@@ -16,7 +16,7 @@ Surprisingly, a Google search didn't turn up any obviously useful implementation
 reused. There are other ID mapping services available but they're source specific:
 
 * [UniProt](https://www.uniprot.org/mapping/)
-* [Patric](https://docs.patricbrc.org/user_guide/genome_feature_data_and_tools/id_mapping_tool.html)
+* [PATRIC](https://docs.patricbrc.org/user_guide/genome_feature_data_and_tools/id_mapping_tool.html)
 
 ## Definitions
 
@@ -38,13 +38,13 @@ reused. There are other ID mapping services available but they're source specifi
   there are no duplicate records.
 * The service must allow ID lookups based on either NID of the tuple.
 * The service must return all NIDs associated with the lookup NID unless filters are specified.
-** The service must allow filtering results by namespace.
+  * The service must allow filtering results by namespace.
 * Arbitrary key-value metadata, not to exceed 1KB serialized as a JSON map,
   may be attached to each NID in a tuple upon creation of the tuple. This may be useful for
   providing information about the targets of the NID.
-** For example, NCBI IDs map to both a Genome and Assembly object in KBase, and the metadata
+  * For example, NCBI IDs map to both a Genome and Assembly object in KBase, and the metadata
    may be used by an application to select which object to retrieve.
-** This metadata is not searchable.
+  * This metadata is not searchable.
 * Mappings may be deleted.
 
 ### Namespaces
@@ -56,12 +56,12 @@ reused. There are other ID mapping services available but they're source specifi
   this property may be changed by namespace administrators at will.
 * Creating a mapping is controlled by whether the namespaces are publicly mappable and
   to which namespace the PNID belongs:
-** If one of the namespaces in a mapping is not publicly mappable and the other is, the PNID
+  * If one of the namespaces in a mapping is not publicly mappable and the other is, the PNID
    must exist in the namespace that is not publicly mappable and the user must be an
    administrator of that namespace.
-** If both namespaces are in mappings that are not publicly mappable the user must be an
+  * If both namespaces are in mappings that are not publicly mappable the user must be an
    administrator of both namespaces and must specify which NID is the PNID.
-** If both namespaces in a mapping are publicly mappable, the user creating or deleting the
+  * If both namespaces in a mapping are publicly mappable, the user creating or deleting the
    mapping must be an administrator of at least one of the namespaces, and the PNID must exist
    in a namespace for which the user is an administrator.
 * An administrator may only delete a mapping where the PNID exists in a namespace for which they
