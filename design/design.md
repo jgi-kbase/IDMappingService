@@ -54,18 +54,21 @@ reused. There are other ID mapping services available but they're source specifi
 * Every namespace has one or more administrators.
 * A namespace may be publicly mappable. At creation a namespace is not publicly mappable but
   this property may be changed by namespace administrators at will.
-* Creating a mapping is controlled by whether the namespaces are publicly mappable and
-  to which namespace the PNID belongs:
-  * If one of the namespaces in a mapping is not publicly mappable and the other is, the PNID
-   must exist in the namespace that is not publicly mappable and the user must be an
-   administrator of that namespace.
-  * If both namespaces are in mappings that are not publicly mappable the user must be an
-   administrator of both namespaces and must specify which NID is the PNID.
-  * If both namespaces in a mapping are publicly mappable, the user creating or deleting the
-   mapping must be an administrator of at least one of the namespaces, and the PNID must exist
-   in a namespace for which the user is an administrator.
-* An administrator may only delete a mapping where the PNID exists in a namespace for which they
-  have administrator access.
+
+### Creating and deleting mappings
+* To create a mapping including a namespace that is not publicly mappable, a user must be an
+  administrator of that namespace.
+* When creating a mapping, the user must specify which NID is the PNID, and the user must be
+  an administrator for the namespace in the NID.
+* To delete a mapping, the user must be an administrator of the namespace in which the PNID
+  exists.
+
+Less abstractly, the PNID can be thought of as the user's 'home' namespace, and the other NID
+as the 'target' namespace. Typically the target will be a public repository of data, like NCBI,
+and the home will be a system associated with the user, like KBase. The user would often have
+administration rights on the home system, but not on the target, but the target would typically
+be publicly mappable such that the user can create a mapping from their system to the public
+system.
 
 ### Administration
 
