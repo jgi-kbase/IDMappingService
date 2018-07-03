@@ -24,6 +24,9 @@ reused. There are other ID mapping services available but they're source specifi
   (`NCBI Refseq`, `GCF_001598195.1`).
 * PNID - Primary Namespaced ID. This is used to determine who can create and delete a mapping (see
   below).
+* DAL - Data Abstraction Layer.
+* CLI - Command Line Interface.
+* CSL - Comma Separated List.
 
 ## MVP Service Requirements
 
@@ -54,6 +57,8 @@ reused. There are other ID mapping services available but they're source specifi
 * Every namespace has one or more administrators.
 * A namespace may be publicly mappable. At creation a namespace is not publicly mappable but
   this property may be changed by namespace administrators at will.
+* It is expected that fewer than 1000 namespaces exist in the system, although there is no hard
+  limit.
 
 ### Creating and deleting mappings
 * To create a mapping including a namespace that is not publicly mappable, a user must be an
@@ -78,9 +83,134 @@ system.
 
 ## Design
 
-* TBD
+* HTTP / REST-ish interface
+  * Try to avoid MIME encoding if at all possible
+* Mappings are stored in MongoDB (with a DAL so alternative storage systems can be swapped in
+  via implementing the DAL interface)
+* Administration of namespace creation and administrator assignment is done via a CLI that
+  interfaces with the DAL directly
+  * Practically this means anyone with MongoDB credentials for and network access to the database
+    is a general administrator
+  * The CLI allows for creating user accounts associated with a token which can be provided to
+    the user out of band. The token is hashed and stored in the database. Any token expiration
+    policies are handled manually via the CLI. A user account is an arbitrary name matching the
+    regex `$[a-z][a-z0-9]+^` and an associated token.
+  * The CLI allows for associating user accounts to namespaces in a many-to-many relationship.
+
+### Constraints
+
+* A namespace matches the regex `$[a-zA-Z0-9_]+^`
+* IDs are unconstrained other than they cannot be whitespace-only.
+  * As such, IDs must be URL-encoded when appearing in a URL if they contain any url-unsafe
+    characters.
+
+### API
+
+`[Auth source]` defines the source of authentication information and currently exists to
+provide for the possibility of alternative authentication sources in the future. In the first
+iteration of the service the only authentication source will be `Local`.
+
+#### List namespaces
+
+```
+GET /api/v1/namespace/
+
+RETURNS:
+[{"namespace": <namespace1>,
+  "publicly_mappable": <boolean1>
+  },
+  ...
+  {"namespace": <namespaceN>,
+  "publicly_mappable": <booleanN>
+  }
+ }
+]
+```
+
+#### Show namespace
+
+```
+GET /api/v1/namespace/<namespace>
+
+RETURNS:
+{"namespace": <namespace>,
+ "publicly_mappable": <boolean>
+ }
+```
+
+#### Create a mapping
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/namespace/<primary namespace>/map/<primary ID>/<target namespace>/<target ID>
+{"pnid_meta": {"key1": "value1",
+               ...
+               "keyN": "valueN"},
+ "other_meta": {"key", "value"}
+ }
+ 
+RETURNS:
+{"pnid": {"namespace": <primary namespace>,
+          "id": <primary ID>,
+          "meta": {...}
+          },
+ "other": {"namespace": <target namespace>,
+           "id": <target ID>,
+           "meta": {...}
+           }
+ }
+```
+
+Both meta keys, as well as the PUT body in its entirety, are optional.
+
+#### List mappings
+
+```
+GET /api/v1/namespace/<namespace>/map/<ID>/[?namespace_filter=<namespace CSL>]
+
+RETURNS:
+[{"namespace": <namespace1>,
+  "id: <id1>,
+  "meta": {...},
+  "is_primary": <boolean1>
+  },
+  ...
+ {"namespace": <namespaceN>,
+  "id: <idN>,
+  "meta": {...},
+  "is_primary": <booleanN>
+  }
+ } 
+]
+```
+
+#### Delete a mapping
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+DELETE /api/v1/namespace/<namespace>/map/<primary ID>/<target namespace>/<target ID>
+```
+
+#### Alter namespace
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/namespace/<namespace>/set/?publicly_mappable=<true or false>
+
+RETURNS:
+{"namespace": <namespace>,
+ "publicly_mappable": <boolean>
+ }
+```
 
 ## Future work
 
+* Bulk mapping creation and search endpoints.
 * Provide administrator access via outside authentication systems, such as KBase and JGI auth.
 
