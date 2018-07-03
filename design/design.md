@@ -39,6 +39,8 @@ reused. There are other ID mapping services available but they're source specifi
   it is expected there may exist multiple tuples containing a particular NID.
 * Therefore, the only uniqueness constraint in the system is that each tuple is unique - e.g.
   there are no duplicate records.
+  * Note that there may be 2 copies of a particular tuple - one with the PNID in one namespace,
+    and the other with the PNID in the other namespace.
 * The service must allow ID lookups based on either NID of the tuple.
 * The service must return all NIDs associated with the lookup NID unless filters are specified.
   * The service must allow filtering results by namespace.
@@ -96,11 +98,14 @@ system.
     policies are handled manually via the CLI. A user account is an arbitrary name matching the
     regex `$[a-z][a-z0-9]+^` and an associated token.
   * The CLI allows for associating user accounts to namespaces in a many-to-many relationship.
+  * The CLI allows for listing all users in the system.
+  * The CLI allows for listing all users that can administrate a namespace.
 
 ### Constraints
 
-* A namespace matches the regex `$[a-zA-Z0-9_]+^`
-* IDs are unconstrained other than they cannot be whitespace-only.
+* A namespace matches the regex `$[a-zA-Z0-9_]+^` with a maximum length of 256 characters.
+* IDs are unconstrained other than they cannot be whitespace-only and have a maximum length of
+  1000 characters.
   * As such, IDs must be URL-encoded when appearing in a URL if they contain any url-unsafe
     characters.
 
@@ -144,11 +149,11 @@ RETURNS:
 HEADERS:
 Authorization: [Auth source] <token>
 
-PUT /api/v1/namespace/<primary namespace>/map/<primary ID>/<target namespace>/<target ID>
+PUT /api/v1/namespace/<primary namespace>/map/<primary ID>/<namespace>/<ID>
 {"pnid_meta": {"key1": "value1",
                ...
                "keyN": "valueN"},
- "other_meta": {"key", "value"}
+ "nid_meta": {"key", "value"}
  }
  
 RETURNS:
@@ -156,8 +161,8 @@ RETURNS:
           "id": <primary ID>,
           "meta": {...}
           },
- "other": {"namespace": <target namespace>,
-           "id": <target ID>,
+ "nid": {"namespace": <namespace>,
+           "id": <ID>,
            "meta": {...}
            }
  }
@@ -192,7 +197,7 @@ RETURNS:
 HEADERS:
 Authorization: [Auth source] <token>
 
-DELETE /api/v1/namespace/<namespace>/map/<primary ID>/<target namespace>/<target ID>
+DELETE /api/v1/namespace/<primary namespace>/map/<primary ID>/<namespace>/<ID>
 ```
 
 #### Alter namespace
