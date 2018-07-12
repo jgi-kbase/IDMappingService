@@ -44,12 +44,6 @@ reused. There are other ID mapping services available but they're source specifi
 * The service must allow ID lookups based on either NID of the tuple.
 * The service must return all NIDs associated with the lookup NID unless filters are specified.
   * The service must allow filtering results by namespace.
-* Arbitrary key-value metadata, not to exceed 1KB serialized as a JSON map,
-  may be attached to each NID in a tuple upon creation of the tuple. This may be useful for
-  providing information about the targets of the NID.
-  * For example, NCBI IDs map to both a Genome and Assembly object in KBase, and the metadata
-   may be used by an application to select which object to retrieve.
-  * This metadata is not searchable.
 * Mappings may be deleted.
 
 ### Namespaces
@@ -150,25 +144,16 @@ HEADERS:
 Authorization: [Auth source] <token>
 
 PUT /api/v1/namespace/<primary namespace>/map/<primary ID>/<namespace>/<ID>
-{"pnid_meta": {"key1": "value1",
-               ...
-               "keyN": "valueN"},
- "nid_meta": {"key", "value"}
- }
  
 RETURNS:
 {"pnid": {"namespace": <primary namespace>,
           "id": <primary ID>,
-          "meta": {...}
           },
  "nid": {"namespace": <namespace>,
            "id": <ID>,
-           "meta": {...}
            }
  }
 ```
-
-Both meta keys, as well as the PUT body in its entirety, are optional.
 
 #### List mappings
 
@@ -178,13 +163,11 @@ GET /api/v1/namespace/<namespace>/map/<ID>/[?namespace_filter=<namespace CSL>]
 RETURNS:
 [{"namespace": <namespace1>,
   "id: <id1>,
-  "meta": {...},
   "is_primary": <boolean1>
   },
   ...
  {"namespace": <namespaceN>,
   "id: <idN>,
-  "meta": {...},
   "is_primary": <booleanN>
   }
  } 
