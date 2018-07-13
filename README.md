@@ -5,5 +5,5 @@
 
 * dockerize
 * travis
-  * coverage
+  * coverage (check working)
   * docker build
