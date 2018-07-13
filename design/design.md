@@ -144,16 +144,9 @@ HEADERS:
 Authorization: [Auth source] <token>
 
 PUT /api/v1/namespace/<primary namespace>/map/<primary ID>/<namespace>/<ID>
- 
-RETURNS:
-{"pnid": {"namespace": <primary namespace>,
-          "id": <primary ID>,
-          },
- "nid": {"namespace": <namespace>,
-           "id": <ID>,
-           }
- }
 ```
+
+POST is also accepted, although not strictly correct.
 
 #### List mappings
 
@@ -190,11 +183,6 @@ HEADERS:
 Authorization: [Auth source] <token>
 
 PUT /api/v1/namespace/<namespace>/set/?publicly_mappable=<true or false>
-
-RETURNS:
-{"namespace": <namespace>,
- "publicly_mappable": <boolean>
- }
 ```
 
 ## Future work
