@@ -5,7 +5,7 @@ Classes representing authentication tokens.
 @author: gaprice@lbl.gov
 """
 
-from jgikbase.idmapping.util.Util import not_none
+from jgikbase.idmapping.util.util import not_none
 
 
 class HashedToken:

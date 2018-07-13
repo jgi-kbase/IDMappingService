@@ -6,8 +6,6 @@ Utility functions
 """
 from typing import cast
 
-# TODO docstrings should use """
-
 
 def not_none(obj: object, name: str):
     """

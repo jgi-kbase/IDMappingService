@@ -3,9 +3,9 @@
 @author: gaprice@lbl.gov
 """
 
-from jgikbase.idmapping.util.Util import not_none
+from jgikbase.idmapping.util.util import not_none
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
-import pytest
+from pytest import fail
 
 
 def test_no_none_obj_pass():
@@ -28,6 +28,6 @@ def test_no_none_str_fail():
 def fail_no_none(obj: object, name: str, expected: Exception):
     try:
         not_none(obj, name)
-        pytest.fail('expected exception')
+        fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)

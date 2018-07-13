@@ -4,12 +4,12 @@ Interface for a storage system for ID mappings.
 """
 from abc import abstractmethod as _abstractmethod
 from abc import ABCMeta as _ABCMeta
-from jgikbase.idmapping.core.NamespaceID import NamespaceID
-from jgikbase.idmapping.core.User import User
-from jgikbase.idmapping.core.Tokens import HashedToken
-from jgikbase.idmapping.core.Namespace import Namespace
+from jgikbase.idmapping.core.namespace_id import NamespaceID
+from jgikbase.idmapping.core.user import User
+from jgikbase.idmapping.core.tokens import HashedToken
+from jgikbase.idmapping.core.namespace import Namespace
 from typing import List
-from jgikbase.idmapping.core.NamespacedID import NamespacedID
+from jgikbase.idmapping.core.namespaced_id import NamespacedID
 
 
 class IDMappingStorage:
@@ -43,7 +43,7 @@ class IDMappingStorage:
 
         :param namespace_id: The namespace to create.
 
-        Throws a :class:`jgikbase.idmapping.storage.Exceptions.NamespaceExistsException` if the
+        Throws a :class:`jgikbase.idmapping.storage.exceptions.NamespaceExistsException` if the
         namespace already exists.
         """
         raise NotImplementedError()
