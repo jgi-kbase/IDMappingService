@@ -7,7 +7,7 @@
 # TODO Users need to be scoped to an auth source
 
 
-class User(object):
+class User:
     '''
     classdocs
     '''

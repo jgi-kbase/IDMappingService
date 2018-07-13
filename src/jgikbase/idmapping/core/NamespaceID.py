@@ -6,7 +6,7 @@
 # TODO NOW
 
 
-class NamespaceID(object):
+class NamespaceID:
     '''
     classdocs
     '''

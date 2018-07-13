@@ -8,7 +8,7 @@ Classes representing authentication tokens.
 from jgikbase.idmapping.util.Util import not_none
 
 
-class HashedToken(object):
+class HashedToken:
     '''
     A token that has been hashed by a hashing algorithm.
 

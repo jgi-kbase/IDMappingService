@@ -12,7 +12,7 @@ from typing import List
 from jgikbase.idmapping.core.NamespacedID import NamespacedID
 
 
-class IDMappingStorage(object):
+class IDMappingStorage:
     '''
     An interface for a storage system for ID mappings. All methods are abstract.
     '''

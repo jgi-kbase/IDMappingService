@@ -8,7 +8,7 @@
 # TODO NOW
 
 
-class Namespace(object):
+class Namespace:
     '''
     classdocs
     '''
