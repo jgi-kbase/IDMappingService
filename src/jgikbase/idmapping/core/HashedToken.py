@@ -1,5 +1,4 @@
 '''
-Created on Jul 12, 2018
 
 @author: gaprice@lbl.gov
 '''

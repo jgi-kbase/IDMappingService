@@ -1,10 +1,10 @@
 '''
 
-@author: crusherofheads
+@author: gaprice@lbl.gov
 '''
 from jgikbase.idmapping.storage.IDMappingStorage import IDMappingStorage as _IDMappingStorage
-from jgikbase.idmapping.core.NamespaceID import NamespaceID as _NamespaceID
-from jgikbase.idmapping.core.User import User as _User
+from jgikbase.idmapping.core.NamespaceID import NamespaceID
+from jgikbase.idmapping.core.User import User
 
 # TODO NOW
 
@@ -21,6 +21,6 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
     def create_namespace(
             self,
-            namespace_id: _NamespaceID,
-            admin_user: _User) -> None:
+            namespace_id: NamespaceID,
+            admin_user: User) -> None:
         print('foo')
