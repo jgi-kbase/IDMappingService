@@ -1,7 +1,7 @@
-'''
+"""
 
 @author: gaprice@lbl.gov
-'''
+"""
 
 from jgikbase.idmapping.util.Util import not_none
 from jgikbase.test.idmapping.test_utils import assert_exception_correct

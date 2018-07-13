@@ -1,7 +1,7 @@
-'''
+"""
 
 @author: gaprice@lbl.gov
-'''
+"""
 
 
 # TODO NOW lowercase all module names
@@ -9,11 +9,11 @@
 
 
 class Namespace:
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, params):
-        '''
+        """
         Constructor
-        '''
+        """
