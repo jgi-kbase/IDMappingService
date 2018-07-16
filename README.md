@@ -7,3 +7,4 @@
 * travis
   * coverage (check working)
   * docker build
+  * mongo versions
