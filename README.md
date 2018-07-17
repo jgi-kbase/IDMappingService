@@ -10,4 +10,5 @@ Build status (master):
 * travis
   * docker build
   * mongo versions
+    * try 4.0.0
 * rename `namespaced_id` -> `object_id`
