@@ -15,7 +15,6 @@ install:
   - wget http://fastdl.mongodb.org/linux/$MONGODB_VER.tgz
   - tar xfz $MONGODB_VER.tgz
   - export MONGOD=`pwd`/$MONGODB_VER/bin/mongod
-  - cd -
   - cp -n test.cfg.example test.cfg
   - sed -i "s#^test.temp.dir=.*#test.temp.dir=temp_test_dir#" test.cfg
   - sed -i "s#^test.mongo.exe.*#test.mongo.exe=$MONGOD#" test.cfg
