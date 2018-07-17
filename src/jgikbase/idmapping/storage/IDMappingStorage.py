@@ -23,6 +23,7 @@ class IDMappingStorage(object):
         '''
         Create or update a user. If the user already exists, the user's token is updated.
         Once created, users cannot be removed.
+
         :param user: the user, which must be in the 'local' user scope.
         :param token: the user's token after applying a hash function.
         '''
@@ -39,6 +40,7 @@ class IDMappingStorage(object):
     def create_namespace(self, namespace_id: NamespaceID) -> None:
         '''
         Create a new namespace. Once created, namespaces cannot be removed.
+
         :param namespace_id: The namespace to create.
 
         Throws a :class:`jgikbase.idmapping.storage.Exceptions.NamespaceExistsException` if the
@@ -51,6 +53,7 @@ class IDMappingStorage(object):
         '''
         Add a user to a namespace, giving them administration rights. A noop occurs if the user
         is already an administrator for the namespace.
+
         :param namespace_id: the namespace to modify.
         :param admin_user: the user.
         '''
@@ -61,6 +64,7 @@ class IDMappingStorage(object):
     def remove_user_from_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
         '''
         Remove a user from a namespace, removing their administration rights.
+
         :param namespace_id: the namespace to modify.
         :param admin_user: the user.
         '''
@@ -71,6 +75,7 @@ class IDMappingStorage(object):
     def get_users_for_namespace(self, namespace_id: NamespaceID) -> List[User]:
         '''
         Get the users that can administrate a particular namespace.
+
         :param namespace_id: The namespace to query.
         '''
         # TODO throw no such namespace
@@ -84,6 +89,7 @@ class IDMappingStorage(object):
             ) -> None:
         '''
         Set the publicly mappable flag on a namespace.
+
         :param namespace_id: The namespace to alter.
         :param publically_mappable: True to set the namespace to publicly mappable, False (the
             default) to prevent public mapping.
@@ -102,6 +108,7 @@ class IDMappingStorage(object):
     def get_namespace(self, namespace_id: NamespaceID) -> Namespace:
         '''
         Get a particular namespace.
+
         :param namespace_id: the id of the namespace to get.
         '''
         # TODO throw no such namespace
@@ -112,6 +119,7 @@ class IDMappingStorage(object):
         '''
         Create a mapping from one namespace to another.
         Note that this method does NOT check for the existence of the namespaces.
+
         :param primary_NID: the primary namespace/ID combination.
         :param secondary_NID: the secondary namespace/ID combination.
         '''
@@ -121,6 +129,7 @@ class IDMappingStorage(object):
     def remove_mapping(self, primary_NID: NamespacedID, secondary_NID: NamespacedID) -> None:
         '''
         Remove a mapping from one namespace to another.
+
         :param primary_NID: the primary namespace/ID combination.
         :param secondary_NID: the secondary namespace/ID combination.
         '''
@@ -135,6 +144,7 @@ class IDMappingStorage(object):
         '''
         Find mappings given a namespace / id combination.
         If the namespace does not exist, no results will be returned.
+
         :param nid: the namespace / id combination to match against.
         :param ns_filter: a list of namespaces with which to filter the results. Only results in
             these namespaces will be returned.
