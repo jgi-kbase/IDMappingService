@@ -1,7 +1,7 @@
-'''
+"""
 
 @author: gaprice@lbl.gov
-'''
+"""
 
 
 def assert_exception_correct(got: Exception, expected: Exception):
