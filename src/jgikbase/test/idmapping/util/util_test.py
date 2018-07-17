@@ -1,8 +1,3 @@
-"""
-
-@author: gaprice@lbl.gov
-"""
-
 from jgikbase.idmapping.util.util import not_none
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import fail
