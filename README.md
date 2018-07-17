@@ -9,4 +9,4 @@ Build status (master):
 * dockerize
 * travis
   * docker build
-  
+* rename `namespaced_id` -> `object_id`
