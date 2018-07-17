@@ -1,0 +1,5 @@
+bandit=1.4.0
+mypy=0.610
+flake8=3.5.0
+coverage=4.5.1
+pytest-cov=2.5.1

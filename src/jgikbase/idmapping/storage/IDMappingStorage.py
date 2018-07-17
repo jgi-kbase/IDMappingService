@@ -6,7 +6,7 @@ from abc import abstractmethod as _abstractmethod
 from abc import ABCMeta as _ABCMeta
 from jgikbase.idmapping.core.NamespaceID import NamespaceID
 from jgikbase.idmapping.core.User import User
-from jgikbase.idmapping.core.HashedToken import HashedToken
+from jgikbase.idmapping.core.Tokens import HashedToken
 from jgikbase.idmapping.core.Namespace import Namespace
 from typing import List
 from jgikbase.idmapping.core.NamespacedID import NamespacedID
