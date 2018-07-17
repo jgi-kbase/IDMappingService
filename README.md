@@ -8,6 +8,5 @@ Build status (master):
 
 * dockerize
 * travis
-  * coverage (check working)
   * docker build
   
