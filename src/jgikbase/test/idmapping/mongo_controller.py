@@ -28,7 +28,7 @@ class MongoController:
 
         command = [str(mongoexe), '--port', str(self.port), '--dbpath', str(data_dir),
                    '--nojournal']
-        if (use_wired_tiger):
+        if use_wired_tiger:
             command.extend(['--storageEngine', 'wiredTiger'])
 
         self._outfile = open(self.temp_dir.joinpath('mongo.log'), 'w')
