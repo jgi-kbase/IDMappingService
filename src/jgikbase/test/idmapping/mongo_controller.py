@@ -1,3 +1,8 @@
+"""
+A controller for MongoDB useful for running tests.
+
+Production use is not recommended.
+"""
 from pathlib import Path
 from jgikbase.test.idmapping.test_utils import TestException
 import os
@@ -9,8 +14,24 @@ import shutil
 
 
 class MongoController:
+    """
+    The main MongoDB controller class.
+
+    Attributes:
+    port - the port for the MongoDB service.
+    temp_dir - the location of the MongoDB data and logs.
+    """
 
     def __init__(self, mongoexe: Path, root_temp_dir: Path, use_wired_tiger: bool=False) -> None:
+        '''
+        Create and start a new MongoDB database. An unused port will be selected for the server.
+
+        :param mongoexe: The path to the MongoDB server executable (e.g. mongod) to run.
+        :param root_temp_dir: A temporary directory in which to store MongoDB data and log files.
+            The files will be stored inside a child directory that is unique per invocation.
+        :param use_wired_tiger: For MongoDB versions > 3.0, specify that the Wired Tiger storage
+            engine should be used. Setting this to true for other versions will cause an error.
+        '''
         if not mongoexe or not os.access(mongoexe, os.X_OK):
             raise TestException('mongod executable path {} does not exist or is not executable.'
                                 .format(mongoexe))
@@ -37,6 +58,12 @@ class MongoController:
         time.sleep(1)  # wait for server to start up
 
     def destroy(self, delete_temp_files: bool) -> None:
+        """
+        Shut down the MongoDB server.
+
+        :param delete_temp_files: delete all the MongoDB data files and logs generated during the
+            test.
+        """
         if self._proc:
             self._proc.terminate()
         if self._outfile:
