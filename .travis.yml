@@ -1,12 +1,30 @@
 sudo: required
-services:
-  - docker
 language: python
 python: "3.6"
+
+env:
+    # Runs parallel jobs, 1 for each line. Tests different DB configurations for compatibility.
+    - MONGODB_VER=mongodb-linux-x86_64-2.6.12 WIRED_TIGER=false
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=false
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=true
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=false
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=true
+    
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
+  
+  - wget http://fastdl.mongodb.org/linux/$MONGODB_VER.tgz
+  - tar xfz $MONGODB_VER.tgz
+  - export MONGOD=`pwd`/$MONGODB_VER/bin/mongod
+  - cp -n test.cfg.example test.cfg
+  - sed -i "s#^test.temp.dir=.*#test.temp.dir=temp_test_dir#" test.cfg
+  - sed -i "s#^test.mongo.exe.*#test.mongo.exe=$MONGOD#" test.cfg
+  - sed -i "s#^test.mongo.wired_tiger.*#test.mongo.wired_tiger=$WIRED_TIGER#" test.cfg
+  - cat test.cfg
+ 
 script:
   - make test
+
 after_success:
   - coveralls
