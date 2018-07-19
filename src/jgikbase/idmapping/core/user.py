@@ -9,6 +9,9 @@ class AuthsourceID:
     """
     An identifier for an authentication source for a user.
 
+    An authentication source is any server, program, or agent that can give you back a
+    username when it is given a secret token.
+
     Attributes:
     authsource - the ID of the authentication source.
     """
