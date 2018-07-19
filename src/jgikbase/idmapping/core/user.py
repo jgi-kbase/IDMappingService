@@ -7,7 +7,7 @@ from jgikbase.idmapping.util.util import not_none
 
 class AuthsourceID:
     """
-    An identifier for an authorization source for a user.
+    An identifier for an authentication source for a user.
 
     Attributes:
     authsource - the ID of the authentication source.
