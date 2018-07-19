@@ -19,6 +19,7 @@ class Authsource:
     def __init__(self, authsource: str) -> None:
         '''
         Create an authorization source.
+
         :param authsource: A string identifier for the authorization source, consisting only of
             lowercase ASCII letters and no longer than 20 characters.
         '''
@@ -37,7 +38,7 @@ class User:
     username - the user name.
     """
 
-    _legal_chars = 'a-z0-9_'
+    _legal_chars = 'a-z0-9'
     _max_len = 100
 
     def __init__(self, authsource: Authsource, username: str) -> None:
@@ -45,7 +46,7 @@ class User:
         Create a new user.
 
         :param authsource: The authentication source for the user.
-        :param username: The name of the user.
+        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$.
         """
         not_none(authsource, 'authsource')
         check_string(username, 'username', self._legal_chars, self._max_len)

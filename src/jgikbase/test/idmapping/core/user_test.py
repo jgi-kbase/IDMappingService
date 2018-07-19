@@ -32,10 +32,10 @@ def fail_authsource_init(source: str, expected: Exception):
 
 
 def test_user_init_pass():
-    u = User(Authsource('foo'), LONG_STR[0:63] + 'abcdefghijklmnopqrstuvwxyz0123456789_')
+    u = User(Authsource('foo'), LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
     # yuck, but don't want to add a hash fn to authsource unless necessary
     assert u.authsource.authsource == 'foo'
-    assert u.username == LONG_STR[0:63] + 'abcdefghijklmnopqrstuvwxyz0123456789_'
+    assert u.username == LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789'
 
 
 def test_user_init_fail():
@@ -46,12 +46,12 @@ def test_user_init_fail():
                    ValueError('username cannot be whitespace only'))
     fail_user_init(as_, LONG_STR + 'b',
                    ValueError('username ' + LONG_STR + 'b exceeds maximum length of 100'))
-    for c in '0123456789_':
+    for c in '0123456789':
         fail_user_init(as_, c + 'foo',
                        ValueError('username ' + c + 'foo must start with a letter'))
-    for c in '*&@-+\n\t~':
-        fail_user_init(as_, 'foo1_d' + c,
-                       ValueError('Illegal character in username foo1_d' + c + ': ' + c))
+    for c in '*&@-+\n\t~_':
+        fail_user_init(as_, 'foo1d' + c,
+                       ValueError('Illegal character in username foo1d' + c + ': ' + c))
 
 
 def fail_user_init(authsource: Authsource, username: str, expected: Exception):
