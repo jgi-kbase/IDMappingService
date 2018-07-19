@@ -3,7 +3,7 @@
 @author: gaprice@lbl.gov
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage as _IDMappingStorage
-from jgikbase.idmapping.core.namespace_id import NamespaceID
+from jgikbase.idmapping.core.object_id import NamespaceID
 
 # TODO NOW
 
