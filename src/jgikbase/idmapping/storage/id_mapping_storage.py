@@ -31,6 +31,15 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
+    def get_user(self, token: HashedToken) -> User:
+        """
+        Get the user, if any, associated with a hashed token.
+
+        :param token: the hashed token.
+        """
+        raise NotImplementedError()
+
+    @_abstractmethod
     def get_users(self) -> List[User]:
         """
         Get all the users in the system.
