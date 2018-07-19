@@ -11,6 +11,8 @@ from jgikbase.idmapping.core.object_id import Namespace
 from typing import List
 from jgikbase.idmapping.core.object_id import ObjectID
 
+# TODO NOW cover this class with tests
+
 
 class IDMappingStorage:
     """

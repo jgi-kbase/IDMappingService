@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.user import Authsource, User
+from jgikbase.idmapping.core.user import AuthsourceID, User
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 
@@ -6,10 +6,10 @@ LONG_STR = 'a' * 100
 
 
 def test_authsource_init_pass():
-    as_ = Authsource('abcdefghijklmnopqrst')
+    as_ = AuthsourceID('abcdefghijklmnopqrst')
     assert as_.authsource == 'abcdefghijklmnopqrst'
 
-    as_ = Authsource('uvwxyz')
+    as_ = AuthsourceID('uvwxyz')
     assert as_.authsource == 'uvwxyz'
 
 
@@ -25,21 +25,21 @@ def test_authsource_init_fail():
 
 def fail_authsource_init(source: str, expected: Exception):
     try:
-        Authsource(source)
+        AuthsourceID(source)
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
 
 
 def test_user_init_pass():
-    u = User(Authsource('foo'), LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
+    u = User(AuthsourceID('foo'), LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
     # yuck, but don't want to add a hash fn to authsource unless necessary
     assert u.authsource.authsource == 'foo'
     assert u.username == LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789'
 
 
 def test_user_init_fail():
-    as_ = Authsource('bar')
+    as_ = AuthsourceID('bar')
     fail_user_init(None, 'foo', ValueError('authsource cannot be None'))
     fail_user_init(as_, None, ValueError('username cannot be None'))
     fail_user_init(as_, '       \t      \n   ',
@@ -54,7 +54,7 @@ def test_user_init_fail():
                        ValueError('Illegal character in username foo1d' + c + ': ' + c))
 
 
-def fail_user_init(authsource: Authsource, username: str, expected: Exception):
+def fail_user_init(authsource: AuthsourceID, username: str, expected: Exception):
     try:
         User(authsource, username)
         fail('expected exception')

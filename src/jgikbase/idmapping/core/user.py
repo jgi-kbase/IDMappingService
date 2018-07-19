@@ -5,12 +5,15 @@ ID Mapping system user classes.
 from jgikbase.idmapping.util.util import not_none, check_string
 
 
-class Authsource:
+class AuthsourceID:
     """
-    An authorization source for a user.
+    An identifier for an authentication source for a user.
+
+    An authentication source is any server, program, or agent that can give you back a
+    username when it is given a secret token.
 
     Attributes:
-    authsource - the name of the authentication source.
+    authsource - the ID of the authentication source.
     """
 
     _legal_chars = 'a-z'
@@ -41,7 +44,7 @@ class User:
     _legal_chars = 'a-z0-9'
     _max_len = 100
 
-    def __init__(self, authsource: Authsource, username: str) -> None:
+    def __init__(self, authsource: AuthsourceID, username: str) -> None:
         """
         Create a new user.
 
