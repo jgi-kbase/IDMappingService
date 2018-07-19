@@ -12,6 +12,7 @@ env:
     
 install:
   - pip install -r requirements.txt
+  - pip install -r dev-requirements.txt
   
   - wget http://fastdl.mongodb.org/linux/$MONGODB_VER.tgz
   - tar xfz $MONGODB_VER.tgz

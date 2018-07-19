@@ -11,6 +11,8 @@ from jgikbase.idmapping.core.namespace import Namespace
 from typing import List
 from jgikbase.idmapping.core.namespaced_id import NamespacedID
 
+# TODO NOW cover this class with tests
+
 
 class IDMappingStorage:
     """
