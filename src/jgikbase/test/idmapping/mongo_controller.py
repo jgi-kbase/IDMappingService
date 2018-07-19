@@ -86,12 +86,22 @@ class MongoController:
         if delete_temp_files and self.temp_dir:
             shutil.rmtree(self.temp_dir)
 
-    def clear_database(self, db_name):
-        db = self.client[db_name]
-        for name in db.list_collection_names():
-            if not name.startswith('system.'):
-                # don't drop collection since that drops indexes
-                db.get_collection(name).delete_many({})
+    def clear_database(self, db_name, drop_indexes=False):
+        '''
+        Remove all data from a database.
+
+        :param db_name: the name of the db to clear.
+        :param drop_indexes: drop all indexes if true, retain indexes (which will be empty) if
+            false.
+        '''
+        if drop_indexes:
+            self._client.drop_database(db_name)
+        else:
+            db = self.client[db_name]
+            for name in db.list_collection_names():
+                if not name.startswith('system.'):
+                    # don't drop collection since that drops indexes
+                    db.get_collection(name).delete_many({})
 
 
 def main():
