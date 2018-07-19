@@ -4,29 +4,17 @@ from pytest import fail
 from jgikbase.idmapping.util import util
 
 
-def test_not_none_obj_pass():
+def test_not_none_pass():
     not_none(4, 'integer')
-
-
-def test_not_none_string_pass():
     not_none('four', 'text')
 
 
-def test_not_none_obj_fail():
-    fail_not_none(None, 'my name', ValueError('my name cannot be None'))
-
-
-def test_not_none_str_fail():
-    fail_not_none('   \t   \n   ', 'my name',
-                  ValueError('my name cannot be whitespace only'))
-
-
-def fail_not_none(obj: object, name: str, expected: Exception):
+def test_not_none_fail():
     try:
-        not_none(obj, name)
+        not_none(None, 'my name')
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, expected)
+        assert_exception_correct(got, ValueError('my name cannot be None'))
 
 
 def test_check_string_pass():

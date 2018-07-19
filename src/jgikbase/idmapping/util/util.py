@@ -4,9 +4,8 @@ Utility functions
 
 @author: gaprice@lbl.gov
 """
-from typing import cast as _cast
-from typing import Dict as _Dict
-from typing import Pattern as _Pattern
+from typing import Dict as _Dict  # @UnusedImport PyDev thinks it's unused, flake & mypy get it
+from typing import Pattern as _Pattern  # @UnusedImport PyDev sez it's unused, flake & mypy get it
 import re as _re
 
 
@@ -20,10 +19,7 @@ def not_none(obj: object, name: str):
     :param obj: the object to check
     :param name: the name of the object to use in error messages.
     """
-    if type(obj) == str:  # TODO NOW move string checking to check_string
-        if not _cast(str, obj).strip():
-            raise ValueError(name + ' cannot be whitespace only')
-    elif not obj:
+    if not obj:
         raise ValueError(name + ' cannot be None')
 
 # TODO EXCEP change exceptions to package specific
@@ -46,6 +42,8 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     :param max_len: the maximum length of the string.
     '''
     not_none(string, name)
+    if not string.strip():
+        raise ValueError(name + ' cannot be whitespace only')
     if max_len:
         if len(string) > max_len:
             raise ValueError('{} {} exceeds maximum length of {}'

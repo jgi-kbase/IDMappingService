@@ -46,6 +46,6 @@ class User:
         :param username: The name of the user.
         """
         not_none(authsource, 'authsource')
-        not_none(username, 'username')  # TODO NOW check strign
+        check_string(username, 'username')  # TODO NOW size & chars
         self.authsource = authsource
         self.username = username

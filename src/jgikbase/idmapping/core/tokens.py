@@ -5,7 +5,7 @@ Classes representing authentication tokens.
 @author: gaprice@lbl.gov
 """
 
-from jgikbase.idmapping.util.util import not_none
+from jgikbase.idmapping.util.util import check_string
 
 
 class HashedToken:
@@ -25,5 +25,5 @@ class HashedToken:
 
         :param token_hash: the hash of the token.
         """
-        not_none(token_hash, 'token_hash')
+        check_string(token_hash, 'token_hash')
         self.token_hash = token_hash
