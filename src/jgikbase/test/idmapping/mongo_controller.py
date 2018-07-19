@@ -22,6 +22,12 @@ class MongoController:
     Attributes:
     port - the port for the MongoDB service.
     temp_dir - the location of the MongoDB data and logs.
+    client - a pymongo client pointed at the server.
+    db_version - the version of the mongod executable.
+    index_version - the version of the indexes created by the mongod executable - 1 for < 3.4.0,
+        2 otherwise.
+    includes_system_indexes - true if system indexes will be included when listing database
+        indexes, false otherwise.
     """
 
     def __init__(self, mongoexe: Path, root_temp_dir: Path, use_wired_tiger: bool=False) -> None:
