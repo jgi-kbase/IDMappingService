@@ -33,7 +33,7 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     Check that a string meets a set of criteria:
     - it is not None or whitespace only
     - (optional) it is less than some specified maximum length
-    - (optional) it does not contains only legal characters.
+    - (optional) it contains only legal characters.
 
     :param string: the string to test.
     :param name: the name of the string to be used in error messages.

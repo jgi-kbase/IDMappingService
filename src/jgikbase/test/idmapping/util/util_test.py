@@ -20,8 +20,8 @@ def test_not_none_fail():
 def test_check_string_pass():
     check_string('mystring', 'myname')
     check_string('foo', 'bar', max_len=3)
-    check_string('foo', 'bar', legal_characters='[^fo]')
-    check_string('foo', 'bar', '[^fo]', 3)
+    check_string('foo', 'bar', legal_characters='fo')
+    check_string('foo', 'bar', 'fo', 3)
 
 
 def test_check_string_fail():
