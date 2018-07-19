@@ -9,4 +9,5 @@ Build status (master):
 * dockerize
 * travis
   * docker build
-  
+  * try mongo 4.0.0
+* rename `namespaced_id` -> `object_id`
