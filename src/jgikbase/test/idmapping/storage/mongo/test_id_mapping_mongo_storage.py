@@ -14,8 +14,8 @@ def mongo():
     tempdir = test_utils.get_temp_dir()
     wt = test_utils.get_use_wired_tiger()
     mongo = MongoController(mongoexe, tempdir, wt)
-    print('running mongo {} on port {} in dir {}'.format(
-        mongo.db_version, mongo.port, mongo.temp_dir))
+    print('running mongo {}{} on port {} in dir {}'.format(
+        mongo.db_version, ' with WiredTiger' if wt else '', mongo.port, mongo.temp_dir))
     yield mongo
     del_temp = test_utils.get_delete_temp_files()
     print('shutting down mongo, delete_temp_files={}'.format(del_temp))
