@@ -4,12 +4,12 @@ Interface for a storage system for ID mappings.
 """
 from abc import abstractmethod as _abstractmethod
 from abc import ABCMeta as _ABCMeta
-from jgikbase.idmapping.core.namespace_id import NamespaceID
+from jgikbase.idmapping.core.object_id import NamespaceID
 from jgikbase.idmapping.core.user import User
 from jgikbase.idmapping.core.tokens import HashedToken
-from jgikbase.idmapping.core.namespace import Namespace
+from jgikbase.idmapping.core.object_id import Namespace
 from typing import List
-from jgikbase.idmapping.core.namespaced_id import NamespacedID
+from jgikbase.idmapping.core.object_id import ObjectID
 
 # TODO make the coverage calculation not care about abstract classes
 
@@ -117,37 +117,37 @@ class IDMappingStorage:
         raise NotImplementedError()
 
     @_abstractmethod
-    def add_mapping(self, primary_NID: NamespacedID, secondary_NID: NamespacedID) -> None:
+    def add_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
         """
         Create a mapping from one namespace to another.
         Note that this method does NOT check for the existence of the namespaces.
 
-        :param primary_NID: the primary namespace/ID combination.
-        :param secondary_NID: the secondary namespace/ID combination.
+        :param primary_OID: the primary namespace/ID combination.
+        :param secondary_OID: the secondary namespace/ID combination.
         """
         raise NotImplementedError()
 
     @_abstractmethod
-    def remove_mapping(self, primary_NID: NamespacedID, secondary_NID: NamespacedID) -> None:
+    def remove_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
         """
         Remove a mapping from one namespace to another.
 
-        :param primary_NID: the primary namespace/ID combination.
-        :param secondary_NID: the secondary namespace/ID combination.
+        :param primary_OID: the primary namespace/ID combination.
+        :param secondary_OID: the secondary namespace/ID combination.
         """
         raise NotImplementedError()
 
     @_abstractmethod
     def find_mappings(
             self,
-            nid: NamespacedID,
+            oid: ObjectID,
             ns_filter: List[NamespaceID]=None
-            ) -> List[NamespacedID]:
+            ) -> List[ObjectID]:
         """
         Find mappings given a namespace / id combination.
         If the namespace does not exist, no results will be returned.
 
-        :param nid: the namespace / id combination to match against.
+        :param oid: the namespace / id combination to match against.
         :param ns_filter: a list of namespaces with which to filter the results. Only results in
             these namespaces will be returned.
         """
