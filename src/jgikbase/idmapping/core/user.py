@@ -46,7 +46,8 @@ class User:
         Create a new user.
 
         :param authsource: The authentication source for the user.
-        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$.
+        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
+            than 100 characters.
         """
         not_none(authsource, 'authsource')
         check_string(username, 'username', self._legal_chars, self._max_len)

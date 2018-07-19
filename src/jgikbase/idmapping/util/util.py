@@ -44,10 +44,9 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     not_none(string, name)
     if not string.strip():
         raise ValueError(name + ' cannot be whitespace only')
-    if max_len:
-        if len(string) > max_len:
-            raise ValueError('{} {} exceeds maximum length of {}'
-                             .format(name, string, max_len))
+    if max_len and len(string) > max_len:
+        raise ValueError('{} {} exceeds maximum length of {}'
+                         .format(name, string, max_len))
     if legal_characters:
         global _REGEX_CACHE
         if legal_characters not in _REGEX_CACHE:
