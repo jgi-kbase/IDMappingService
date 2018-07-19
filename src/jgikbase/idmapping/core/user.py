@@ -2,7 +2,7 @@
 ID Mapping system user classes.
 
 """
-from jgikbase.idmapping.util.util import not_none
+from jgikbase.idmapping.util.util import not_none, check_string
 
 
 class Authsource:
@@ -13,8 +13,17 @@ class Authsource:
     authsource - the name of the authentication source.
     """
 
+    _legal_chars = 'a-z'
+    _max_len = 20
+
     def __init__(self, authsource: str) -> None:
-        not_none(authsource, 'authsource')
+        '''
+        Create an authorization source.
+        :param authsource: A string identifier for the authorization source, consisting only of
+            lowercase ASCII letters and no longer than 20 characters.
+        '''
+        check_string(authsource, 'authsource',
+                     max_len=self._max_len, legal_characters=self._legal_chars)
         self.authsource = authsource
 
 
@@ -37,6 +46,6 @@ class User:
         :param username: The name of the user.
         """
         not_none(authsource, 'authsource')
-        not_none(username, 'username')
+        not_none(username, 'username')  # TODO NOW check strign
         self.authsource = authsource
         self.username = username

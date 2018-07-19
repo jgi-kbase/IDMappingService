@@ -11,7 +11,7 @@ def test_hashed_token_init_pass():
 def test_hashed_token_init_fail():
     fail_hashed_token_init(None, ValueError('token_hash cannot be None'))
     fail_hashed_token_init('   \t    \n   ',
-                           ValueError('token_hash cannot be None or whitespace only'))
+                           ValueError('token_hash cannot be whitespace only'))
 
 
 def fail_hashed_token_init(htoken: str, expected: Exception):

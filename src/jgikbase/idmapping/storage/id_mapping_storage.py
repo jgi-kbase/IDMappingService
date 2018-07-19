@@ -11,8 +11,6 @@ from jgikbase.idmapping.core.object_id import Namespace
 from typing import List
 from jgikbase.idmapping.core.object_id import ObjectID
 
-# TODO make the coverage calculation not care about abstract classes
-
 
 class IDMappingStorage:
     """

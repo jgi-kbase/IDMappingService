@@ -4,14 +4,21 @@ from jgikbase.test.idmapping.test_utils import assert_exception_correct
 
 
 def test_authsource_init_pass():
-    as_ = Authsource('foo')
-    assert as_.authsource == 'foo'
+    as_ = Authsource('abcdefghijklmnopqrst')
+    assert as_.authsource == 'abcdefghijklmnopqrst'
+
+    as_ = Authsource('uvwxyz')
+    assert as_.authsource == 'uvwxyz'
 
 
 def test_authsource_init_fail():
     fail_authsource_init(None, ValueError('authsource cannot be None'))
     fail_authsource_init('   \t    \n   ',
-                         ValueError('authsource cannot be None or whitespace only'))
+                         ValueError('authsource cannot be whitespace only'))
+    fail_authsource_init('abcdefghijklmnopqrstu', ValueError(
+        'authsource abcdefghijklmnopqrstu exceeds maximum length of 20'))
+    fail_authsource_init('fooo1b&',
+                         ValueError('Illegal character in authsource fooo1b&: 1'))
 
 
 def fail_authsource_init(source: str, expected: Exception):
@@ -34,7 +41,7 @@ def test_user_init_fail():
     fail_user_init(None, 'foo', ValueError('authsource cannot be None'))
     fail_user_init(as_, None, ValueError('username cannot be None'))
     fail_user_init(as_, '       \t      \n   ',
-                   ValueError('username cannot be None or whitespace only'))
+                   ValueError('username cannot be whitespace only'))
 
 
 def fail_user_init(authsource: Authsource, username: str, expected: Exception):
