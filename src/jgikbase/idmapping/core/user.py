@@ -21,9 +21,9 @@ class AuthsourceID:
 
     def __init__(self, authsource: str) -> None:
         '''
-        Create an authorization source identifier.
+        Create an authentication source identifier.
 
-        :param authsource: A string identifier for the authorization source, consisting only of
+        :param authsource: A string identifier for the authentication source, consisting only of
             lowercase ASCII letters and no longer than 20 characters.
         '''
         check_string(authsource, 'authsource', self._LEGAL_CHARS, self._MAX_LEN)
