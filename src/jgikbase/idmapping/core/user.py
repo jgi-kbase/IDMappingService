@@ -5,12 +5,12 @@ ID Mapping system user classes.
 from jgikbase.idmapping.util.util import not_none
 
 
-class Authsource:
+class AuthsourceID:
     """
-    An authorization source for a user.
+    An identifier for an authorization source for a user.
 
     Attributes:
-    authsource - the name of the authentication source.
+    authsource - the ID of the authentication source.
     """
 
     def __init__(self, authsource: str) -> None:
@@ -29,7 +29,7 @@ class User:
     username - the user name.
     """
 
-    def __init__(self, authsource: Authsource, username: str) -> None:
+    def __init__(self, authsource: AuthsourceID, username: str) -> None:
         """
         Create a new user.
 
