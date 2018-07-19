@@ -17,8 +17,6 @@ class HashedToken:
     token_hash - the token hash.
     """
 
-    # TODO NOW
-
     def __init__(self, token_hash: str) -> None:
         """
         Create a hashed token.

@@ -22,8 +22,7 @@ class Authsource:
         :param authsource: A string identifier for the authorization source, consisting only of
             lowercase ASCII letters and no longer than 20 characters.
         '''
-        check_string(authsource, 'authsource',
-                     max_len=self._max_len, legal_characters=self._legal_chars)
+        check_string(authsource, 'authsource', self._legal_chars, self._max_len)
         self.authsource = authsource
 
 
@@ -38,6 +37,9 @@ class User:
     username - the user name.
     """
 
+    _legal_chars = 'a-z0-9_'
+    _max_len = 100
+
     def __init__(self, authsource: Authsource, username: str) -> None:
         """
         Create a new user.
@@ -46,6 +48,9 @@ class User:
         :param username: The name of the user.
         """
         not_none(authsource, 'authsource')
-        check_string(username, 'username')  # TODO NOW size & chars
+        check_string(username, 'username', self._legal_chars, self._max_len)
+        if not username[0].isalpha():
+            # TODO EXCEP change to package specific exception
+            raise ValueError('username {} must start with a letter'.format(username))
         self.authsource = authsource
         self.username = username
