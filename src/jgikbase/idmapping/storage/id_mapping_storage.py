@@ -2,19 +2,18 @@
 Interface for a storage system for ID mappings.
 
 """
-from abc import abstractmethod as _abstractmethod
-from abc import ABCMeta as _ABCMeta
-from jgikbase.idmapping.core.object_id import NamespaceID
-from jgikbase.idmapping.core.user import User
-from jgikbase.idmapping.core.tokens import HashedToken
-from jgikbase.idmapping.core.object_id import Namespace
-from typing import List
-from jgikbase.idmapping.core.object_id import ObjectID
+# it'd be nice if you could just pragma: no cover the entire file, but that doesn't seem to work
+from abc import abstractmethod as _abstractmethod  # pragma: no cover
+from abc import ABCMeta as _ABCMeta  # pragma: no cover
+from jgikbase.idmapping.core.object_id import NamespaceID  # pragma: no cover
+from jgikbase.idmapping.core.user import User  # pragma: no cover
+from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
+from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
+from typing import List  # pragma: no cover
+from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
 
-# TODO NOW cover this class with tests
 
-
-class IDMappingStorage:
+class IDMappingStorage:  # pragma: no cover
     """
     An interface for a storage system for ID mappings. All methods are abstract.
     """
@@ -28,6 +27,15 @@ class IDMappingStorage:
 
         :param user: the user, which must be in the 'local' user scope.
         :param token: the user's token after applying a hash function.
+        """
+        raise NotImplementedError()
+
+    @_abstractmethod
+    def get_user(self, token: HashedToken) -> User:
+        """
+        Get the user, if any, associated with a hashed token.
+
+        :param token: the hashed token.
         """
         raise NotImplementedError()
 

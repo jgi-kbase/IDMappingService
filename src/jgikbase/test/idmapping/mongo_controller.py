@@ -101,7 +101,7 @@ class MongoController:
             false.
         '''
         if drop_indexes:
-            self._client.drop_database(db_name)
+            self.client.drop_database(db_name)
         else:
             db = self.client[db_name]
             for name in db.list_collection_names():

@@ -10,3 +10,5 @@ Build status (master):
 * travis
   * docker build
   * try mongo 4.0.0
+* rename primary id to something more accurate - admin id? owned id?
+* update design doc with new names (object_id primarily)
