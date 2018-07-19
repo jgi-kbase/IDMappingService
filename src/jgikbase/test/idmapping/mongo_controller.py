@@ -1,3 +1,8 @@
+"""
+A controller for MongoDB useful for running tests.
+
+Production use is not recommended.
+"""
 from pathlib import Path
 from jgikbase.test.idmapping.test_utils import TestException
 import os
@@ -11,8 +16,30 @@ import semver
 
 
 class MongoController:
+    """
+    The main MongoDB controller class.
+
+    Attributes:
+    port - the port for the MongoDB service.
+    temp_dir - the location of the MongoDB data and logs.
+    client - a pymongo client pointed at the server.
+    db_version - the version of the mongod executable.
+    index_version - the version of the indexes created by the mongod executable - 1 for < 3.4.0,
+        2 otherwise.
+    includes_system_indexes - true if system indexes will be included when listing database
+        indexes, false otherwise.
+    """
 
     def __init__(self, mongoexe: Path, root_temp_dir: Path, use_wired_tiger: bool=False) -> None:
+        '''
+        Create and start a new MongoDB database. An unused port will be selected for the server.
+
+        :param mongoexe: The path to the MongoDB server executable (e.g. mongod) to run.
+        :param root_temp_dir: A temporary directory in which to store MongoDB data and log files.
+            The files will be stored inside a child directory that is unique per invocation.
+        :param use_wired_tiger: For MongoDB versions > 3.0, specify that the Wired Tiger storage
+            engine should be used. Setting this to true for other versions will cause an error.
+        '''
         if not mongoexe or not os.access(mongoexe, os.X_OK):
             raise TestException('mongod executable path {} does not exist or is not executable.'
                                 .format(mongoexe))
@@ -30,7 +57,7 @@ class MongoController:
 
         command = [str(mongoexe), '--port', str(self.port), '--dbpath', str(data_dir),
                    '--nojournal']
-        if (use_wired_tiger):
+        if use_wired_tiger:
             command.extend(['--storageEngine', 'wiredTiger'])
 
         self._outfile = open(self.temp_dir.joinpath('mongo.log'), 'w')
@@ -50,6 +77,12 @@ class MongoController:
                                         and not use_wired_tiger)
 
     def destroy(self, delete_temp_files: bool) -> None:
+        """
+        Shut down the MongoDB server.
+
+        :param delete_temp_files: delete all the MongoDB data files and logs generated during the
+            test.
+        """
         if self.client:
             self.client.close()
         if self._proc:
@@ -59,12 +92,22 @@ class MongoController:
         if delete_temp_files and self.temp_dir:
             shutil.rmtree(self.temp_dir)
 
-    def clear_database(self, db_name):
-        db = self.client[db_name]
-        for name in db.list_collection_names():
-            if not name.startswith('system.'):
-                # don't drop collection since that drops indexes
-                db.get_collection(name).delete_many({})
+    def clear_database(self, db_name, drop_indexes=False):
+        '''
+        Remove all data from a database.
+
+        :param db_name: the name of the db to clear.
+        :param drop_indexes: drop all indexes if true, retain indexes (which will be empty) if
+            false.
+        '''
+        if drop_indexes:
+            self._client.drop_database(db_name)
+        else:
+            db = self.client[db_name]
+            for name in db.list_collection_names():
+                if not name.startswith('system.'):
+                    # don't drop collection since that drops indexes
+                    db.get_collection(name).delete_many({})
 
 
 def main():
