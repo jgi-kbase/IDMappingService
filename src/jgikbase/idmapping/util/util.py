@@ -38,7 +38,7 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     :param string: the string to test.
     :param name: the name of the string to be used in error messages.
     :param legal_characters: a regex character class that matches legal characters in the string.
-        Typical examples are a-zA-Z0-9_, a-z, etc.
+        Typical examples are a-zA-Z_0-9, a-z, etc.
     :param max_len: the maximum length of the string.
     '''
     not_none(string, name)

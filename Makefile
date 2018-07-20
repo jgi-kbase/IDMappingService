@@ -12,6 +12,6 @@ build-docs:
 test:
 	flake8 src
 	mypy src
-	IDMAP_TEST_FILE=$(TEST_CFG) pytest src --cov src/jgikbase/idmapping
+	IDMAP_TEST_FILE=$(TEST_CFG) pytest --verbose src --cov src/jgikbase/idmapping
 	bandit --recursive src --exclude src/jgikbase/test
 	
