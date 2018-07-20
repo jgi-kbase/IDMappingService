@@ -8,6 +8,7 @@ from pymongo.database import Database
 from jgikbase.idmapping.util.util import not_none
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import re
+from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 
 # TODO NOW implement remaining methods in superclass
 # TODO NOW implement database schema checking
@@ -45,8 +46,11 @@ class IDMappingMongoStorage(_IDMappingStorage):
         self._ensure_indexes()
 
     def _ensure_indexes(self):
-        self.db[_COL_USERS].create_index(_FLD_USER, unique=True)
-        self.db[_COL_USERS].create_index(_FLD_TOKEN, unique=True)
+        try:
+            self.db[_COL_USERS].create_index(_FLD_USER, unique=True)
+            self.db[_COL_USERS].create_index(_FLD_TOKEN, unique=True)
+        except PyMongoError as e:
+            raise StorageInitException('Connection to database failed: ' + str(e)) from e
 
     def create_local_user(self, user: User, token: HashedToken) -> None:
         self._check_user_inputs(user, token)
@@ -65,8 +69,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             # this is impossible to test
             raise ValueError('Unexpected duplicate key exception')
         except PyMongoError as e:
-            # TODO EXCEP handle other mongo errors
-            raise e
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
     # this regex is gross, but matches duplicate key error text across mongo versions 2 & 3 at
     # least.
@@ -107,17 +110,15 @@ class IDMappingMongoStorage(_IDMappingStorage):
             # this is impossible to test
             raise ValueError('Unexpected duplicate key exception')
         except PyMongoError as e:
-            # TODO EXCEP handle other mongo errors
-            raise e
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
     def get_user(self, token: HashedToken) -> User:
         not_none(token, 'token')
         try:
             userdoc = self.db[_COL_USERS].find_one({_FLD_TOKEN: token.token_hash}, {_FLD_TOKEN: 0})
         except PyMongoError as e:
-            # TODO EXCEP handle other mongo errors
-            raise e
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
         if not userdoc:
-            raise ValueError('Invalid token')  # TODO EXCEP use specific exception
+            raise ValueError('Invalid token')  # TODO EXCEP make invalid token exception
         return User(LOCAL, userdoc[_FLD_USER])
