@@ -6,6 +6,8 @@ from jgikbase.idmapping.core.user import User, AuthsourceID, LOCAL
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
+from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError
+from jgikbase.idmapping.storage.errors import IDMappingStorageError
 
 TEST_DB_NAME = 'test_id_mapping'
 
@@ -102,8 +104,7 @@ def test_create_user_fail_not_local(idstorage):
 
 def test_create_user_fail_duplicate_user(idstorage):
     idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    fail_create_user(idstorage, User(LOCAL, 'u'), HashedToken('t1'),
-                     ValueError('Duplicate user: u'))
+    fail_create_user(idstorage, User(LOCAL, 'u'), HashedToken('t1'), UserExistsError('u'))
 
 
 def test_create_user_fail_duplicate_token(idstorage):
@@ -143,7 +144,7 @@ def test_update_user_fail_duplicate_token(idstorage):
 def test_update_user_fail_no_such_user(idstorage):
     idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
     fail_update_user(idstorage, User(LOCAL, 'u1'), HashedToken('t1'),
-                     ValueError('No such user: u1'))
+                     NoSuchUserError('u1'))
 
 
 def fail_update_user(idstorage, user, token, expected):
@@ -160,7 +161,7 @@ def test_get_user_fail_input_None(idstorage):
 
 def test_get_user_fail_no_such_token(idstorage):
     idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    fail_get_user(idstorage, HashedToken('t1'), ValueError('Invalid token'))
+    fail_get_user(idstorage, HashedToken('t1'), InvalidTokenError())
 
 
 def fail_get_user(idstorage, token, expected):
@@ -177,5 +178,5 @@ def test_unparseable_duplicate_key_exception(idstorage):
         idstorage._get_duplicate_location(DuplicateKeyError('unmatchable dup key foo'))
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got,
-                                 ValueError('unable to parse duplicate key error: unmatchable '))
+        assert_exception_correct(
+            got, IDMappingStorageError('unable to parse duplicate key error: unmatchable '))

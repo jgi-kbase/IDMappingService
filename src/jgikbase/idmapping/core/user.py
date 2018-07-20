@@ -15,9 +15,8 @@ class AuthsourceID:
     An authentication source is any server, program, or agent that can give you back a
     username when it is given a secret token.
 
-    Attributes:
-    authsource - the ID of the authentication source.
-    LOCAL - a string designating a local authentication source.
+    :ivar authsource: the ID of the authentication source.
+    :ivar LOCAL: a string designating a local authentication source.
     """
 
     LOCAL = 'local'
@@ -25,6 +24,7 @@ class AuthsourceID:
     _LEGAL_CHARS = 'a-z'
     _MAX_LEN = 20
 
+    # TODO NOW change authsource -> authsource_id (or just id maybe) everywhere in this file
     def __init__(self, authsource: str) -> None:
         '''
         Create an authentication source identifier.
@@ -50,9 +50,8 @@ class User:
     The authentication source determines how the ID service should authenticate a user given
     a secret.
 
-    Attributes:
-    authsource - the authentication source.
-    username - the user name.
+    :ivar authsource: the authentication source.
+    :ivar username: the user name.
     """
 
     _LEGAL_CHARS = 'a-z0-9'

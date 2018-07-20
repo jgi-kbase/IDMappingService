@@ -63,7 +63,7 @@ class IDMappingStorage:  # pragma: no cover
 
         :param namespace_id: The namespace to create.
 
-        Throws a :class:`jgikbase.idmapping.storage.exceptions.NamespaceExistsException` if the
+        Throws a :class:`jgikbase.idmapping.core.errors.NamespaceExistsError` if the
         namespace already exists.
         """
         raise NotImplementedError()
