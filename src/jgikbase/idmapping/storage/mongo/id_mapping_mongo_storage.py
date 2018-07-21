@@ -9,7 +9,6 @@ from jgikbase.idmapping.util.util import not_none
 
 # TODO NOW implement remaining methods in superclass
 # TODO NOW implement database schema checking
-# TODO NOW test indexes are correct
 # TODO NOW finish tests
 
 # Testing the (many) catch blocks for the general mongo exception is pretty hard, since it
