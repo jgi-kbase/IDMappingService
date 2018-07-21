@@ -1,6 +1,7 @@
 from jgikbase.idmapping.core.tokens import HashedToken
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.errors import MissingParameterError
 
 
 def test_hashed_token_init_pass():
@@ -9,9 +10,8 @@ def test_hashed_token_init_pass():
 
 
 def test_hashed_token_init_fail():
-    fail_hashed_token_init(None, ValueError('token_hash cannot be None'))
-    fail_hashed_token_init('   \t    \n   ',
-                           ValueError('token_hash cannot be whitespace only'))
+    fail_hashed_token_init(None, MissingParameterError('token_hash'))
+    fail_hashed_token_init('   \t    \n   ', MissingParameterError('token_hash'))
 
 
 def fail_hashed_token_init(htoken: str, expected: Exception):

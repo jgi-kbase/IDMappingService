@@ -2,7 +2,6 @@
 Exceptions thrown by the ID mapping system.
 """
 from enum import Enum
-from jgikbase.idmapping.util.util import not_none
 
 
 class ErrorType(Enum):
@@ -59,6 +58,7 @@ class IDMappingError(Exception):
     The super class of all ID mapping related errors.
 
     :ivar error_type: the error type of this error.
+    :ivar message: the message for this error.
     """
 
     def __init__(self, error_type: ErrorType, message: str=None) -> None:
@@ -68,11 +68,13 @@ class IDMappingError(Exception):
         :param error_type: the error type of this error.
         :param message: an error message.
         '''
-        not_none(error_type, 'error_type')
+        if not error_type:  # don't use not_none here, causes circular import
+            raise ValueError('error_type cannot be None')
+        message = message if message and message.strip() else None
         super().__init__('{} {}{}'.format(
-            error_type.error_code, error_type.error_type,
-            ': ' + message if (message and message.strip()) else ''))
+            error_type.error_code, error_type.error_type, ': ' + message if message else ''))
         self.error_type = error_type
+        self.message = message
 
 
 class NoDataException(IDMappingError):
@@ -128,3 +130,30 @@ class InvalidTokenError(AuthenticationError):
 
     def __init__(self, message: str=None) -> None:
         super().__init__(ErrorType.INVALID_TOKEN, message)
+
+
+class MissingParameterError(IDMappingError):
+    """
+    An error thrown when a required parameter is missing.
+    """
+
+    def __init__(self, message: str=None) -> None:
+        super().__init__(ErrorType.MISSING_PARAMETER, message)
+
+
+class IllegalParameterError(IDMappingError):
+    """
+    An error thrown when a provided parameter is illegal.
+    """
+
+    def __init__(self, message: str=None) -> None:
+        super().__init__(ErrorType.ILLEGAL_PARAMETER, message)
+
+
+class IllegalUsernameError(IDMappingError):
+    """
+    An error thrown when a provided username is illegal.
+    """
+
+    def __init__(self, message: str=None) -> None:
+        super().__init__(ErrorType.ILLEGAL_USER_NAME, message)
