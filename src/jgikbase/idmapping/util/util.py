@@ -24,8 +24,6 @@ def not_none(obj: object, name: str):
     if not obj:
         raise MissingParameterError(name)
 
-# TODO EXCEP change exceptions to package specific
-
 
 _REGEX_CACHE: _Dict[str, _Pattern] = {}
 

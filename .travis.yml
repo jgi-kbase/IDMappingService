@@ -4,11 +4,11 @@ python: "3.6"
 
 env:
     # Runs parallel jobs, 1 for each line. Tests different DB configurations for compatibility.
-    - MONGODB_VER=mongodb-linux-x86_64-2.6.12 WIRED_TIGER=false
-    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=false
-    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=true
-    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=false
-    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=true
+    - MONGODB_VER=mongodb-linux-x86_64-2.6.12 WIRED_TIGER=false MAKE=test
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=false MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=true  MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=false MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=true  MAKE=test-mongo
     
 install:
   - pip install -r requirements.txt
@@ -24,7 +24,7 @@ install:
   - cat test.cfg
  
 script:
-  - make test
+  - make $MAKE
 
 after_success:
   - coveralls

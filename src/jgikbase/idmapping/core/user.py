@@ -70,7 +70,6 @@ class User:
         except IllegalParameterError as e:
             raise IllegalUsernameError(e.message) from e
         if not username[0].isalpha():
-            # TODO EXCEP change to package specific exception
             raise IllegalUsernameError('username {} must start with a letter'.format(username))
         self.authsource_id = authsource_id
         self.username = username
