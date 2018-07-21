@@ -1,9 +1,5 @@
 """
 ID Mapping system user classes.
-
-Attributes:
-LOCAL - a local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`.
-
 """
 from jgikbase.idmapping.util.util import not_none, check_string
 
@@ -15,7 +11,7 @@ class AuthsourceID:
     An authentication source is any server, program, or agent that can give you back a
     username when it is given a secret token.
 
-    :ivar authsource: the ID of the authentication source.
+    :ivar id: the ID of the authentication source.
     :ivar LOCAL: a string designating a local authentication source.
     """
 
@@ -24,24 +20,26 @@ class AuthsourceID:
     _LEGAL_CHARS = 'a-z'
     _MAX_LEN = 20
 
-    # TODO NOW change authsource -> authsource_id (or just id maybe) everywhere in this file
-    def __init__(self, authsource: str) -> None:
+    def __init__(self, id_: str) -> None:
         '''
         Create an authentication source identifier.
 
-        :param authsource: A string identifier for the authentication source, consisting only of
+        :param id_: A string identifier for the authentication source, consisting only of
             lowercase ASCII letters and no longer than 20 characters.
         '''
-        check_string(authsource, 'authsource', self._LEGAL_CHARS, self._MAX_LEN)
-        self.authsource = authsource
+        check_string(id_, 'authsource id', self._LEGAL_CHARS, self._MAX_LEN)
+        self.id = id_
 
     def __eq__(self, other):
         if type(other) is type(self):
-            return other.authsource == self.authsource
+            return other.id == self.id
         return False
 
 
 LOCAL = AuthsourceID(AuthsourceID.LOCAL)
+"""
+A local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`.
+"""
 
 
 class User:
@@ -50,25 +48,25 @@ class User:
     The authentication source determines how the ID service should authenticate a user given
     a secret.
 
-    :ivar authsource: the authentication source.
+    :ivar authsource_id: the authentication source.
     :ivar username: the user name.
     """
 
     _LEGAL_CHARS = 'a-z0-9'
     _MAX_LEN = 100
 
-    def __init__(self, authsource: AuthsourceID, username: str) -> None:
+    def __init__(self, authsource_id: AuthsourceID, username: str) -> None:
         """
         Create a new user.
 
-        :param authsource: The authentication source for the user.
+        :param authsource_id: The authentication source for the user.
         :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
             than 100 characters.
         """
-        not_none(authsource, 'authsource')
+        not_none(authsource_id, 'authsource_id')
         check_string(username, 'username', self._LEGAL_CHARS, self._MAX_LEN)
         if not username[0].isalpha():
             # TODO EXCEP change to package specific exception
             raise ValueError('username {} must start with a letter'.format(username))
-        self.authsource = authsource
+        self.authsource_id = authsource_id
         self.username = username
