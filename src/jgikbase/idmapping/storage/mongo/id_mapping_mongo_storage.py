@@ -10,6 +10,7 @@ from pymongo.errors import DuplicateKeyError, PyMongoError
 import re
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError
+from typing import Set
 
 # TODO NOW implement remaining methods in superclass
 # TODO NOW implement database schema checking
@@ -132,3 +133,10 @@ class IDMappingMongoStorage(_IDMappingStorage):
         if not userdoc:
             raise InvalidTokenError()
         return User(LOCAL, userdoc[_FLD_USER])
+
+    def get_users(self) -> Set[User]:
+        try:
+            userdocs = self._db[_COL_USERS].find({}, {_FLD_TOKEN: 0})
+            return {User(LOCAL, u[_FLD_USER]) for u in userdocs}
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e

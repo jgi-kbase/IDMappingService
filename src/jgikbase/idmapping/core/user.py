@@ -38,6 +38,9 @@ class AuthsourceID:
             return other.id == self.id
         return False
 
+    def __hash__(self):
+        return hash((self.id,))
+
 
 LOCAL = AuthsourceID(AuthsourceID.LOCAL)
 """
@@ -77,3 +80,11 @@ class User:
             raise IllegalUsernameError('username {} must start with a letter'.format(username))
         self.authsource_id = authsource_id
         self.username = username
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.authsource_id == self.authsource_id and other.username == self.username
+        return False
+
+    def __hash__(self):
+        return hash((self.authsource_id, self.username))

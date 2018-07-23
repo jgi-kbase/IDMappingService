@@ -181,3 +181,18 @@ def test_unparseable_duplicate_key_exception(idstorage):
     except Exception as got:
         assert_exception_correct(
             got, IDMappingStorageError('unable to parse duplicate key error: unmatchable '))
+
+
+def test_get_users(idstorage):
+    assert idstorage.get_users() == set()
+
+    idstorage.create_local_user(User(LOCAL, 'foo'), HashedToken('t1'))
+
+    assert idstorage.get_users() == {User(LOCAL, 'foo')}
+
+    idstorage.create_local_user(User(LOCAL, 'mrsentity'), HashedToken('t2'))
+    idstorage.create_local_user(User(LOCAL, 'mrsenigma'), HashedToken('t3'))
+    idstorage.update_local_user(User(LOCAL, 'mrsenigma'), HashedToken('t4'))
+
+    assert idstorage.get_users() == {User(LOCAL, 'foo'), User(LOCAL, 'mrsenigma'),
+                                     User(LOCAL, 'mrsentity')}
