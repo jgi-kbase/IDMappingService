@@ -41,6 +41,8 @@ class IDMappingMongoStorage(_IDMappingStorage):
         Create a ID mapping storage system.
 
         :param db: the MongoDB database in which to store the mappings and other data.
+        :raises StorageInitException: if the storage system could not be initialized properly.
+        :raises MissingParameterError: if the Mongo database is None.
         """
         not_none(db, 'db')
         self._db = db

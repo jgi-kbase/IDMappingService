@@ -17,6 +17,7 @@ class HashedToken:
         Create a hashed token.
 
         :param token_hash: the hash of the token.
+        :raises MissingParameterError: if the token hash is None or whitespace only.
         """
         check_string(token_hash, 'token_hash')
         self.token_hash = token_hash

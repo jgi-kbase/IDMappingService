@@ -22,11 +22,17 @@ class IDMappingStorage:  # pragma: no cover
     @_abstractmethod
     def create_local_user(self, user: User, token: HashedToken) -> None:
         """
-        Create a user. If the user already exists, an exception is thrown.
-        Once created, users cannot be removed.
+        Create a user.
+        Once created, users cannot be removed. The client programmer is responsible for
+        ensuring that the token provided does not already exist in the database.
 
         :param user: the user, which must be in the 'local' user scope.
         :param token: the user's token after applying a hash function.
+        :raises ValueError: if the token already exists in the database or the user is not a
+            local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
+        :raises MissingParameterError: if any of the arguments are None.
+        :raises UserExistsError: if the user already exists.
+        :raises IDMappingStorageError: if an unexpected error occurs.
         """
         raise NotImplementedError()
 
@@ -37,6 +43,11 @@ class IDMappingStorage:  # pragma: no cover
 
         :param user: the user, which must be in the 'local' user scope.
         :param token: the user's token after applying a hash function.
+        :raises ValueError: if the token already exists in the database or the user is not a
+            local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
+        :raises MissingParameterError: if any of the arguments are None.
+        :raises NoSuchUserError: if the user does not exist.
+        :raises IDMappingStorageError: if an unexpected error occurs.
         """
         raise NotImplementedError()
 
@@ -46,6 +57,9 @@ class IDMappingStorage:  # pragma: no cover
         Get the user, if any, associated with a hashed token.
 
         :param token: the hashed token.
+        :raises MissingParameterError: if the token is None.
+        :raises InvalidTokenError: if the token does not exist in the storage system.
+        :raises IDMappingStorageError: if an unexpected error occurs.
         """
         raise NotImplementedError()
 
