@@ -48,15 +48,24 @@ def test_fail_startup():
 
 def test_collection_names(idstorage, mongo):
     names = mongo.client[TEST_DB_NAME].list_collection_names()
-    expected = set(['users'])
+    expected = set(['users', 'config'])
     if mongo.includes_system_indexes:
         expected.add('system.indexes')
     assert set(names) == expected
 
 
-def test_index_user(idstorage, mongo):
-    indexes = mongo.client[TEST_DB_NAME]['users'].index_information()
+def test_index_config(idstorage, mongo):
     v = mongo.index_version
+    indexes = mongo.client[TEST_DB_NAME]['config'].index_information()
+    expected = {'_id_': {'v': v, 'key': [('_id', 1)], 'ns': 'test_id_mapping.config'},
+                'schema_1': {'v': v, 'unique': True, 'key': [('schema', 1)],
+                             'ns': 'test_id_mapping.config'}}
+    assert indexes == expected
+
+
+def test_index_user(idstorage, mongo):
+    v = mongo.index_version
+    indexes = mongo.client[TEST_DB_NAME]['users'].index_information()
     expected = {'_id_': {'v': v, 'key': [('_id', 1)], 'ns': 'test_id_mapping.users'},
                 'user_1': {'v': v, 'unique': True, 'key': [('user', 1)],
                            'ns': 'test_id_mapping.users'},
