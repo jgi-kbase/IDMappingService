@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.user import AuthsourceID, User
+from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 
@@ -29,6 +29,14 @@ def fail_authsource_init(source: str, expected: Exception):
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
+
+
+def test_authsource_equals():
+    assert AuthsourceID('foo') == AuthsourceID('foo')
+    assert AuthsourceID('foo') != AuthsourceID('bar')
+    assert AuthsourceID('foo') != LOCAL
+    assert AuthsourceID('local') == LOCAL
+    assert LOCAL == LOCAL
 
 
 def test_user_init_pass():

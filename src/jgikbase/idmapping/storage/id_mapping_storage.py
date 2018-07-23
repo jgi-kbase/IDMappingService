@@ -20,10 +20,20 @@ class IDMappingStorage:  # pragma: no cover
     __metaclass__ = _ABCMeta
 
     @_abstractmethod
-    def create_or_update_local_user(self, user: User, token: HashedToken) -> None:
+    def create_local_user(self, user: User, token: HashedToken) -> None:
         """
-        Create or update a user. If the user already exists, the user's token is updated.
+        Create a user. If the user already exists, an exception is thrown.
         Once created, users cannot be removed.
+
+        :param user: the user, which must be in the 'local' user scope.
+        :param token: the user's token after applying a hash function.
+        """
+        raise NotImplementedError()
+
+    @_abstractmethod
+    def update_local_user(self, user: User, token: HashedToken) -> None:
+        """
+        Update an existing user's token.
 
         :param user: the user, which must be in the 'local' user scope.
         :param token: the user's token after applying a hash function.

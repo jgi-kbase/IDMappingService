@@ -1,6 +1,9 @@
 """
 ID Mapping system user classes.
 
+Attributes:
+LOCAL - a local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`.
+
 """
 from jgikbase.idmapping.util.util import not_none, check_string
 
@@ -14,7 +17,10 @@ class AuthsourceID:
 
     Attributes:
     authsource - the ID of the authentication source.
+    LOCAL - a string designating a local authentication source.
     """
+
+    LOCAL = 'local'
 
     _LEGAL_CHARS = 'a-z'
     _MAX_LEN = 20
@@ -28,6 +34,14 @@ class AuthsourceID:
         '''
         check_string(authsource, 'authsource', self._LEGAL_CHARS, self._MAX_LEN)
         self.authsource = authsource
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.authsource == self.authsource
+        return False
+
+
+LOCAL = AuthsourceID(AuthsourceID.LOCAL)
 
 
 class User:
