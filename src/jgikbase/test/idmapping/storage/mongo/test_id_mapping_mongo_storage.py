@@ -48,10 +48,10 @@ def test_fail_startup():
 
 def test_collection_names(idstorage, mongo):
     names = mongo.client[TEST_DB_NAME].list_collection_names()
-    expected = ['users']
+    expected = set(['users'])
     if mongo.includes_system_indexes:
-        expected.append('system.indexes')
-    assert names == expected
+        expected.add('system.indexes')
+    assert set(names) == expected
 
 
 def test_index_user(idstorage, mongo):

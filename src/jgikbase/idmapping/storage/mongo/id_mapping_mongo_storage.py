@@ -73,12 +73,22 @@ class IDMappingMongoStorage(_IDMappingStorage):
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
     # this regex is gross, but matches duplicate key error text across mongo versions 2 & 3 at
-    # least.
+    # least. Example strings:
+    # 2.6 & 3
+    # E11000 duplicate key error index: test_id_mapping.users.$hshtkn_1  dup key: { : "t" }
+    # 3.2+
+    # E11000 duplicate key error collection: test_id_mapping.users index: hshtkn_1 dup key:
+    #     { : "t" }
     _DUPLICATE_KEY_REGEX = re.compile('duplicate key error (index|collection): ' +
-                                      '\\w+\\.(\\w+)( index: |\\.\\$)([\\.\\w]+)\\s+')
+                                      r'\w+\.(\w+)( index: |\.\$)([\.\w]+)\s+')
 
     def _get_duplicate_location(self, e: DuplicateKeyError):
-        # this is some shit right here, but there doesn't seem to be a better way.
+        # To know where the duplicate key conflict occurred, we need the collection name and
+        # index name for the conflict. Unfortunately that info is only available, AFAICT,
+        # in the arbitrary text string that mongo sends back. There are other fields in the
+        # error but they don't contain the necessary info. So it's regex time *sigh*
+
+        # IOW, this is some shit right here, but there doesn't seem to be a better way.
         match = self._DUPLICATE_KEY_REGEX.search(e.args[0])
         if match:
             return match.group(2), match.group(4)
