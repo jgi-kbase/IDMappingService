@@ -1,8 +1,5 @@
 """
-
 Classes representing authentication tokens.
-
-@author: gaprice@lbl.gov
 """
 
 from jgikbase.idmapping.util.util import check_string
@@ -12,9 +9,7 @@ class HashedToken:
     """
     A token that has been hashed by a hashing algorithm.
 
-    Attributes:
-
-    token_hash - the token hash.
+    :ivar token_hash: the token hash.
     """
 
     def __init__(self, token_hash: str) -> None:

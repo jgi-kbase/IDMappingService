@@ -74,6 +74,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# include __init__ documentation.
+autoclass_content = 'both'
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -166,7 +169,8 @@ texinfo_documents = [
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {'https://docs.python.org/': None,
+                       'https://api.mongodb.org/python/3.7.0/': None}
 
 # -- Options for todo extension ----------------------------------------------
 
