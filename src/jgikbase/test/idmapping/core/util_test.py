@@ -1,7 +1,7 @@
-from jgikbase.idmapping.util.util import not_none, check_string
+from jgikbase.idmapping.core.util import not_none, check_string
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import fail
-from jgikbase.idmapping.util import util
+from jgikbase.idmapping.core import util
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
 
 
