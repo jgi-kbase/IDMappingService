@@ -42,6 +42,15 @@ def test_authsource_equals():
     assert AuthsourceID('foo') != 'foo'
 
 
+def test_authsource_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(AuthsourceID('foo')) == hash(AuthsourceID('foo'))
+    assert hash(AuthsourceID('bar')) == hash(AuthsourceID('bar'))
+    assert hash(AuthsourceID('foo')) != hash(AuthsourceID('bar'))
+
+
 def test_user_init_pass():
     u = User(AuthsourceID('foo'), LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
     # yuck, but don't want to add a hash fn to authsource unless necessary
@@ -70,3 +79,20 @@ def fail_user_init(authsource: AuthsourceID, username: str, expected: Exception)
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
+
+
+def test_user_equals():
+    assert User(AuthsourceID('foo'), 'baz') == User(AuthsourceID('foo'), 'baz')
+    assert User(AuthsourceID('foo'), 'baz') != User(AuthsourceID('bar'), 'baz')
+    assert User(AuthsourceID('foo'), 'baz') != User(AuthsourceID('foo'), 'bar')
+    assert User(AuthsourceID('foo'), 'baz') != AuthsourceID('foo')
+
+
+def test_user_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(User(AuthsourceID('foo'), 'bar')) == hash(User(AuthsourceID('foo'), 'bar'))
+    assert hash(User(AuthsourceID('bar'), 'foo')) == hash(User(AuthsourceID('bar'), 'foo'))
+    assert hash(User(AuthsourceID('baz'), 'foo')) != hash(User(AuthsourceID('bar'), 'foo'))
+    assert hash(User(AuthsourceID('bar'), 'fob')) != hash(User(AuthsourceID('bar'), 'foo'))

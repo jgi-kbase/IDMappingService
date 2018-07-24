@@ -9,7 +9,7 @@ from jgikbase.idmapping.core.object_id import NamespaceID  # pragma: no cover
 from jgikbase.idmapping.core.user import User  # pragma: no cover
 from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
-from typing import List  # pragma: no cover
+from typing import List, Set  # pragma: no cover
 from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
 
 
@@ -64,9 +64,11 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_users(self) -> List[User]:
+    def get_users(self) -> Set[User]:
         """
         Get all the users in the system.
+
+        :raises IDMappingStorageError: if an unexpected error occurs.
         """
         raise NotImplementedError()
 
