@@ -67,10 +67,11 @@ class IDMappingError(Exception):
 
         :param error_type: the error type of this error.
         :param message: an error message.
+        :raises TypeError: if error_type is None
         '''
         if not error_type:  # don't use not_none here, causes circular import
-            raise ValueError('error_type cannot be None')
-        message = message if message and message.strip() else None
+            raise TypeError('error_type cannot be None')
+        message = message.strip() if message and message.strip() else None
         super().__init__('{} {}{}'.format(
             error_type.error_code, error_type.error_type, ': ' + message if message else ''))
         self.error_type = error_type

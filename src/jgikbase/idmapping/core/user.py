@@ -27,6 +27,8 @@ class AuthsourceID:
 
         :param id_: A string identifier for the authentication source, consisting only of
             lowercase ASCII letters and no longer than 20 characters.
+        :raises MissingParameterError: if the id is None or whitespace only.
+        :raises IllegalParameterError: if the id does not match the requirements.
         '''
         check_string(id_, 'authsource id', self._LEGAL_CHARS, self._MAX_LEN)
         self.id = id_
@@ -63,6 +65,8 @@ class User:
         :param authsource_id: The authentication source for the user.
         :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
             than 100 characters.
+        :raises MissingParameterError: if the user name is None or whitespace only.
+        :raises IllegalUsernameError: if the user name does not meet the requirements.
         """
         not_none(authsource_id, 'authsource_id')
         try:
