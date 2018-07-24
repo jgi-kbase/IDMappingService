@@ -69,24 +69,24 @@ def test_create_update_and_get_user(idstorage):
     idstorage.create_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('bar'))
     u = idstorage.get_user(HashedToken('bar'))
     assert u.username == 'foo'
-    assert u.authsource == LOCAL
+    assert u.authsource_id == LOCAL
 
     # update
     idstorage.update_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('bat'))
     u = idstorage.get_user(HashedToken('bat'))
     assert u.username == 'foo'
-    assert u.authsource == LOCAL
+    assert u.authsource_id == LOCAL
 
     idstorage.update_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('boo'))
     u = idstorage.get_user(HashedToken('boo'))
     assert u.username == 'foo'
-    assert u.authsource == LOCAL
+    assert u.authsource_id == LOCAL
 
     # test different user
     idstorage.create_local_user(User(AuthsourceID('local'), 'foo1'), HashedToken('baz'))
     u = idstorage.get_user(HashedToken('baz'))
     assert u.username == 'foo1'
-    assert u.authsource == LOCAL
+    assert u.authsource_id == LOCAL
 
 
 def test_create_user_fail_input_None(idstorage):

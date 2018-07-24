@@ -89,9 +89,9 @@ class IDMappingMongoStorage(_IDMappingStorage):
     def _check_user_inputs(self, user, token):
         not_none(user, 'user')
         not_none(token, 'token')
-        if user.authsource != LOCAL:
+        if user.authsource_id != LOCAL:
             raise ValueError('Only users from a {} authsource are allowed'
-                             .format(LOCAL.authsource))
+                             .format(LOCAL.id))
 
     def update_local_user(self, user: User, token: HashedToken) -> None:
         self._check_user_inputs(user, token)
