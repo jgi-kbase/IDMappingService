@@ -323,3 +323,82 @@ def fail_get_namespace(idstorage, namespace_id, expected):
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
+
+
+def test_add_and_remove_namespace_users(idstorage):
+    nsid = NamespaceID('foo')
+    idstorage.create_namespace(nsid)
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), False)
+
+    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('asone'), 'u1'))
+    users = set([User(AuthsourceID('asone'), 'u1')])
+    assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
+
+    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('astwo'), 'u2'))
+    users.add(User(AuthsourceID('astwo'), 'u2'))
+    assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
+
+    idstorage.remove_user_from_namespace(NamespaceID('foo'), User(AuthsourceID('asone'), 'u1'))
+    users = set([User(AuthsourceID('astwo'), 'u2')])
+    assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
+
+    idstorage.remove_user_from_namespace(NamespaceID('foo'), User(AuthsourceID('astwo'), 'u2'))
+    assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False)
+
+
+def test_add_user_to_namespace_fail_inputs_None(idstorage):
+    u = User(LOCAL, 'u')
+    n = NamespaceID('n')
+    fail_add_namespace_user(idstorage, None, u, TypeError('namespace_id cannot be None'))
+    fail_add_namespace_user(idstorage, n, None, TypeError('admin_user cannot be None'))
+
+
+def test_remove_user_from_namespace_fail_inputs_None(idstorage):
+    u = User(LOCAL, 'u')
+    n = NamespaceID('n')
+    fail_remove_namespace_user(idstorage, None, u, TypeError('namespace_id cannot be None'))
+    fail_remove_namespace_user(idstorage, n, None, TypeError('admin_user cannot be None'))
+
+
+def test_add_user_to_namespace_fail_no_such_namespace(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    fail_add_namespace_user(idstorage, NamespaceID('bar'), User(LOCAL, 'u'),
+                            NoSuchNamespaceError('bar'))
+
+
+def test_remove_user_from_namespace_fail_no_such_namespace(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
+    fail_remove_namespace_user(idstorage, NamespaceID('bar'), User(LOCAL, 'u'),
+                               NoSuchNamespaceError('bar'))
+
+
+def test_add_user_to_namespace_fail_duplicate(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
+    fail_add_namespace_user(idstorage, NamespaceID('foo'), User(LOCAL, 'u'),
+                            UserExistsError('User local/u already administrates namespace foo'))
+
+
+def test_remove_user_from_namespace_fail_no_such_user(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
+    fail_remove_namespace_user(
+        idstorage, NamespaceID('foo'), User(LOCAL, 'u1'),
+        NoSuchUserError('User local/u1 does not administrate namespace foo'))
+
+
+def fail_add_namespace_user(idstorage, namespace_id, user, expected):
+    try:
+        idstorage.add_user_to_namespace(namespace_id, user)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def fail_remove_namespace_user(idstorage, namespace_id, user, expected):
+    try:
+        idstorage.remove_user_from_namespace(namespace_id, user)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)

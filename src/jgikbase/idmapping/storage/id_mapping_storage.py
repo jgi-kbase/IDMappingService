@@ -91,8 +91,10 @@ class IDMappingStorage:  # pragma: no cover
 
         :param namespace_id: the namespace to modify.
         :param admin_user: the user.
+        :raises TypeError: if any of the arguments are None.
+        :raises NoSuchNamespaceError: if the namespace does not exist.
+        :raises UserExistsError: if the user already administrates the namespace.
         """
-        # TODO throw no such namespace
         raise NotImplementedError()
 
     @_abstractmethod
@@ -102,18 +104,10 @@ class IDMappingStorage:  # pragma: no cover
 
         :param namespace_id: the namespace to modify.
         :param admin_user: the user.
+        :raises TypeError: if any of the arguments are None.
+        :raises NoSuchNamespaceError: if the namespace does not exist.
+        :raises NoSuchUserError: if the user does not administrate the namespace.
         """
-        # TODO throw no such namespace
-        raise NotImplementedError()
-
-    @_abstractmethod
-    def get_users_for_namespace(self, namespace_id: NamespaceID) -> List[User]:
-        """
-        Get the users that can administrate a particular namespace.
-
-        :param namespace_id: The namespace to query.
-        """
-        # TODO throw no such namespace
         raise NotImplementedError()
 
     @_abstractmethod
