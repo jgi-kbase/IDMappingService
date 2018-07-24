@@ -27,4 +27,7 @@ script:
   - make $MAKE
 
 after_success:
-  - coveralls
+  - |
+    if [ "${MAKE}" == "test" ]; then
+      coveralls
+    fi
