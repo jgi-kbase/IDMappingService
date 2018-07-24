@@ -8,7 +8,8 @@ from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
     MissingParameterError
-from jgikbase.idmapping.storage.errors import IDMappingStorageError
+from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
+import re
 
 TEST_DB_NAME = 'test_id_mapping'
 
@@ -72,6 +73,66 @@ def test_index_user(idstorage, mongo):
                 'hshtkn_1': {'v': v, 'unique': True, 'key': [('hshtkn', 1)],
                              'ns': 'test_id_mapping.users'}}
     assert indexes == expected
+
+
+def test_startup_and_check_config_doc(idstorage, mongo):
+    col = mongo.client[TEST_DB_NAME]['config']
+    assert col.count() == 1  # only one config doc
+    cfgdoc = col.find_one()
+    assert cfgdoc['schema'] == 'schema'
+    assert cfgdoc['schemaver'] == 1
+    assert cfgdoc['inupdate'] is False
+
+    # check startup works with cfg object in place
+    idmap = IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
+    idmap.create_local_user(User(LOCAL, 'foo'), HashedToken('t'))
+    assert idmap.get_user(HashedToken('t')) == User(LOCAL, 'foo')
+
+
+def test_startup_with_2_config_docs(mongo):
+    col = mongo.client[TEST_DB_NAME]['config']
+    col.drop()  # clear db independently of creating a idmapping mongo instance
+    col.insert_many([{'schema': 'schema', 'schemaver': 1, 'inupdate': False},
+                     {'schema': 'schema', 'schemaver': 2, 'inupdate': False}])
+
+    # pattern matcher for the error format across python 2 & 3
+    p = re.compile(
+        'Failed to create index: E11000 duplicate key error (index|collection): ' +
+        r'test_id_mapping.config( index: |\.\$)schema_1\s+dup key: ' +
+        r'\{ : "schema" \}')
+
+    try:
+        IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
+        fail('expected exception')
+    except StorageInitException as e:
+        assert p.match(e.args[0]) is not None
+
+
+def test_startup_with_bad_schema_version(mongo):
+    col = mongo.client[TEST_DB_NAME]['config']
+    col.drop()  # clear db independently of creating a idmapping mongo instance
+    col.insert_one({'schema': 'schema', 'schemaver': 4, 'inupdate': False})
+
+    try:
+        IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, StorageInitException(
+            'Incompatible database schema. Server is v1, DB is v4'))
+
+
+def test_startup_in_update(mongo):
+    col = mongo.client[TEST_DB_NAME]['config']
+    col.drop()  # clear db independently of creating a idmapping mongo instance
+    col.insert_one({'schema': 'schema', 'schemaver': 1, 'inupdate': True})
+
+    try:
+        IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, StorageInitException(
+            'The database is in the middle of an update from v1 of the ' +
+            'schema. Aborting startup.'))
 
 
 def test_create_update_and_get_user(idstorage):

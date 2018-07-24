@@ -13,7 +13,6 @@ from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, Inv
 from typing import Set
 
 # TODO NOW implement remaining methods in superclass
-# TODO NOW implement database schema checking
 
 # Testing the (many) catch blocks for the general mongo exception is pretty hard, since it
 # appears as though the mongo clients have a heartbeat, so just stopping mongo might trigger
@@ -85,11 +84,32 @@ class IDMappingMongoStorage(_IDMappingStorage):
                 for idxinfo in _INDEXES[col]:
                     self._db[col].create_index(idxinfo['idx'], **idxinfo['kw'])
         except PyMongoError as e:
-            raise StorageInitException('Connection to database failed: ' + str(e)) from e
+            raise StorageInitException('Failed to create index: ' + str(e)) from e
 
     def _check_schema(self):
-        # TODO NOW
-        pass
+        col = self._db[_COL_CONFIG]
+        try:
+            col.insert_one({_FLD_SCHEMA_KEY: _SCHEMA_VALUE,
+                            _FLD_SCHEMA_UPDATE: False,
+                            _FLD_SCHEMA_VERSION: _SCHEMA_VERSION})
+        except DuplicateKeyError as e:
+            # ok, the schema version document is already there, this isn't the first time this
+            # database as been used. Now check the document is ok.
+            if col.count() != 1:
+                raise StorageInitException(
+                    'Multiple config objects found in the database. ' +
+                    'This should not happen, something is very wrong.')
+            cfgdoc = col.find_one({_FLD_SCHEMA_KEY: _SCHEMA_VALUE})
+            if cfgdoc[_FLD_SCHEMA_VERSION] != _SCHEMA_VERSION:
+                raise StorageInitException(
+                        'Incompatible database schema. Server is v{}, DB is v{}'.format(
+                            _SCHEMA_VERSION, cfgdoc[_FLD_SCHEMA_VERSION]))
+            if cfgdoc[_FLD_SCHEMA_UPDATE]:
+                raise StorageInitException(
+                        'The database is in the middle of an update from ' +
+                        'v{} of the schema. Aborting startup.'.format(cfgdoc[_FLD_SCHEMA_VERSION]))
+        except PyMongoError as e:
+            raise StorageInitException('Connection to database failed: ' + str(e)) from e
 
     def create_local_user(self, user: User, token: HashedToken) -> None:
         self._check_user_inputs(user, token)
