@@ -7,6 +7,7 @@ from typing import Dict as _Dict  # @UnusedImport PyDev thinks it's unused, flak
 from typing import Pattern as _Pattern  # @UnusedImport PyDev sez it's unused, flake & mypy get it
 import re as _re
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
+from typing import Iterable, Any
 
 
 def not_none(obj: object, name: str):
@@ -17,14 +18,14 @@ def not_none(obj: object, name: str):
     :param name: the name of the object to use in error messages.
     :raises MissingParameterError: if the object is None.
     """
-    if not obj:
-        raise MissingParameterError(name)
+    if obj is None:
+        raise MissingParameterError(name)  # may want to rethink this.
 
 
 _REGEX_CACHE: _Dict[str, _Pattern] = {}
 
 
-def check_string(string: str, name: str, legal_characters: str=None, max_len: int=None):
+def check_string(string: str, name: str, legal_characters: str=None, max_len: int=None) -> None:
     '''
     Check that a string meets a set of criteria:
     - it is not None or whitespace only
@@ -53,3 +54,18 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
         if match:
             raise IllegalParameterError('Illegal character in {} {}: {}'
                                         .format(name, string, match.group()))
+
+
+def no_Nones_in_iterable(iterable: Iterable[Any], name: str) -> None:
+    '''
+    Check that an iterable is not None and contains no None items.
+
+    :param iterable: the iterable to check.
+    :param name: the name of the iterable to be used in error messages.
+    :raises MissingParameterError: if the iterable is None.
+    :raises TypeError: if the iterable contains None.
+    '''
+    not_none(iterable, name)
+    for item in iterable:
+        if item is None:
+            raise TypeError('None item in ' + name)
