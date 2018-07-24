@@ -68,7 +68,7 @@ def test_namespace_init_pass():
 
 def test_namespace_init_fail():
     nsid = NamespaceID('foo')
-    fail_namespace_init(None, None, MissingParameterError('namespace_id'))
+    fail_namespace_init(None, None, TypeError('namespace_id cannot be None'))
     fail_namespace_init(nsid, set([User(LOCAL, 'foo'), None]),
                         TypeError('None item in authed_users'))
 

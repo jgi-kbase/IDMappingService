@@ -16,10 +16,10 @@ def not_none(obj: object, name: str):
 
     :param obj: the object to check
     :param name: the name of the object to use in error messages.
-    :raises MissingParameterError: if the object is None.
+    :raises TypeError: if the object is None.
     """
     if obj is None:
-        raise MissingParameterError(name)  # may want to rethink this.
+        raise TypeError(name + ' cannot be None')
 
 
 _REGEX_CACHE: _Dict[str, _Pattern] = {}
@@ -40,8 +40,7 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     :raises MissingParameterError: if the string is None or whitespace only.
     :raises IllegalParameterError: if the string is too long or contains illegal characters.
     '''
-    not_none(string, name)
-    if not string.strip():
+    if not string or not string.strip():
         raise MissingParameterError(name)
     if max_len and len(string) > max_len:
         raise IllegalParameterError('{} {} exceeds maximum length of {}'
@@ -62,8 +61,7 @@ def no_Nones_in_iterable(iterable: Iterable[Any], name: str) -> None:
 
     :param iterable: the iterable to check.
     :param name: the name of the iterable to be used in error messages.
-    :raises MissingParameterError: if the iterable is None.
-    :raises TypeError: if the iterable contains None.
+    :raises TypeError: if the iterable is None or contains None.
     '''
     not_none(iterable, name)
     for item in iterable:

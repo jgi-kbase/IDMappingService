@@ -60,8 +60,7 @@ class Namespace:
         :param namespace_id: the ID of the namespace.
         :param is_publicly_mappable: whether the namespace is publicly mappable or not.
         :param authed_users: users that are authorized to administer the namespace.
-        :raises MissingParameterError: if namespace_id is None
-        :raises TypeError: if authed_users contains None
+        :raises TypeError: if namespace_id is None or authed_users contains None
         '''
         not_none(namespace_id, 'namespace_id')
         self.namespace_id = namespace_id
