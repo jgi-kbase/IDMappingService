@@ -7,9 +7,10 @@ from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
-    MissingParameterError
+    MissingParameterError, NamespaceExistsError, NoSuchNamespaceError
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 import re
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
 
 TEST_DB_NAME = 'test_id_mapping'
 
@@ -49,7 +50,7 @@ def test_fail_startup():
 
 def test_collection_names(idstorage, mongo):
     names = mongo.client[TEST_DB_NAME].list_collection_names()
-    expected = set(['users', 'config'])
+    expected = set(['users', 'config', 'ns'])
     if mongo.includes_system_indexes:
         expected.add('system.indexes')
     assert set(names) == expected
@@ -72,6 +73,15 @@ def test_index_user(idstorage, mongo):
                            'ns': 'test_id_mapping.users'},
                 'hshtkn_1': {'v': v, 'unique': True, 'key': [('hshtkn', 1)],
                              'ns': 'test_id_mapping.users'}}
+    assert indexes == expected
+
+
+def test_index_namespace(idstorage, mongo):
+    v = mongo.index_version
+    indexes = mongo.client[TEST_DB_NAME]['ns'].index_information()
+    expected = {'_id_': {'v': v, 'key': [('_id', 1)], 'ns': 'test_id_mapping.ns'},
+                'nsid_1': {'v': v, 'unique': True, 'key': [('nsid', 1)],
+                           'ns': 'test_id_mapping.ns'}}
     assert indexes == expected
 
 
@@ -266,3 +276,50 @@ def test_get_users(idstorage):
 
     assert idstorage.get_users() == {User(LOCAL, 'foo'), User(LOCAL, 'mrsenigma'),
                                      User(LOCAL, 'mrsentity')}
+
+
+def test_create_and_get_namespace(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    expected = Namespace(NamespaceID('foo'), False, None)
+
+    assert idstorage.get_namespace(NamespaceID('foo')) == expected
+
+    idstorage.create_namespace(NamespaceID('bar'))
+    expected = Namespace(NamespaceID('bar'), False, None)
+
+    assert idstorage.get_namespace(NamespaceID('bar')) == expected
+
+
+def test_create_namespace_fail_input_None(idstorage):
+    fail_create_namespace(idstorage, None, MissingParameterError('namespace_id'))
+
+
+def test_create_namespace_fail_namespace_exists(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+
+    fail_create_namespace(idstorage, NamespaceID('foo'), NamespaceExistsError('foo'))
+
+
+def fail_create_namespace(idstorage, namespace_id, expected):
+    try:
+        idstorage.create_namespace(namespace_id)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_get_namespace_fail_input_None(idstorage):
+    fail_get_namespace(idstorage, None, MissingParameterError('namespace_id'))
+
+
+def test_get_namespace_fail_no_such_namespace(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    fail_get_namespace(idstorage, NamespaceID('bar'), NoSuchNamespaceError('bar'))
+
+
+def fail_get_namespace(idstorage, namespace_id, expected):
+    try:
+        idstorage.get_namespace(namespace_id)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)

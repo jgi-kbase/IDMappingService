@@ -9,8 +9,10 @@ from jgikbase.idmapping.core.util import not_none
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import re
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
-from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError
+from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
+    NamespaceExistsError, NoSuchNamespaceError
 from typing import Set
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
 
 # TODO NOW implement remaining methods in superclass
 
@@ -39,11 +41,17 @@ _FLD_SCHEMA_VERSION = 'schemaver'
 
 # database collections
 _COL_USERS = 'users'
+_COL_NAMESPACES = 'ns'
 
-# collection fields
+# user collection fields
 _FLD_AUTHSOURCE = 'auth'
 _FLD_USER = 'user'
 _FLD_TOKEN = 'hshtkn'
+
+# namespace collection fields
+_FLD_NS_ID = 'nsid'
+_FLD_PUB_MAP = 'pubmap'
+_FLD_USERS = 'users'
 
 _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                           'kw': {'unique': True},
@@ -51,6 +59,10 @@ _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                          {'idx': _FLD_TOKEN,
                           'kw': {'unique': True}
                           }],
+            _COL_NAMESPACES: [{'idx': _FLD_NS_ID,
+                               'kw': {'unique': True}
+                               }
+                              ],
             _COL_CONFIG: [{'idx': _FLD_SCHEMA_KEY,
                            'kw': {'unique': True}
                            }
@@ -169,11 +181,9 @@ class IDMappingMongoStorage(_IDMappingStorage):
             if res.matched_count != 1:  # don't care if user was updated or not, just found
                 raise NoSuchUserError(user.username)
         except DuplicateKeyError as e:
-            coll, index = self._get_duplicate_location(e)
-            if coll == _COL_USERS and index == _FLD_TOKEN + '_1':
-                raise ValueError('The provided token already exists in the database')
-            # this is impossible to test
-            raise IDMappingStorageError('Unexpected duplicate key exception')
+            # since only the token can cause a duplicate key error here, we assume something
+            # crazy isn't going and just raise that exception
+            raise ValueError('The provided token already exists in the database')
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
@@ -195,3 +205,33 @@ class IDMappingMongoStorage(_IDMappingStorage):
             return {User(LOCAL, u[_FLD_USER]) for u in userdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def create_namespace(self, namespace_id: NamespaceID) -> None:
+        not_none(namespace_id, 'namespace_id')
+        try:
+            self._db[_COL_NAMESPACES].insert_one({_FLD_NS_ID: namespace_id.id,
+                                                  _FLD_PUB_MAP: False,
+                                                  _FLD_USERS: []})
+        except DuplicateKeyError as e:
+            raise NamespaceExistsError(namespace_id.id)
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def get_namespace(self, namespace_id: NamespaceID) -> Namespace:
+        not_none(namespace_id, 'namespace_id')
+        try:
+            nsdoc = self._db[_COL_NAMESPACES].find_one({_FLD_NS_ID: namespace_id.id})
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+        if not nsdoc:
+            raise NoSuchNamespaceError(namespace_id.id)
+        return Namespace(
+            NamespaceID(nsdoc[_FLD_NS_ID]),
+            nsdoc[_FLD_PUB_MAP],
+            self._to_user_set(nsdoc[_FLD_USERS]))
+
+    def _to_user_set(self, userdocs):
+        # TODO implement when add / remove user are implemented
+        userdocs.clear()
+        return set()
