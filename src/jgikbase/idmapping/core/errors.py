@@ -72,8 +72,9 @@ class IDMappingError(Exception):
         if not error_type:  # don't use not_none here, causes circular import
             raise TypeError('error_type cannot be None')
         msg = '{} {}'.format(error_type.error_code, error_type.error_type)
-        if message and message.strip():
-            msg += ': ' + message.strip()
+        message = message.strip() if message and message.strip() else None
+        if message:
+            msg += ': ' + message
         super().__init__(msg)
         self.error_type = error_type
         self.message = message
