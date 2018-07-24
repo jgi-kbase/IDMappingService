@@ -262,3 +262,15 @@ class IDMappingMongoStorage(_IDMappingStorage):
                     admin_user.authsource_id.id, admin_user.username, action, namespace_id.id))
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publically_mappable: bool
+                                        ) -> None:
+        not_none(namespace_id, 'namespace_id')
+        pm = True if publically_mappable else False  # more readable than 'and True'
+        try:
+            res = self._db[_COL_NAMESPACES].update_one({_FLD_NS_ID: namespace_id.id},
+                                                       {'$set': {_FLD_PUB_MAP: pm}})
+            if res.matched_count != 1:  # don't care if modified or not
+                raise NoSuchNamespaceError(namespace_id.id)
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e

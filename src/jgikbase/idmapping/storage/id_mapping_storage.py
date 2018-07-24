@@ -111,19 +111,17 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def set_namespace_publicly_mappable(
-            self,
-            namespace_id: NamespaceID,
-            publically_mappable: bool=False
-            ) -> None:
+    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publically_mappable: bool
+                                        ) -> None:
         """
         Set the publicly mappable flag on a namespace.
 
         :param namespace_id: The namespace to alter.
-        :param publically_mappable: True to set the namespace to publicly mappable, False (the
-            default) to prevent public mapping.
+        :param publically_mappable: True to set the namespace to publicly mappable, False or None
+            to prevent public mapping.
+        :raises TypeError: if namespace_id is None.
+        :raises NoSuchNamespaceError: if the namespace does not exist.
         """
-        # TODO throw no such namespace
         raise NotImplementedError()
 
     @_abstractmethod
