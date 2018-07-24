@@ -5,7 +5,7 @@ from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage as _I
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.idmapping.core.user import User, LOCAL
 from pymongo.database import Database
-from jgikbase.idmapping.util.util import not_none
+from jgikbase.idmapping.core.util import not_none
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import re
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException

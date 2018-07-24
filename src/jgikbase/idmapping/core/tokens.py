@@ -2,7 +2,7 @@
 Classes representing authentication tokens.
 """
 
-from jgikbase.idmapping.util.util import check_string
+from jgikbase.idmapping.core.util import check_string
 
 
 class HashedToken:
