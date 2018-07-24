@@ -1,6 +1,8 @@
 from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.errors import IllegalUsernameError, MissingParameterError,\
+    IllegalParameterError
 
 LONG_STR = 'a' * 100
 
@@ -14,13 +16,13 @@ def test_authsource_init_pass():
 
 
 def test_authsource_init_fail():
-    fail_authsource_init(None, ValueError('authsource id cannot be None'))
+    fail_authsource_init(None, MissingParameterError('authsource id'))
     fail_authsource_init('   \t    \n   ',
-                         ValueError('authsource id cannot be whitespace only'))
-    fail_authsource_init('abcdefghijklmnopqrstu', ValueError(
+                         MissingParameterError('authsource id'))
+    fail_authsource_init('abcdefghijklmnopqrstu', IllegalParameterError(
         'authsource id abcdefghijklmnopqrstu exceeds maximum length of 20'))
     fail_authsource_init('fooo1b&',
-                         ValueError('Illegal character in authsource id fooo1b&: 1'))
+                         IllegalParameterError('Illegal character in authsource id fooo1b&: 1'))
 
 
 def fail_authsource_init(source: str, expected: Exception):
@@ -37,6 +39,7 @@ def test_authsource_equals():
     assert AuthsourceID('foo') != LOCAL
     assert AuthsourceID('local') == LOCAL
     assert LOCAL == LOCAL
+    assert AuthsourceID('foo') != 'foo'
 
 
 def test_user_init_pass():
@@ -48,18 +51,17 @@ def test_user_init_pass():
 
 def test_user_init_fail():
     as_ = AuthsourceID('bar')
-    fail_user_init(None, 'foo', ValueError('authsource_id cannot be None'))
-    fail_user_init(as_, None, ValueError('username cannot be None'))
-    fail_user_init(as_, '       \t      \n   ',
-                   ValueError('username cannot be whitespace only'))
-    fail_user_init(as_, LONG_STR + 'b',
-                   ValueError('username ' + LONG_STR + 'b exceeds maximum length of 100'))
+    fail_user_init(None, 'foo', MissingParameterError('authsource_id'))
+    fail_user_init(as_, None, MissingParameterError('username'))
+    fail_user_init(as_, '       \t      \n   ', MissingParameterError('username'))
+    fail_user_init(as_, LONG_STR + 'b', IllegalUsernameError(
+        'username ' + LONG_STR + 'b exceeds maximum length of 100'))
     for c in '0123456789':
         fail_user_init(as_, c + 'foo',
-                       ValueError('username ' + c + 'foo must start with a letter'))
+                       IllegalUsernameError('username ' + c + 'foo must start with a letter'))
     for c in '*&@-+\n\t~_':
         fail_user_init(as_, 'foo1d' + c,
-                       ValueError('Illegal character in username foo1d' + c + ': ' + c))
+                       IllegalUsernameError('Illegal character in username foo1d' + c + ': ' + c))
 
 
 def fail_user_init(authsource: AuthsourceID, username: str, expected: Exception):

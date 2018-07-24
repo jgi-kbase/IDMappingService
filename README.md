@@ -9,6 +9,7 @@ Build status (master):
 * dockerize
 * travis
   * docker build
+  * only run mongo tests other than one target
   * try mongo 4 - maybe wait for a couple bugfix versions
 * rename primary id to something more accurate - admin id? owned id?
 * update design doc with new names (object_id primarily)

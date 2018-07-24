@@ -2,6 +2,7 @@ from jgikbase.idmapping.util.util import not_none, check_string
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import fail
 from jgikbase.idmapping.util import util
+from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
 
 
 def test_not_none_pass():
@@ -14,7 +15,7 @@ def test_not_none_fail():
         not_none(None, 'my name')
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, ValueError('my name cannot be None'))
+        assert_exception_correct(got, MissingParameterError('my name'))
 
 
 def test_check_string_pass():
@@ -25,12 +26,13 @@ def test_check_string_pass():
 
 
 def test_check_string_fail():
-    fail_check_string(None, 'foo', None, None, ValueError('foo cannot be None'))
+    fail_check_string(None, 'foo', None, None, MissingParameterError('foo'))
     fail_check_string('   \t   \n   ', 'foo', None, None,
-                      ValueError('foo cannot be whitespace only'))
-    fail_check_string('bar', 'foo', None, 2, ValueError('foo bar exceeds maximum length of 2'))
+                      MissingParameterError('foo'))
+    fail_check_string('bar', 'foo', None, 2,
+                      IllegalParameterError('foo bar exceeds maximum length of 2'))
     fail_check_string('b_ar&_1', 'foo', 'a-z_', None,
-                      ValueError('Illegal character in foo b_ar&_1: &'))
+                      IllegalParameterError('Illegal character in foo b_ar&_1: &'))
 
     # this is reaching into the implementation which is very naughty but I don't see a good way
     # to check the cache is actually working otherwise
@@ -38,7 +40,7 @@ def test_check_string_fail():
 
     # test with cache
     fail_check_string('b_ar&_1', 'foo', 'a-z_', None,
-                      ValueError('Illegal character in foo b_ar&_1: &'))
+                      IllegalParameterError('Illegal character in foo b_ar&_1: &'))
 
 
 def fail_check_string(string, name, illegal_characters, max_len, expected):

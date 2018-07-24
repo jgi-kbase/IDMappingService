@@ -2,6 +2,7 @@
 ID Mapping system user classes.
 """
 from jgikbase.idmapping.util.util import not_none, check_string
+from jgikbase.idmapping.core.errors import IllegalUsernameError, IllegalParameterError
 
 
 class AuthsourceID:
@@ -64,9 +65,12 @@ class User:
             than 100 characters.
         """
         not_none(authsource_id, 'authsource_id')
-        check_string(username, 'username', self._LEGAL_CHARS, self._MAX_LEN)
+        try:
+            check_string(username, 'username', self._LEGAL_CHARS, self._MAX_LEN)
+        except IllegalParameterError as e:
+            raise IllegalUsernameError(e.message) from e
         if not username[0].isalpha():
             # TODO EXCEP change to package specific exception
-            raise ValueError('username {} must start with a letter'.format(username))
+            raise IllegalUsernameError('username {} must start with a letter'.format(username))
         self.authsource_id = authsource_id
         self.username = username

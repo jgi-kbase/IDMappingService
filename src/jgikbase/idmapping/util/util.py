@@ -2,11 +2,13 @@
 
 Utility functions
 
-@author: gaprice@lbl.gov
 """
 from typing import Dict as _Dict  # @UnusedImport PyDev thinks it's unused, flake & mypy get it
 from typing import Pattern as _Pattern  # @UnusedImport PyDev sez it's unused, flake & mypy get it
 import re as _re
+from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
+
+# TODO NOW document raised exceptions everywhere
 
 
 def not_none(obj: object, name: str):
@@ -20,7 +22,7 @@ def not_none(obj: object, name: str):
     :param name: the name of the object to use in error messages.
     """
     if not obj:
-        raise ValueError(name + ' cannot be None')
+        raise MissingParameterError(name)
 
 # TODO EXCEP change exceptions to package specific
 
@@ -43,15 +45,15 @@ def check_string(string: str, name: str, legal_characters: str=None, max_len: in
     '''
     not_none(string, name)
     if not string.strip():
-        raise ValueError(name + ' cannot be whitespace only')
+        raise MissingParameterError(name)
     if max_len and len(string) > max_len:
-        raise ValueError('{} {} exceeds maximum length of {}'
-                         .format(name, string, max_len))
+        raise IllegalParameterError('{} {} exceeds maximum length of {}'
+                                    .format(name, string, max_len))
     if legal_characters:
         global _REGEX_CACHE
         if legal_characters not in _REGEX_CACHE:
             _REGEX_CACHE[legal_characters] = _re.compile('[^' + legal_characters + ']')
         match = _REGEX_CACHE[legal_characters].search(string)
         if match:
-            raise ValueError('Illegal character in {} {}: {}'
-                             .format(name, string, match.group()))
+            raise IllegalParameterError('Illegal character in {} {}: {}'
+                                        .format(name, string, match.group()))

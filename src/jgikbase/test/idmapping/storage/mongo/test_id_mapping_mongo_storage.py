@@ -6,7 +6,8 @@ from jgikbase.idmapping.core.user import User, AuthsourceID, LOCAL
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
-from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError
+from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
+    MissingParameterError
 from jgikbase.idmapping.storage.errors import IDMappingStorageError
 
 TEST_DB_NAME = 'test_id_mapping'
@@ -37,7 +38,7 @@ def test_fail_startup():
         IDMappingMongoStorage(None)
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, ValueError('db cannot be None'))
+        assert_exception_correct(got, MissingParameterError('db'))
 
 # The following tests ensure that all indexes are created correctly. The collection names
 # are tested so that if a new collection is added the test will fail without altering
@@ -92,8 +93,8 @@ def test_create_update_and_get_user(idstorage):
 def test_create_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = User(LOCAL, 'u')
-    fail_create_user(idstorage, None, t, ValueError('user cannot be None'))
-    fail_create_user(idstorage, u, None, ValueError('token cannot be None'))
+    fail_create_user(idstorage, None, t, MissingParameterError('user'))
+    fail_create_user(idstorage, u, None, MissingParameterError('token'))
 
 
 def test_create_user_fail_not_local(idstorage):
@@ -124,8 +125,8 @@ def fail_create_user(idstorage, user, token, expected):
 def test_update_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = User(LOCAL, 'u')
-    fail_update_user(idstorage, None, t, ValueError('user cannot be None'))
-    fail_update_user(idstorage, u, None, ValueError('token cannot be None'))
+    fail_update_user(idstorage, None, t, MissingParameterError('user'))
+    fail_update_user(idstorage, u, None, MissingParameterError('token'))
 
 
 def test_update_user_fail_not_local(idstorage):
@@ -156,7 +157,7 @@ def fail_update_user(idstorage, user, token, expected):
 
 
 def test_get_user_fail_input_None(idstorage):
-    fail_get_user(idstorage, None, ValueError('token cannot be None'))
+    fail_get_user(idstorage, None, MissingParameterError('token'))
 
 
 def test_get_user_fail_no_such_token(idstorage):
