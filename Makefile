@@ -14,4 +14,9 @@ test:
 	mypy src
 	IDMAP_TEST_FILE=$(TEST_CFG) pytest --verbose src --cov src/jgikbase/idmapping
 	bandit --recursive src --exclude src/jgikbase/test
+
+# Only test the MongoDB related code.
+test-mongo:
+	IDMAP_TEST_FILE=$(TEST_CFG) pytest --verbose src/jgikbase/test/idmapping/storage/mongo
+
 	
