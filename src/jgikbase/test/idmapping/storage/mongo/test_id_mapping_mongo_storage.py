@@ -492,6 +492,26 @@ def test_add_and_get_mapping(idstorage):
         (set(), set([ObjectID(NamespaceID('foo'), 'bar')]))
 
 
+def test_remove_mapping(idstorage):
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+    idstorage.add_mapping(ObjectID(NamespaceID('baz'), 'bar'), ObjectID(NamespaceID('bar'), 'bat'))
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('foo'), 'bar')) == \
+        (set([ObjectID(NamespaceID('baz'), 'bat')]), set())
+    assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bar')) == \
+        (set([ObjectID(NamespaceID('bar'), 'bat')]), set())
+
+    assert idstorage.remove_mapping(ObjectID(NamespaceID('foo'), 'bar'),
+                                    ObjectID(NamespaceID('baz'), 'bat')) is True
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('foo'), 'bar')) == (set(), set())
+    assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bar')) == \
+        (set([ObjectID(NamespaceID('bar'), 'bat')]), set())
+
+    assert idstorage.remove_mapping(ObjectID(NamespaceID('foo'), 'bar'),
+                                    ObjectID(NamespaceID('baz'), 'bat')) is False
+
+
 def test_find_no_mappings(idstorage):
     idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
     idstorage.add_mapping(ObjectID(NamespaceID('baz'), 'bar'), ObjectID(NamespaceID('bar'), 'bat'))
@@ -540,6 +560,20 @@ def test_add_mapping_fail_same_namespace(idstorage):
 def fail_add_mapping(idstorage, pOID, sOID, expected):
     try:
         idstorage.add_mapping(pOID, sOID)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_remove_mapping_fail_input_None(idstorage):
+    oid = ObjectID(NamespaceID('foo'), 'bar')
+    fail_remove_mapping(idstorage, None, oid, TypeError('primary_OID cannot be None'))
+    fail_remove_mapping(idstorage, oid, None, TypeError('secondary_OID cannot be None'))
+
+
+def fail_remove_mapping(idstorage, pOID, sOID, expected):
+    try:
+        idstorage.remove_mapping(pOID, sOID)
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)

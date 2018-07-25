@@ -157,13 +157,14 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def remove_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
+    def remove_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> bool:
         """
-        Remove a mapping from one namespace to another. If the mapping does not exist, no further
-        action is taken.
+        Remove a mapping from one namespace to another. Returns true if a mapping was removed,
+        false otherwise.
 
         :param primary_OID: the primary namespace/ID combination.
         :param secondary_OID: the secondary namespace/ID combination.
+        :raise TypeError: if any of the arguments are None.
         """
         raise NotImplementedError()
 

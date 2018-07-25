@@ -304,12 +304,25 @@ class IDMappingMongoStorage(_IDMappingStorage):
             raise ValueError('Namespace IDs cannot be the same')
         try:
             self._db[_COL_MAPPINGS].insert_one(
-                {_FLD_PRIMARY_NS: primary_OID.namespace_id.id,
-                 _FLD_PRIMARY_ID: primary_OID.id,
-                 _FLD_SECONDARY_NS: secondary_OID.namespace_id.id,
-                 _FLD_SECONDARY_ID: secondary_OID.id})
+                self.to_mapping_mongo_doc(primary_OID, secondary_OID))
         except DuplicateKeyError as e:
             pass  # don't care, record is already there
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def to_mapping_mongo_doc(self, primary_OID, secondary_OID):
+        return {_FLD_PRIMARY_NS: primary_OID.namespace_id.id,
+                _FLD_PRIMARY_ID: primary_OID.id,
+                _FLD_SECONDARY_NS: secondary_OID.namespace_id.id,
+                _FLD_SECONDARY_ID: secondary_OID.id}
+
+    def remove_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> bool:
+        not_none(primary_OID, 'primary_OID')
+        not_none(secondary_OID, 'secondary_OID')
+        try:
+            res = self._db[_COL_MAPPINGS].delete_one(
+                self.to_mapping_mongo_doc(primary_OID, secondary_OID))
+            return res.deleted_count == 1
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
