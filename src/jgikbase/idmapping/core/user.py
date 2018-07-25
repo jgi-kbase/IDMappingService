@@ -68,7 +68,7 @@ class User:
         :param authsource_id: The authentication source for the user.
         :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
             than 100 characters.
-        :raises TypeError: if the authshource ID is None.
+        :raises TypeError: if the authsource ID is None.
         :raises MissingParameterError: if the user name is None or whitespace only.
         :raises IllegalUsernameError: if the user name does not meet the requirements.
         """

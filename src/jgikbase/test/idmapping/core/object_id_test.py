@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
@@ -116,3 +116,46 @@ def test_namespace_hash():
     assert hash(Namespace(NamespaceID('foo'), False,
                           set([User(LOCAL, 'foo'), User(LOCAL, 'baz')]))) != \
         hash(Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'fob')])))
+
+
+def test_object_id_init_pass():
+    a = 'abcdefghijklmnopqrstuvwxyz'
+    oidstr = a + a.upper() + r'0123456789!@#$%^&*()_+`~{}[]\|/<>,.?' + ('a' * 912)
+    oid = ObjectID(NamespaceID('foo'), oidstr)
+
+    assert oid.namespace_id == NamespaceID('foo')
+    assert oid.id == oidstr
+
+
+def test_object_id_init_fail():
+    ns = NamespaceID('foo')
+    fail_object_id_init(None, 'o', TypeError('namespace_id cannot be None'))
+    fail_object_id_init(ns, None, MissingParameterError('data id'))
+    fail_object_id_init(ns, '   \t   \n    ', MissingParameterError('data id'))
+    fail_object_id_init(ns, 'a' * 1001, IllegalParameterError(
+        'data id ' + ('a' * 1001) + ' exceeds maximum length of 1000'))
+
+
+def fail_object_id_init(namespace_id, obj_id, expected):
+    try:
+        ObjectID(namespace_id, obj_id)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_object_id_equals():
+    assert ObjectID(NamespaceID('foo'), 'baz') == ObjectID(NamespaceID('foo'), 'baz')
+    assert ObjectID(NamespaceID('foo'), 'baz') != ObjectID(NamespaceID('bar'), 'baz')
+    assert ObjectID(NamespaceID('foo'), 'baz') != ObjectID(NamespaceID('foo'), 'bar')
+    assert ObjectID(NamespaceID('foo'), 'baz') != NamespaceID('foo')
+
+
+def test_object_id_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(ObjectID(NamespaceID('foo'), 'bar')) == hash(ObjectID(NamespaceID('foo'), 'bar'))
+    assert hash(ObjectID(NamespaceID('bar'), 'foo')) == hash(ObjectID(NamespaceID('bar'), 'foo'))
+    assert hash(ObjectID(NamespaceID('baz'), 'foo')) != hash(ObjectID(NamespaceID('bar'), 'foo'))
+    assert hash(ObjectID(NamespaceID('bar'), 'fob')) != hash(ObjectID(NamespaceID('bar'), 'foo'))
