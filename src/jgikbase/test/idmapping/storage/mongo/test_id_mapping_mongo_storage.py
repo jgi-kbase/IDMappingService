@@ -437,3 +437,23 @@ def fail_set_namespace_publicly_mappable(idstorage, namespace_id, expected):
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
+
+
+def test_get_namespaces(idstorage):
+    assert idstorage.get_namespaces() == set()
+
+    idstorage.create_namespace(NamespaceID('ns1'))
+    idstorage.set_namespace_publicly_mappable(NamespaceID('ns1'), True)
+    idstorage.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('as'), 'u'))
+
+    idstorage.create_namespace(NamespaceID('ns2'))
+
+    idstorage.create_namespace(NamespaceID('ns3'))
+    idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('as'), 'u'))
+    idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('astwo'), 'u3'))
+
+    assert idstorage.get_namespaces() == \
+        {Namespace(NamespaceID('ns1'), True, set([User(AuthsourceID('as'), 'u')])),
+         Namespace(NamespaceID('ns2'), False),
+         Namespace(NamespaceID('ns3'), False, set([User(AuthsourceID('as'), 'u'),
+                                                   User(AuthsourceID('astwo'), 'u3')]))}
