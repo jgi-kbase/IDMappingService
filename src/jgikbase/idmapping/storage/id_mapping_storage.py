@@ -125,9 +125,12 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_namespaces(self) -> Set[Namespace]:
+    def get_namespaces(self, nids: Iterable[NamespaceID]=None) -> Set[Namespace]:
         """
         Get all the namespaces in the system.
+
+        :param ids: specific namespaces to get. By default all namespaces are returned.
+        :raises TypeError: if nids contains None.
         """
         raise NotImplementedError()
 

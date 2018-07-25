@@ -93,7 +93,11 @@ def test_index_mappings(idstorage, mongo):
                     'v': v,
                     'unique': True,
                     'key': [('pnsid', 1), ('pid', 1), ('snsid', 1), ('sid', 1)],
-                    'ns': 'test_id_mapping.map'}
+                    'ns': 'test_id_mapping.map'},
+                'snsid_1_sid_1': {
+                    'v': v,
+                    'key': [('snsid', 1), ('sid', 1)],
+                    'ns': 'test_id_mapping.map'},
                 }
     assert indexes == expected
 
@@ -460,9 +464,7 @@ def fail_set_namespace_publicly_mappable(idstorage, namespace_id, expected):
         assert_exception_correct(got, expected)
 
 
-def test_get_namespaces(idstorage):
-    assert idstorage.get_namespaces() == set()
-
+def set_up_data_for_get_namespaces(idstorage):
     idstorage.create_namespace(NamespaceID('ns1'))
     idstorage.set_namespace_publicly_mappable(NamespaceID('ns1'), True)
     idstorage.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('as'), 'u'))
@@ -473,11 +475,42 @@ def test_get_namespaces(idstorage):
     idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('as'), 'u'))
     idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('astwo'), 'u3'))
 
-    assert idstorage.get_namespaces() == \
-        {Namespace(NamespaceID('ns1'), True, set([User(AuthsourceID('as'), 'u')])),
-         Namespace(NamespaceID('ns2'), False),
-         Namespace(NamespaceID('ns3'), False, set([User(AuthsourceID('as'), 'u'),
-                                                   User(AuthsourceID('astwo'), 'u3')]))}
+    expected = [Namespace(NamespaceID('ns1'), True, set([User(AuthsourceID('as'), 'u')])),
+                Namespace(NamespaceID('ns2'), False),
+                Namespace(NamespaceID('ns3'), False, set([User(AuthsourceID('as'), 'u'),
+                                                          User(AuthsourceID('astwo'), 'u3')]))]
+    return expected
+
+
+def test_get_namespaces(idstorage):
+    assert idstorage.get_namespaces() == set()
+
+    expected = set(set_up_data_for_get_namespaces(idstorage))
+
+    assert idstorage.get_namespaces() == expected
+    assert idstorage.get_namespaces(None) == expected
+    assert idstorage.get_namespaces(nids=None) == expected
+
+
+def test_get_namespaces_with_nids(idstorage):
+    assert idstorage.get_namespaces() == set()
+
+    expected = set_up_data_for_get_namespaces(idstorage)
+
+    assert idstorage.get_namespaces([NamespaceID('ns1')]) == set([expected[0]])
+    assert idstorage.get_namespaces(nids=set([NamespaceID('ns1')])) == set([expected[0]])
+
+    nids = {NamespaceID('ns2'), NamespaceID('ns3')}
+    assert idstorage.get_namespaces(nids) == set([expected[1], expected[2]])
+    assert idstorage.get_namespaces(nids=nids) == set([expected[1], expected[2]])
+
+
+def test_get_namespaces_fail(idstorage):
+    try:
+        idstorage.get_namespaces({NamespaceID('foo'), None})
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, TypeError('None item in nids'))
 
 
 def test_add_and_get_mapping(idstorage):

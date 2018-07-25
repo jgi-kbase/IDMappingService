@@ -76,7 +76,16 @@ _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                                      (_FLD_PRIMARY_ID, 1),
                                      (_FLD_SECONDARY_NS, 1),
                                      (_FLD_SECONDARY_ID, 1)],
-                             'kw': {'unique': True}}],
+                             'kw': {'unique': True}
+                             },
+                            # index for 'backwards' queries
+                            # could improve performance by including the primary IDs for covered
+                            # queries. Not sure if that's worth the index size increase.
+                            {'idx': [(_FLD_SECONDARY_NS, 1),
+                                     (_FLD_SECONDARY_ID, 1)],
+                             'kw': {}
+                             }
+                            ],
             _COL_CONFIG: [{'idx': _FLD_SCHEMA_KEY,
                            'kw': {'unique': True}
                            }
@@ -284,9 +293,13 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
-    def get_namespaces(self) -> Set[Namespace]:
+    def get_namespaces(self, nids: Iterable[NamespaceID]=None) -> Set[Namespace]:
+        query = {}
+        if nids:
+            no_Nones_in_iterable(nids, 'nids')
+            query[_FLD_NS_ID] = {'$in': [nid.id for nid in nids]}
         try:
-            nsdocs = self._db[_COL_NAMESPACES].find()
+            nsdocs = self._db[_COL_NAMESPACES].find(query)
             return {self._to_ns(nsdoc) for nsdoc in nsdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
