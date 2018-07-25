@@ -3,7 +3,7 @@ A MongoDB based storage system for ID mapping.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage as _IDMappingStorage
 from jgikbase.idmapping.core.tokens import HashedToken
-from jgikbase.idmapping.core.user import User, LOCAL, AuthsourceID
+from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from pymongo.database import Database
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -148,16 +148,17 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
 # may want to just create a Username class and use that in the local user functions
 
-    def create_local_user(self, user: User, token: HashedToken) -> None:
-        self._check_user_inputs(user, token)
+    def create_local_user(self, user: Username, token: HashedToken) -> None:
+        not_none(user, 'user')
+        not_none(token, 'token')
         try:
-            self._db[_COL_USERS].insert_one({_FLD_USER: user.username,
+            self._db[_COL_USERS].insert_one({_FLD_USER: user.name,
                                             _FLD_TOKEN: token.token_hash})
         except DuplicateKeyError as e:
             coll, index = self._get_duplicate_location(e)
             if coll == _COL_USERS:
                 if index == _FLD_USER + '_1':
-                    raise UserExistsError(user.username)
+                    raise UserExistsError(user.name)
                 elif index == _FLD_TOKEN + '_1':
                     raise ValueError('The provided token already exists in the database')
             # this is impossible to test
@@ -191,20 +192,14 @@ class IDMappingMongoStorage(_IDMappingStorage):
             raise IDMappingStorageError('unable to parse duplicate key error: ' +
                                         e.args[0].split('dup key')[0])
 
-    def _check_user_inputs(self, user, token):
+    def update_local_user(self, user: Username, token: HashedToken) -> None:
         not_none(user, 'user')
         not_none(token, 'token')
-        if user.authsource_id != LOCAL:
-            raise ValueError('Only users from a {} authsource are allowed'
-                             .format(LOCAL.id))
-
-    def update_local_user(self, user: User, token: HashedToken) -> None:
-        self._check_user_inputs(user, token)
         try:
-            res = self._db[_COL_USERS].update_one({_FLD_USER: user.username},
+            res = self._db[_COL_USERS].update_one({_FLD_USER: user.name},
                                                   {'$set': {_FLD_TOKEN: token.token_hash}})
             if res.matched_count != 1:  # don't care if user was updated or not, just found
-                raise NoSuchUserError(user.username)
+                raise NoSuchUserError(user.name)
         except DuplicateKeyError as e:
             # since only the token can cause a duplicate key error here, we assume something
             # crazy isn't going and just raise that exception
@@ -212,7 +207,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
-    def get_user(self, token: HashedToken) -> User:
+    def get_user(self, token: HashedToken) -> Username:
         not_none(token, 'token')
         try:
             userdoc = self._db[_COL_USERS].find_one(
@@ -222,12 +217,12 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
         if not userdoc:
             raise InvalidTokenError()
-        return User(LOCAL, userdoc[_FLD_USER])
+        return Username(userdoc[_FLD_USER])
 
-    def get_users(self) -> Set[User]:
+    def get_users(self) -> Set[Username]:
         try:
             userdocs = self._db[_COL_USERS].find({}, {_FLD_TOKEN: 0})
-            return {User(LOCAL, u[_FLD_USER]) for u in userdocs}
+            return {Username(u[_FLD_USER]) for u in userdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 

@@ -2,7 +2,7 @@ from pytest import fail, fixture
 from jgikbase.test.idmapping.mongo_controller import MongoController
 from jgikbase.test.idmapping import test_utils
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
-from jgikbase.idmapping.core.user import User, AuthsourceID, LOCAL
+from jgikbase.idmapping.core.user import User, AuthsourceID, LOCAL, Username
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
@@ -112,8 +112,8 @@ def test_startup_and_check_config_doc(idstorage, mongo):
 
     # check startup works with cfg object in place
     idmap = IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
-    idmap.create_local_user(User(LOCAL, 'foo'), HashedToken('t'))
-    assert idmap.get_user(HashedToken('t')) == User(LOCAL, 'foo')
+    idmap.create_local_user(Username('foo'), HashedToken('t'))
+    assert idmap.get_user(HashedToken('t')) == Username('foo')
 
 
 def test_startup_with_2_config_docs(mongo):
@@ -172,50 +172,40 @@ def fail_startup(mongo, expected_msg):
 
 def test_create_update_and_get_user(idstorage):
     # create
-    idstorage.create_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('bar'))
+    idstorage.create_local_user(Username('foo'), HashedToken('bar'))
     u = idstorage.get_user(HashedToken('bar'))
-    assert u.username == 'foo'
-    assert u.authsource_id == LOCAL
+    assert u.name == 'foo'
 
     # update
-    idstorage.update_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('bat'))
+    idstorage.update_local_user(Username('foo'), HashedToken('bat'))
     u = idstorage.get_user(HashedToken('bat'))
-    assert u.username == 'foo'
-    assert u.authsource_id == LOCAL
+    assert u.name == 'foo'
 
-    idstorage.update_local_user(User(AuthsourceID('local'), 'foo'), HashedToken('boo'))
+    idstorage.update_local_user(Username('foo'), HashedToken('boo'))
     u = idstorage.get_user(HashedToken('boo'))
-    assert u.username == 'foo'
-    assert u.authsource_id == LOCAL
+    assert u.name == 'foo'
 
     # test different user
-    idstorage.create_local_user(User(AuthsourceID('local'), 'foo1'), HashedToken('baz'))
+    idstorage.create_local_user(Username('foo1'), HashedToken('baz'))
     u = idstorage.get_user(HashedToken('baz'))
-    assert u.username == 'foo1'
-    assert u.authsource_id == LOCAL
+    assert u.name == 'foo1'
 
 
 def test_create_user_fail_input_None(idstorage):
     t = HashedToken('t')
-    u = User(LOCAL, 'u')
+    u = Username('u')
     fail_create_user(idstorage, None, t, TypeError('user cannot be None'))
     fail_create_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
-def test_create_user_fail_not_local(idstorage):
-    u = User(AuthsourceID('a'), 'u')
-    t = HashedToken('t')
-    fail_create_user(idstorage, u, t, ValueError('Only users from a local authsource are allowed'))
-
-
 def test_create_user_fail_duplicate_user(idstorage):
-    idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    fail_create_user(idstorage, User(LOCAL, 'u'), HashedToken('t1'), UserExistsError('u'))
+    idstorage.create_local_user(Username('u'), HashedToken('t'))
+    fail_create_user(idstorage, Username('u'), HashedToken('t1'), UserExistsError('u'))
 
 
 def test_create_user_fail_duplicate_token(idstorage):
-    idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    fail_create_user(idstorage, User(LOCAL, 'u1'), HashedToken('t'),
+    idstorage.create_local_user(Username('u'), HashedToken('t'))
+    fail_create_user(idstorage, Username('u1'), HashedToken('t'),
                      ValueError('The provided token already exists in the database'))
 
 
@@ -229,27 +219,21 @@ def fail_create_user(idstorage, user, token, expected):
 
 def test_update_user_fail_input_None(idstorage):
     t = HashedToken('t')
-    u = User(LOCAL, 'u')
+    u = Username('u')
     fail_update_user(idstorage, None, t, TypeError('user cannot be None'))
     fail_update_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
-def test_update_user_fail_not_local(idstorage):
-    u = User(AuthsourceID('a'), 'u')
-    t = HashedToken('t')
-    fail_update_user(idstorage, u, t, ValueError('Only users from a local authsource are allowed'))
-
-
 def test_update_user_fail_duplicate_token(idstorage):
-    idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    idstorage.create_local_user(User(LOCAL, 'u1'), HashedToken('t1'))
-    fail_update_user(idstorage, User(LOCAL, 'u1'), HashedToken('t'),
+    idstorage.create_local_user(Username('u'), HashedToken('t'))
+    idstorage.create_local_user(Username('u1'), HashedToken('t1'))
+    fail_update_user(idstorage, Username('u1'), HashedToken('t'),
                      ValueError('The provided token already exists in the database'))
 
 
 def test_update_user_fail_no_such_user(idstorage):
-    idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
-    fail_update_user(idstorage, User(LOCAL, 'u1'), HashedToken('t1'),
+    idstorage.create_local_user(Username('u'), HashedToken('t'))
+    fail_update_user(idstorage, Username('u1'), HashedToken('t1'),
                      NoSuchUserError('u1'))
 
 
@@ -266,7 +250,7 @@ def test_get_user_fail_input_None(idstorage):
 
 
 def test_get_user_fail_no_such_token(idstorage):
-    idstorage.create_local_user(User(LOCAL, 'u'), HashedToken('t'))
+    idstorage.create_local_user(Username('u'), HashedToken('t'))
     fail_get_user(idstorage, HashedToken('t1'), InvalidTokenError())
 
 
@@ -291,16 +275,16 @@ def test_unparseable_duplicate_key_exception(idstorage):
 def test_get_users(idstorage):
     assert idstorage.get_users() == set()
 
-    idstorage.create_local_user(User(LOCAL, 'foo'), HashedToken('t1'))
+    idstorage.create_local_user(Username('foo'), HashedToken('t1'))
 
-    assert idstorage.get_users() == {User(LOCAL, 'foo')}
+    assert idstorage.get_users() == {Username('foo')}
 
-    idstorage.create_local_user(User(LOCAL, 'mrsentity'), HashedToken('t2'))
-    idstorage.create_local_user(User(LOCAL, 'mrsenigma'), HashedToken('t3'))
-    idstorage.update_local_user(User(LOCAL, 'mrsenigma'), HashedToken('t4'))
+    idstorage.create_local_user(Username('mrsentity'), HashedToken('t2'))
+    idstorage.create_local_user(Username('mrsenigma'), HashedToken('t3'))
+    idstorage.update_local_user(Username('mrsenigma'), HashedToken('t4'))
 
-    assert idstorage.get_users() == {User(LOCAL, 'foo'), User(LOCAL, 'mrsenigma'),
-                                     User(LOCAL, 'mrsentity')}
+    assert idstorage.get_users() == {Username('foo'), Username('mrsenigma'),
+                                     Username('mrsentity')}
 
 
 def test_create_and_get_namespace(idstorage):
