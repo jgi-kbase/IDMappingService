@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.util import not_none, check_string
+from jgikbase.idmapping.core.util import not_none, check_string, no_Nones_in_iterable
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import fail
 from jgikbase.idmapping.core import util
@@ -7,7 +7,11 @@ from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParamet
 
 def test_not_none_pass():
     not_none(4, 'integer')
+    not_none(0, 'integer')
     not_none('four', 'text')
+    not_none(True, 'bool')
+    not_none(False, 'bool')
+    not_none('', 'str')
 
 
 def test_not_none_fail():
@@ -46,6 +50,27 @@ def test_check_string_fail():
 def fail_check_string(string, name, illegal_characters, max_len, expected):
     try:
         check_string(string, name, illegal_characters, max_len)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_no_Nones_in_iterable_pass():
+    no_Nones_in_iterable([], 'foo')
+    no_Nones_in_iterable(set(), 'foo')
+    no_Nones_in_iterable(['a', 'b', 'c'], 'foo')
+    no_Nones_in_iterable({'a', 'b', 'c'}, 'foo')
+
+
+def test_no_Nones_in_iterable_fail():
+    fail_no_Nones_in_iterable(None, 'my name', MissingParameterError('my name'))
+    fail_no_Nones_in_iterable(['a', None, 'c'], 'thingy', TypeError('None item in thingy'))
+    fail_no_Nones_in_iterable({'a', 'c', None}, 'thingy2', TypeError('None item in thingy2'))
+
+
+def fail_no_Nones_in_iterable(iterable, name, expected):
+    try:
+        no_Nones_in_iterable(iterable, name)
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)

@@ -1,0 +1,113 @@
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from pytest import fail
+from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
+from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL
+
+
+def test_namespace_id_init_pass():
+    ns = NamespaceID('abcdefghijklmnopqrstuvwxyz0123456789_')
+    assert ns.id == 'abcdefghijklmnopqrstuvwxyz0123456789_'
+
+    ns = NamespaceID('abcdefghijklmnopqrstuvwxyz0123456789_'.upper())
+    assert ns.id == 'abcdefghijklmnopqrstuvwxyz0123456789_'.upper()
+
+    ns = NamespaceID('a' * 256)
+    assert ns.id == 'a' * 256
+
+
+def test_namespace_id_init_fail():
+    fail_namespace_id_init(None, MissingParameterError('namespace id'))
+    fail_namespace_id_init('   \t    \n   ',
+                           MissingParameterError('namespace id'))
+    fail_namespace_id_init('a' * 257, IllegalParameterError(
+        'namespace id ' + ('a' * 257) + ' exceeds maximum length of 256'))
+    fail_namespace_id_init('fooo1b&_*',
+                           IllegalParameterError('Illegal character in namespace id fooo1b&_*: &'))
+
+
+def fail_namespace_id_init(id_: str, expected: Exception):
+    try:
+        NamespaceID(id_)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_namespace_id_equals():
+    assert NamespaceID('foo') == NamespaceID('foo')
+    assert NamespaceID('foo') != NamespaceID('bar')
+    assert NamespaceID('foo') != 'foo'
+
+
+def test_namespace_id_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(NamespaceID('foo')) == hash(NamespaceID('foo'))
+    assert hash(NamespaceID('bar')) == hash(NamespaceID('bar'))
+    assert hash(NamespaceID('foo')) != hash(NamespaceID('bar'))
+
+
+def test_namespace_init_pass():
+    ns = Namespace(NamespaceID('foo'), True, None)
+    assert ns.namespace_id == NamespaceID('foo')
+    assert ns.is_publicly_mappable is True
+    assert ns.authed_users == set()
+
+    ns = Namespace(NamespaceID('baz'), True, set())
+    assert ns.namespace_id == NamespaceID('baz')
+    assert ns.is_publicly_mappable is True
+    assert ns.authed_users == set()
+
+    ns = Namespace(NamespaceID('foo'), False, set([User(AuthsourceID('bar'), 'baz')]))
+    assert ns.namespace_id == NamespaceID('foo')
+    assert ns.is_publicly_mappable is False
+    assert ns.authed_users == set([User(AuthsourceID('bar'), 'baz')])
+
+
+def test_namespace_init_fail():
+    nsid = NamespaceID('foo')
+    fail_namespace_init(None, None, MissingParameterError('namespace_id'))
+    fail_namespace_init(nsid, set([User(LOCAL, 'foo'), None]),
+                        TypeError('None item in authed_users'))
+
+
+def fail_namespace_init(id_, authed_users, expected):
+    try:
+        Namespace(id_, True, authed_users)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_namespace_equals():
+    assert Namespace(NamespaceID('foo'), True, None) == Namespace(NamespaceID('foo'), True, set())
+    assert Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'foo'), User(LOCAL, 'baz')])) == \
+        Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'foo')]))
+
+    assert Namespace(NamespaceID('bar'), True, set()) != Namespace(NamespaceID('foo'), True, set())
+    assert Namespace(NamespaceID('foo'), False, set()) != \
+        Namespace(NamespaceID('foo'), True, set())
+    assert Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'foo'), User(LOCAL, 'baz')])) != \
+        Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'fob')]))
+    assert Namespace(NamespaceID('foo'), False, set()) != NamespaceID('foo')
+
+
+def test_namespace_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(Namespace(NamespaceID('foo'), True, None)) == \
+        hash(Namespace(NamespaceID('foo'), True, set()))
+    assert hash(Namespace(NamespaceID('foo'), False,
+                          set([User(LOCAL, 'foo'), User(LOCAL, 'baz')]))) == \
+        hash(Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'foo')])))
+
+    assert hash(Namespace(NamespaceID('bar'), True, set())) != \
+        hash(Namespace(NamespaceID('foo'), True, set()))
+    assert hash(Namespace(NamespaceID('foo'), False, set())) != \
+        hash(Namespace(NamespaceID('foo'), True, set()))
+    assert hash(Namespace(NamespaceID('foo'), False,
+                          set([User(LOCAL, 'foo'), User(LOCAL, 'baz')]))) != \
+        hash(Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'fob')])))
