@@ -5,14 +5,14 @@ from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage as _I
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.idmapping.core.user import User, LOCAL, AuthsourceID
 from pymongo.database import Database
-from jgikbase.idmapping.core.util import not_none
+from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from pymongo.errors import DuplicateKeyError, PyMongoError
 import re
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
     NamespaceExistsError, NoSuchNamespaceError
-from typing import Set
-from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from typing import Set, Iterable, Tuple, Dict, Any  # @UnusedImport pydev gets confused here
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 
 # TODO NOW implement remaining methods in superclass
 
@@ -42,6 +42,7 @@ _FLD_SCHEMA_VERSION = 'schemaver'
 # database collections
 _COL_USERS = 'users'
 _COL_NAMESPACES = 'ns'
+_COL_MAPPINGS = 'map'
 
 # user collection fields
 _FLD_AUTHSOURCE = 'auth'
@@ -55,6 +56,12 @@ _FLD_USERS = 'users'
 _FLD_AUTHSOURCE = 'auth'
 _FLD_NAME = 'name'
 
+# mapping collection fields:
+_FLD_PRIMARY_NS = 'pnsid'
+_FLD_SECONDARY_NS = 'snsid'
+_FLD_PRIMARY_ID = 'pid'
+_FLD_SECONDARY_ID = 'sid'
+
 _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                           'kw': {'unique': True},
                           },
@@ -65,6 +72,11 @@ _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                                'kw': {'unique': True}
                                }
                               ],
+            _COL_MAPPINGS: [{'idx': [(_FLD_PRIMARY_NS, 1),
+                                     (_FLD_PRIMARY_ID, 1),
+                                     (_FLD_SECONDARY_NS, 1),
+                                     (_FLD_SECONDARY_ID, 1)],
+                             'kw': {'unique': True}}],
             _COL_CONFIG: [{'idx': _FLD_SCHEMA_KEY,
                            'kw': {'unique': True}
                            }
@@ -284,3 +296,46 @@ class IDMappingMongoStorage(_IDMappingStorage):
             NamespaceID(nsdoc[_FLD_NS_ID]),
             nsdoc[_FLD_PUB_MAP],
             self._to_user_set(nsdoc[_FLD_USERS]))
+
+    def add_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
+        not_none(primary_OID, 'primary_OID')
+        not_none(secondary_OID, 'secondary_OID')
+        if primary_OID.namespace_id == secondary_OID.namespace_id:
+            raise ValueError('Namespace IDs cannot be the same')
+        try:
+            self._db[_COL_MAPPINGS].insert_one(
+                {_FLD_PRIMARY_NS: primary_OID.namespace_id.id,
+                 _FLD_PRIMARY_ID: primary_OID.id,
+                 _FLD_SECONDARY_NS: secondary_OID.namespace_id.id,
+                 _FLD_SECONDARY_ID: secondary_OID.id})
+        except DuplicateKeyError as e:
+            pass  # don't care, record is already there
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def find_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
+                      ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
+        not_none(oid, 'oid')
+        # could probably make a method & run it twice here but not worth the trouble
+        primary_query: Dict[str, Any] = {_FLD_PRIMARY_NS: oid.namespace_id.id,
+                                         _FLD_PRIMARY_ID: oid.id}
+        secondary_query: Dict[str, Any] = {_FLD_SECONDARY_NS: oid.namespace_id.id,
+                                           _FLD_SECONDARY_ID: oid.id}
+        if ns_filter:
+            no_Nones_in_iterable(ns_filter, 'ns_filter')
+            fil = [ns.id for ns in ns_filter]
+            primary_query[_FLD_SECONDARY_NS] = {'$in': fil}
+            secondary_query[_FLD_PRIMARY_NS] = {'$in': fil}
+        try:
+            mappings = self._db[_COL_MAPPINGS].find(
+                primary_query, {_FLD_PRIMARY_NS: 0, _FLD_PRIMARY_ID: 0})
+            primary = {ObjectID(NamespaceID(m[_FLD_SECONDARY_NS]), m[_FLD_SECONDARY_ID])
+                       for m in mappings}
+            mappings = self._db[_COL_MAPPINGS].find(
+                secondary_query, {_FLD_SECONDARY_NS: 0, _FLD_SECONDARY_ID: 0})
+            secondary = {ObjectID(NamespaceID(m[_FLD_PRIMARY_NS]), m[_FLD_PRIMARY_ID])
+                         for m in mappings}
+            return primary, secondary
+            # nothing to check here. As long as the op doesn't fail we're good
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
