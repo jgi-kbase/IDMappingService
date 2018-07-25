@@ -13,7 +13,6 @@ from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, Inv
 from typing import Set
 
 # TODO NOW implement remaining methods in superclass
-# TODO NOW implement database schema checking
 
 # Testing the (many) catch blocks for the general mongo exception is pretty hard, since it
 # appears as though the mongo clients have a heartbeat, so just stopping mongo might trigger
@@ -23,11 +22,40 @@ from typing import Set
 # http://stackoverflow.com/questions/7413985/unit-testing-with-mongodb
 # https://github.com/mockito/mockito/wiki/How-to-write-good-tests
 
+# schema version checking constants.
+
+# the schema version collection
+_COL_CONFIG = 'config'
+# the current version of the database schema.
+_SCHEMA_VERSION = 1
+# the key for the schema document used to ensure a singleton.
+_FLD_SCHEMA_KEY = 'schema'
+# the value for the schema key.
+_SCHEMA_VALUE = 'schema'
+# whether the schema is in the process of an update. Value is a boolean.
+_FLD_SCHEMA_UPDATE = 'inupdate'
+# the version of the schema. Value is _SCHEMA_VERSION.
+_FLD_SCHEMA_VERSION = 'schemaver'
+
+# database collections
 _COL_USERS = 'users'
 
+# collection fields
 _FLD_AUTHSOURCE = 'auth'
 _FLD_USER = 'user'
 _FLD_TOKEN = 'hshtkn'
+
+_INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
+                          'kw': {'unique': True},
+                          },
+                         {'idx': _FLD_TOKEN,
+                          'kw': {'unique': True}
+                          }],
+            _COL_CONFIG: [{'idx': _FLD_SCHEMA_KEY,
+                           'kw': {'unique': True}
+                           }
+                          ]
+            }
 
 
 class IDMappingMongoStorage(_IDMappingStorage):
@@ -48,11 +76,38 @@ class IDMappingMongoStorage(_IDMappingStorage):
         not_none(db, 'db')
         self._db = db
         self._ensure_indexes()
+        self._check_schema()  # MUST happen after ensuring indexes
 
     def _ensure_indexes(self):
         try:
-            self._db[_COL_USERS].create_index(_FLD_USER, unique=True)
-            self._db[_COL_USERS].create_index(_FLD_TOKEN, unique=True)
+            for col in _INDEXES:
+                for idxinfo in _INDEXES[col]:
+                    self._db[col].create_index(idxinfo['idx'], **idxinfo['kw'])
+        except PyMongoError as e:
+            raise StorageInitException('Failed to create index: ' + str(e)) from e
+
+    def _check_schema(self):
+        col = self._db[_COL_CONFIG]
+        try:
+            col.insert_one({_FLD_SCHEMA_KEY: _SCHEMA_VALUE,
+                            _FLD_SCHEMA_UPDATE: False,
+                            _FLD_SCHEMA_VERSION: _SCHEMA_VERSION})
+        except DuplicateKeyError as e:
+            # ok, the schema version document is already there, this isn't the first time this
+            # database as been used. Now check the document is ok.
+            if col.count() != 1:
+                raise StorageInitException(
+                    'Multiple config objects found in the database. ' +
+                    'This should not happen, something is very wrong.')
+            cfgdoc = col.find_one({_FLD_SCHEMA_KEY: _SCHEMA_VALUE})
+            if cfgdoc[_FLD_SCHEMA_VERSION] != _SCHEMA_VERSION:
+                raise StorageInitException(
+                        'Incompatible database schema. Server is v{}, DB is v{}'.format(
+                            _SCHEMA_VERSION, cfgdoc[_FLD_SCHEMA_VERSION]))
+            if cfgdoc[_FLD_SCHEMA_UPDATE]:
+                raise StorageInitException(
+                        'The database is in the middle of an update from ' +
+                        'v{} of the schema. Aborting startup.'.format(cfgdoc[_FLD_SCHEMA_VERSION]))
         except PyMongoError as e:
             raise StorageInitException('Connection to database failed: ' + str(e)) from e
 

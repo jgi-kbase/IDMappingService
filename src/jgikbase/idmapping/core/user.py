@@ -44,7 +44,7 @@ class AuthsourceID:
 
 LOCAL = AuthsourceID(AuthsourceID.LOCAL)
 """
-A local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`.
+A local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`).
 """
 
 
