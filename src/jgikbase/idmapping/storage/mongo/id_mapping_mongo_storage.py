@@ -226,6 +226,13 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
+    def user_exists(self, user: Username) -> bool:
+        not_none(user, 'user')
+        try:
+            return self._db[_COL_USERS].count_documents({_FLD_USER: user.name}) == 1
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
     def create_namespace(self, namespace_id: NamespaceID) -> None:
         not_none(namespace_id, 'namespace_id')
         try:
