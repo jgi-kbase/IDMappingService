@@ -402,3 +402,38 @@ def fail_remove_namespace_user(idstorage, namespace_id, user, expected):
         fail('expected exception')
     except Exception as got:
         assert_exception_correct(got, expected)
+
+
+def test_set_namespace_publicly_mappable(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), False)
+
+    idstorage.set_namespace_publicly_mappable(NamespaceID('foo'), True)
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), True)
+
+    idstorage.set_namespace_publicly_mappable(NamespaceID('foo'), False)
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), False)
+
+    idstorage.set_namespace_publicly_mappable(NamespaceID('foo'), True)
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), True)
+
+    idstorage.set_namespace_publicly_mappable(NamespaceID('foo'), None)
+    assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), False)
+
+
+def test_set_namespace_publicly_mappable_input_None(idstorage):
+    fail_set_namespace_publicly_mappable(idstorage, None, TypeError('namespace_id cannot be None'))
+
+
+def test_set_namespace_publibly_mappable_no_such_namespace(idstorage):
+    idstorage.create_namespace(NamespaceID('foo'))
+    fail_set_namespace_publicly_mappable(idstorage, NamespaceID('bar'),
+                                         NoSuchNamespaceError('bar'))
+
+
+def fail_set_namespace_publicly_mappable(idstorage, namespace_id, expected):
+    try:
+        idstorage.set_namespace_publicly_mappable(namespace_id, True)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
