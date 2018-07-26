@@ -10,7 +10,7 @@ from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, Inv
     NamespaceExistsError, NoSuchNamespaceError
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 import re
-from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 
 TEST_DB_NAME = 'test_id_mapping'
 
@@ -50,7 +50,7 @@ def test_fail_startup():
 
 def test_collection_names(idstorage, mongo):
     names = mongo.client[TEST_DB_NAME].list_collection_names()
-    expected = set(['users', 'config', 'ns'])
+    expected = set(['users', 'config', 'ns', 'map'])
     if mongo.includes_system_indexes:
         expected.add('system.indexes')
     assert set(names) == expected
@@ -82,6 +82,19 @@ def test_index_namespace(idstorage, mongo):
     expected = {'_id_': {'v': v, 'key': [('_id', 1)], 'ns': 'test_id_mapping.ns'},
                 'nsid_1': {'v': v, 'unique': True, 'key': [('nsid', 1)],
                            'ns': 'test_id_mapping.ns'}}
+    assert indexes == expected
+
+
+def test_index_mappings(idstorage, mongo):
+    v = mongo.index_version
+    indexes = mongo.client[TEST_DB_NAME]['map'].index_information()
+    expected = {'_id_': {'v': v, 'key': [('_id', 1)], 'ns': 'test_id_mapping.map'},
+                'pnsid_1_pid_1_snsid_1_sid_1': {
+                    'v': v,
+                    'unique': True,
+                    'key': [('pnsid', 1), ('pid', 1), ('snsid', 1), ('sid', 1)],
+                    'ns': 'test_id_mapping.map'}
+                }
     assert indexes == expected
 
 
@@ -457,3 +470,84 @@ def test_get_namespaces(idstorage):
          Namespace(NamespaceID('ns2'), False),
          Namespace(NamespaceID('ns3'), False, set([User(AuthsourceID('as'), 'u'),
                                                    User(AuthsourceID('astwo'), 'u3')]))}
+
+
+def test_add_and_get_mapping(idstorage):
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+    # add twice to check for no errors or duplictions
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('foo'), 'bar')) == \
+        (set([ObjectID(NamespaceID('baz'), 'bat')]), set())
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bat')) == \
+        (set(), set([ObjectID(NamespaceID('foo'), 'bar')]))
+
+
+def test_find_no_mappings(idstorage):
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+    idstorage.add_mapping(ObjectID(NamespaceID('baz'), 'bar'), ObjectID(NamespaceID('bar'), 'bat'))
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('bat'), 'bar')) == (set(), set())
+    assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bag')) == (set(), set())
+
+
+def test_find_multiple_mappings(idstorage):
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('bar'), 'bag'))
+
+    idstorage.add_mapping(ObjectID(NamespaceID('bag'), 'arg'), ObjectID(NamespaceID('foo'), 'bar'))
+    idstorage.add_mapping(ObjectID(NamespaceID('bla'), 'urg'), ObjectID(NamespaceID('foo'), 'bar'))
+
+    assert idstorage.find_mappings(ObjectID(NamespaceID('foo'), 'bar'), None) == \
+        (set([ObjectID(NamespaceID('baz'), 'bat'), ObjectID(NamespaceID('bar'), 'bag')]),
+         set([ObjectID(NamespaceID('bag'), 'arg'), ObjectID(NamespaceID('bla'), 'urg')]))
+
+
+def test_filter_mappings(idstorage):
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
+    idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('bar'), 'bag'))
+
+    idstorage.add_mapping(ObjectID(NamespaceID('bag'), 'arg'), ObjectID(NamespaceID('foo'), 'bar'))
+    idstorage.add_mapping(ObjectID(NamespaceID('bla'), 'urg'), ObjectID(NamespaceID('foo'), 'bar'))
+
+    assert idstorage.find_mappings(
+        ObjectID(NamespaceID('foo'), 'bar'),
+        ns_filter=set([NamespaceID('baz'), NamespaceID('bag')])) == \
+        (set([ObjectID(NamespaceID('baz'), 'bat')]), set([ObjectID(NamespaceID('bag'), 'arg')]))
+
+
+def test_add_mapping_fail_input_None(idstorage):
+    oid = ObjectID(NamespaceID('foo'), 'bar')
+    fail_add_mapping(idstorage, None, oid, TypeError('primary_OID cannot be None'))
+    fail_add_mapping(idstorage, oid, None, TypeError('secondary_OID cannot be None'))
+
+
+def test_add_mapping_fail_same_namespace(idstorage):
+    fail_add_mapping(idstorage, ObjectID(NamespaceID('foo'), 'bar'),
+                     ObjectID(NamespaceID('foo'), 'baz'),
+                     ValueError('Namespace IDs cannot be the same'))
+
+
+def fail_add_mapping(idstorage, pOID, sOID, expected):
+    try:
+        idstorage.add_mapping(pOID, sOID)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_find_mappings_fail_input_None(idstorage):
+    oid = ObjectID(NamespaceID('foo'), 'bar')
+    f = set([NamespaceID('foo')])
+    fail_find_mappings(idstorage, None, f, TypeError('oid cannot be None'))
+    fail_find_mappings(idstorage, oid, set([NamespaceID('foo'), None]),
+                       TypeError('None item in ns_filter'))
+
+
+def fail_find_mappings(idstorage, oid, ns_filter, expected):
+    try:
+        idstorage.find_mappings(oid, ns_filter)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)

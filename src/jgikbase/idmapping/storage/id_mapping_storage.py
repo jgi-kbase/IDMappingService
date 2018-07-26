@@ -9,7 +9,7 @@ from jgikbase.idmapping.core.object_id import NamespaceID  # pragma: no cover
 from jgikbase.idmapping.core.user import User  # pragma: no cover
 from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
-from typing import List, Set  # pragma: no cover
+from typing import Iterable, Set, Tuple  # pragma: no cover
 from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
 
 
@@ -147,16 +147,20 @@ class IDMappingStorage:  # pragma: no cover
         """
         Create a mapping from one namespace to another.
         Note that this method does NOT check for the existence of the namespaces.
+        If the mapping already exists, no further action is taken.
 
         :param primary_OID: the primary namespace/ID combination.
         :param secondary_OID: the secondary namespace/ID combination.
+        :raise TypeError: if any of the arguments are None.
+        :raise ValueError: if the namespace IDs are the same.
         """
         raise NotImplementedError()
 
     @_abstractmethod
     def remove_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
         """
-        Remove a mapping from one namespace to another.
+        Remove a mapping from one namespace to another. If the mapping does not exist, no further
+        action is taken.
 
         :param primary_OID: the primary namespace/ID combination.
         :param secondary_OID: the secondary namespace/ID combination.
@@ -164,17 +168,19 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def find_mappings(
-            self,
-            oid: ObjectID,
-            ns_filter: List[NamespaceID]=None
-            ) -> List[ObjectID]:
+    def find_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
+                      ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
-        Find mappings given a namespace / id combination.
-        If the namespace does not exist, no results will be returned.
+        Find mappings given a namespace / id combination. The first set of object IDs in the
+        returned tuple are mappings where the provided object ID is the primary object ID, and
+        the second set in the tuple are mappings where the provided object ID is the
+        secondary object ID.
+        If the namespace or id does not exist, no results will be returned. The namespaces in the
+        filter are ignored if they do not exist.
 
         :param oid: the namespace / id combination to match against.
         :param ns_filter: a list of namespaces with which to filter the results. Only results in
             these namespaces will be returned.
+        :raise TypeError: if the object ID is None or the filter contains None.
         """
         raise NotImplementedError()
