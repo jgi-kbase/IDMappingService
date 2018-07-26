@@ -125,7 +125,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_namespaces(self) -> List[Namespace]:
+    def get_namespaces(self) -> Set[Namespace]:
         """
         Get all the namespaces in the system.
         """

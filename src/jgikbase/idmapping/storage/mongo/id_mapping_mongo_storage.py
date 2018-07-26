@@ -230,10 +230,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
         if not nsdoc:
             raise NoSuchNamespaceError(namespace_id.id)
-        return Namespace(
-            NamespaceID(nsdoc[_FLD_NS_ID]),
-            nsdoc[_FLD_PUB_MAP],
-            self._to_user_set(nsdoc[_FLD_USERS]))
+        return self._to_ns(nsdoc)
 
     def _to_user_set(self, userdocs) -> Set[User]:
         return {User(AuthsourceID(u[_FLD_AUTHSOURCE]), u[_FLD_NAME]) for u in userdocs}
@@ -274,3 +271,16 @@ class IDMappingMongoStorage(_IDMappingStorage):
                 raise NoSuchNamespaceError(namespace_id.id)
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def get_namespaces(self) -> Set[Namespace]:
+        try:
+            nsdocs = self._db[_COL_NAMESPACES].find()
+            return {self._to_ns(nsdoc) for nsdoc in nsdocs}
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def _to_ns(self, nsdoc):
+        return Namespace(
+            NamespaceID(nsdoc[_FLD_NS_ID]),
+            nsdoc[_FLD_PUB_MAP],
+            self._to_user_set(nsdoc[_FLD_USERS]))
