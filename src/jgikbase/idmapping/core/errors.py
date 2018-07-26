@@ -97,6 +97,15 @@ class NoSuchUserError(NoDataException):
         super().__init__(ErrorType.NO_SUCH_USER, message)
 
 
+class NoSuchNamespaceError(NoDataException):
+    """
+    An error thrown when a namespace does not exist.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(ErrorType.NO_SUCH_NAMESPACE, message)
+
+
 class NamespaceExistsError(IDMappingError):
     """
     An error thrown when a namespace already exists.
