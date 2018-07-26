@@ -1,6 +1,6 @@
 from jgikbase.idmapping.core.util import not_none, check_string, no_Nones_in_iterable
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
-from pytest import fail
+from pytest import raises
 from jgikbase.idmapping.core import util
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
 
@@ -15,11 +15,9 @@ def test_not_none_pass():
 
 
 def test_not_none_fail():
-    try:
+    with raises(Exception) as got:
         not_none(None, 'my name')
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, TypeError('my name cannot be None'))
+    assert_exception_correct(got.value, TypeError('my name cannot be None'))
 
 
 def test_check_string_pass():
@@ -48,11 +46,9 @@ def test_check_string_fail():
 
 
 def fail_check_string(string, name, illegal_characters, max_len, expected):
-    try:
+    with raises(Exception) as got:
         check_string(string, name, illegal_characters, max_len)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_no_Nones_in_iterable_pass():
@@ -69,8 +65,6 @@ def test_no_Nones_in_iterable_fail():
 
 
 def fail_no_Nones_in_iterable(iterable, name, expected):
-    try:
+    with raises(Exception) as got:
         no_Nones_in_iterable(iterable, name)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)

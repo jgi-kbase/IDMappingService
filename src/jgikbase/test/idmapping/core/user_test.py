@@ -1,5 +1,5 @@
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
-from pytest import fail
+from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import IllegalUsernameError, MissingParameterError,\
     IllegalParameterError
@@ -26,11 +26,9 @@ def test_authsource_init_fail():
 
 
 def fail_authsource_init(source: str, expected: Exception):
-    try:
+    with raises(Exception) as got:
         AuthsourceID(source)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_authsource_equals():
@@ -71,11 +69,9 @@ def test_username_init_fail():
 
 
 def fail_username_init(username, expected):
-    try:
+    with raises(Exception) as got:
         Username(username)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_username_equals():
@@ -105,11 +101,9 @@ def test_user_init_fail():
 
 
 def fail_user_init(authsource: AuthsourceID, username: Username, expected: Exception):
-    try:
+    with raises(Exception) as got:
         User(authsource, username)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_user_equals():

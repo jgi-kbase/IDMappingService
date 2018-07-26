@@ -1,4 +1,4 @@
-from pytest import fail, fixture
+from pytest import raises, fixture
 from jgikbase.test.idmapping.mongo_controller import MongoController
 from jgikbase.test.idmapping import test_utils
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
@@ -36,11 +36,9 @@ def idstorage(mongo):
 
 
 def test_fail_startup():
-    try:
+    with raises(Exception) as got:
         IDMappingMongoStorage(None)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, TypeError('db cannot be None'))
+    assert_exception_correct(got.value, TypeError('db cannot be None'))
 
 # The following tests ensure that all indexes are created correctly. The collection names
 # are tested so that if a new collection is added the test will fail without altering
@@ -128,11 +126,9 @@ def test_startup_with_2_config_docs(mongo):
         r'test_id_mapping.config( index: |\.\$)schema_1\s+dup key: ' +
         r'\{ : "schema" \}')
 
-    try:
+    with raises(StorageInitException) as got:
         IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
-        fail('expected exception')
-    except StorageInitException as e:
-        assert p.match(e.args[0]) is not None
+    assert p.match(got.value.args[0]) is not None
 
 
 def test_startup_with_extra_corrupt_config_doc(mongo):
@@ -163,11 +159,9 @@ def test_startup_in_update(mongo):
 
 
 def fail_startup(mongo, expected_msg):
-    try:
+    with raises(Exception) as got:
         IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, StorageInitException(expected_msg))
+    assert_exception_correct(got.value, StorageInitException(expected_msg))
 
 
 def test_create_update_and_get_user(idstorage):
@@ -210,11 +204,9 @@ def test_create_user_fail_duplicate_token(idstorage):
 
 
 def fail_create_user(idstorage, user, token, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.create_local_user(user, token)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_update_user_fail_input_None(idstorage):
@@ -238,11 +230,9 @@ def test_update_user_fail_no_such_user(idstorage):
 
 
 def fail_update_user(idstorage, user, token, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.update_local_user(user, token)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_get_user_fail_input_None(idstorage):
@@ -255,21 +245,17 @@ def test_get_user_fail_no_such_token(idstorage):
 
 
 def fail_get_user(idstorage, token, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.get_user(token)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_unparseable_duplicate_key_exception(idstorage):
     # this is a very naughty test reaching into the implementation
-    try:
+    with raises(Exception) as got:
         idstorage._get_duplicate_location(DuplicateKeyError('unmatchable dup key foo'))
-        fail('expected exception')
-    except Exception as got:
         assert_exception_correct(
-            got, IDMappingStorageError('unable to parse duplicate key error: unmatchable '))
+            got.value, IDMappingStorageError('unable to parse duplicate key error: unmatchable '))
 
 
 def test_get_users(idstorage):
@@ -295,11 +281,9 @@ def test_user_exists(idstorage):
 
 
 def test_user_exists_fail(idstorage):
-    try:
+    with raises(Exception) as got:
         idstorage.user_exists(None)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, TypeError('user cannot be None'))
+    assert_exception_correct(got.value, TypeError('user cannot be None'))
 
 
 def test_create_and_get_namespace(idstorage):
@@ -325,11 +309,9 @@ def test_create_namespace_fail_namespace_exists(idstorage):
 
 
 def fail_create_namespace(idstorage, namespace_id, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.create_namespace(namespace_id)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_get_namespace_fail_input_None(idstorage):
@@ -342,11 +324,9 @@ def test_get_namespace_fail_no_such_namespace(idstorage):
 
 
 def fail_get_namespace(idstorage, namespace_id, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.get_namespace(namespace_id)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_add_and_remove_namespace_users(idstorage):
@@ -413,19 +393,15 @@ def test_remove_user_from_namespace_fail_no_such_user(idstorage):
 
 
 def fail_add_namespace_user(idstorage, namespace_id, user, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.add_user_to_namespace(namespace_id, user)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def fail_remove_namespace_user(idstorage, namespace_id, user, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.remove_user_from_namespace(namespace_id, user)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_set_namespace_publicly_mappable(idstorage):
@@ -456,11 +432,9 @@ def test_set_namespace_publicly_mappable_no_such_namespace(idstorage):
 
 
 def fail_set_namespace_publicly_mappable(idstorage, namespace_id, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.set_namespace_publicly_mappable(namespace_id, True)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def set_up_data_for_get_namespaces(idstorage):
@@ -505,11 +479,9 @@ def test_get_namespaces_with_nids(idstorage):
 
 
 def test_get_namespaces_fail(idstorage):
-    try:
+    with raises(Exception) as got:
         idstorage.get_namespaces({NamespaceID('foo'), None})
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, TypeError('None item in nids'))
+    assert_exception_correct(got.value, TypeError('None item in nids'))
 
 
 def test_add_and_get_mapping(idstorage):
@@ -590,11 +562,9 @@ def test_add_mapping_fail_same_namespace(idstorage):
 
 
 def fail_add_mapping(idstorage, pOID, sOID, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.add_mapping(pOID, sOID)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_remove_mapping_fail_input_None(idstorage):
@@ -604,11 +574,9 @@ def test_remove_mapping_fail_input_None(idstorage):
 
 
 def fail_remove_mapping(idstorage, pOID, sOID, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.remove_mapping(pOID, sOID)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_find_mappings_fail_input_None(idstorage):
@@ -620,8 +588,6 @@ def test_find_mappings_fail_input_None(idstorage):
 
 
 def fail_find_mappings(idstorage, oid, ns_filter, expected):
-    try:
+    with raises(Exception) as got:
         idstorage.find_mappings(oid, ns_filter)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)

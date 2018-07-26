@@ -1,5 +1,5 @@
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
-from pytest import fail
+from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
 from jgikbase.idmapping.core.user import AuthsourceID, User
@@ -27,11 +27,9 @@ def test_namespace_id_init_fail():
 
 
 def fail_namespace_id_init(id_: str, expected: Exception):
-    try:
+    with raises(Exception) as got:
         NamespaceID(id_)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_namespace_id_equals():
@@ -79,11 +77,9 @@ def test_namespace_init_fail():
 
 
 def fail_namespace_init(id_, authed_users, expected):
-    try:
+    with raises(Exception) as got:
         Namespace(id_, True, authed_users)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_namespace_equals():
@@ -139,11 +135,9 @@ def test_object_id_init_fail():
 
 
 def fail_object_id_init(namespace_id, obj_id, expected):
-    try:
+    with raises(Exception) as got:
         ObjectID(namespace_id, obj_id)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_object_id_equals():
