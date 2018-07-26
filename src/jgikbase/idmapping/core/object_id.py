@@ -82,11 +82,30 @@ class Namespace:
 class ObjectID:
     '''
     An object ID consisting of a namespace ID and the ID of the data object within the namespace.
+
+    :ivar namespace_id: The ID of the namespace.
+    :ivar id: The ID of the data object.
     '''
 
-    # TODO NOW
+    def __init__(self, namespace_id: NamespaceID, data_id: str) -> None:
+        """
+        Create a new object ID.
 
-    def __init__(self, params):
-        '''
-        Constructor
-        '''
+        :param namespace_id: The ID of the namespace in which the data ID resides.
+        :param data_id: The ID of the data unit, no more than 1000 characters.
+        :raises TypeError: if the namespace ID is None.
+        :raises MissingParameterError: if the data ID is None or whitespace only.
+        :raises IllegalParameterError: if the data ID does not meet the requirements.
+        """
+        not_none(namespace_id, 'namespace_id')
+        check_string(data_id, 'data id', max_len=1000)  # should maybe check for control chars
+        self.namespace_id = namespace_id
+        self.id = data_id
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.namespace_id == self.namespace_id and other.id == self.id
+        return False
+
+    def __hash__(self):
+        return hash((self.namespace_id, self.id))
