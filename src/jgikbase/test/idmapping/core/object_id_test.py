@@ -2,7 +2,7 @@ from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
-from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL
+from jgikbase.idmapping.core.user import AuthsourceID, User
 
 
 def test_namespace_id_init_pass():
@@ -74,7 +74,7 @@ def test_namespace_init_pass():
 def test_namespace_init_fail():
     nsid = NamespaceID('foo')
     fail_namespace_init(None, None, TypeError('namespace_id cannot be None'))
-    fail_namespace_init(nsid, set([User(LOCAL, 'foo'), None]),
+    fail_namespace_init(nsid, set([User(AuthsourceID('as'), 'foo'), None]),
                         TypeError('None item in authed_users'))
 
 
@@ -87,15 +87,16 @@ def fail_namespace_init(id_, authed_users, expected):
 
 
 def test_namespace_equals():
+    asid = AuthsourceID('as')
     assert Namespace(NamespaceID('foo'), True, None) == Namespace(NamespaceID('foo'), True, set())
-    assert Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'foo'), User(LOCAL, 'baz')])) == \
-        Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'foo')]))
+    assert Namespace(NamespaceID('foo'), False, set([User(asid, 'foo'), User(asid, 'baz')])) == \
+        Namespace(NamespaceID('foo'), False, set([User(asid, 'baz'), User(asid, 'foo')]))
 
     assert Namespace(NamespaceID('bar'), True, set()) != Namespace(NamespaceID('foo'), True, set())
     assert Namespace(NamespaceID('foo'), False, set()) != \
         Namespace(NamespaceID('foo'), True, set())
-    assert Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'foo'), User(LOCAL, 'baz')])) != \
-        Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'fob')]))
+    assert Namespace(NamespaceID('foo'), False, set([User(asid, 'foo'), User(asid, 'baz')])) != \
+        Namespace(NamespaceID('foo'), False, set([User(asid, 'baz'), User(asid, 'fob')]))
     assert Namespace(NamespaceID('foo'), False, set()) != NamespaceID('foo')
 
 
@@ -103,19 +104,20 @@ def test_namespace_hash():
     # string hashes will change from instance to instance of the python interpreter, and therefore
     # tests can't be written that directly test the hash value. See
     # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    asid = AuthsourceID('as')
     assert hash(Namespace(NamespaceID('foo'), True, None)) == \
         hash(Namespace(NamespaceID('foo'), True, set()))
     assert hash(Namespace(NamespaceID('foo'), False,
-                          set([User(LOCAL, 'foo'), User(LOCAL, 'baz')]))) == \
-        hash(Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'foo')])))
+                          set([User(asid, 'foo'), User(asid, 'baz')]))) == \
+        hash(Namespace(NamespaceID('foo'), False, set([User(asid, 'baz'), User(asid, 'foo')])))
 
     assert hash(Namespace(NamespaceID('bar'), True, set())) != \
         hash(Namespace(NamespaceID('foo'), True, set()))
     assert hash(Namespace(NamespaceID('foo'), False, set())) != \
         hash(Namespace(NamespaceID('foo'), True, set()))
     assert hash(Namespace(NamespaceID('foo'), False,
-                          set([User(LOCAL, 'foo'), User(LOCAL, 'baz')]))) != \
-        hash(Namespace(NamespaceID('foo'), False, set([User(LOCAL, 'baz'), User(LOCAL, 'fob')])))
+                          set([User(asid, 'foo'), User(asid, 'baz')]))) != \
+        hash(Namespace(NamespaceID('foo'), False, set([User(asid, 'baz'), User(asid, 'fob')])))
 
 
 def test_object_id_init_pass():

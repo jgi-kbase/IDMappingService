@@ -14,8 +14,6 @@ from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, Inv
 from typing import Set, Iterable, Tuple, Dict, Any  # @UnusedImport pydev gets confused here
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 
-# TODO NOW implement remaining methods in superclass
-
 # Testing the (many) catch blocks for the general mongo exception is pretty hard, since it
 # appears as though the mongo clients have a heartbeat, so just stopping mongo might trigger
 # the heartbeat exception rather than the exception you're going for.
@@ -146,8 +144,6 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise StorageInitException('Connection to database failed: ' + str(e)) from e
 
-# may want to just create a Username class and use that in the local user functions
-
     def create_local_user(self, user: Username, token: HashedToken) -> None:
         not_none(user, 'user')
         not_none(token, 'token')
@@ -264,7 +260,10 @@ class IDMappingMongoStorage(_IDMappingStorage):
     def remove_user_from_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
         self._modify_namespace_users(False, namespace_id, admin_user)
 
-    def _modify_namespace_users(self, add, namespace_id, admin_user):
+    def _modify_namespace_users(self, add: bool, namespace_id, admin_user):
+        """
+        :param add: True to add the user to the namespace, False to remove.
+        """
         not_none(namespace_id, 'namespace_id')
         not_none(admin_user, 'admin_user')
         op = '$addToSet' if add else '$pull'

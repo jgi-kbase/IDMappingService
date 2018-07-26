@@ -24,6 +24,21 @@ def fail_hashed_token_init(htoken: str, expected: Exception):
         assert_exception_correct(got, expected)
 
 
+def test_hashed_token_equals():
+    assert HashedToken('foo') == HashedToken('foo')
+    assert HashedToken('foo') != HashedToken('bar')
+    assert HashedToken('foo') != 'foo'
+
+
+def test_hashed_token_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(HashedToken('foo')) == hash(HashedToken('foo'))
+    assert hash(HashedToken('bar')) == hash(HashedToken('bar'))
+    assert hash(HashedToken('foo')) != hash(HashedToken('bar'))
+
+
 def test_token_init_pass():
     t = Token('foo')
     assert t.token == 'foo'
@@ -54,9 +69,9 @@ def test_generate_token():
     assert len(t.token) is 28
 
 
-def isBase64(s):
+def isBase64(s: str):
     try:
-        if base64.b64encode(base64.b64decode(s)) == s:
+        if base64.b64encode(base64.b64decode(s.encode())) == s.encode():
             return True
     except Exception as e:
         print(e)

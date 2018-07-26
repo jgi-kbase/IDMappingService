@@ -13,10 +13,7 @@ class AuthsourceID:
     username when it is given a secret token.
 
     :ivar id: the ID of the authentication source.
-    :ivar LOCAL: a string designating a local authentication source.
     """
-
-    LOCAL = 'local'
 
     _LEGAL_CHARS = 'a-z'
     _MAX_LEN = 20
@@ -40,12 +37,6 @@ class AuthsourceID:
 
     def __hash__(self):
         return hash((self.id,))
-
-
-LOCAL = AuthsourceID(AuthsourceID.LOCAL)
-"""
-A local authentication source (see :class:`jgikbase.idmapping.core.user.AuthsourceID`).
-"""
 
 
 class Username:
