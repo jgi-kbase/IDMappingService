@@ -3,7 +3,7 @@ A MongoDB based storage system for ID mapping.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage as _IDMappingStorage
 from jgikbase.idmapping.core.tokens import HashedToken
-from jgikbase.idmapping.core.user import User, LOCAL
+from jgikbase.idmapping.core.user import User, LOCAL, AuthsourceID
 from pymongo.database import Database
 from jgikbase.idmapping.core.util import not_none
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -52,6 +52,8 @@ _FLD_TOKEN = 'hshtkn'
 _FLD_NS_ID = 'nsid'
 _FLD_PUB_MAP = 'pubmap'
 _FLD_USERS = 'users'
+_FLD_AUTHSOURCE = 'auth'
+_FLD_NAME = 'name'
 
 _INDEXES = {_COL_USERS: [{'idx': _FLD_USER,
                           'kw': {'unique': True},
@@ -122,6 +124,8 @@ class IDMappingMongoStorage(_IDMappingStorage):
                         'v{} of the schema. Aborting startup.'.format(cfgdoc[_FLD_SCHEMA_VERSION]))
         except PyMongoError as e:
             raise StorageInitException('Connection to database failed: ' + str(e)) from e
+
+# may want to just create a Username class and use that in the local user functions
 
     def create_local_user(self, user: User, token: HashedToken) -> None:
         self._check_user_inputs(user, token)
@@ -231,7 +235,30 @@ class IDMappingMongoStorage(_IDMappingStorage):
             nsdoc[_FLD_PUB_MAP],
             self._to_user_set(nsdoc[_FLD_USERS]))
 
-    def _to_user_set(self, userdocs):
-        # TODO implement when add / remove user are implemented
-        userdocs.clear()
-        return set()
+    def _to_user_set(self, userdocs) -> Set[User]:
+        return {User(AuthsourceID(u[_FLD_AUTHSOURCE]), u[_FLD_NAME]) for u in userdocs}
+
+    def add_user_to_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
+        self._modify_namespace_users(True, namespace_id, admin_user)
+
+    def remove_user_from_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
+        self._modify_namespace_users(False, namespace_id, admin_user)
+
+    def _modify_namespace_users(self, add, namespace_id, admin_user):
+        not_none(namespace_id, 'namespace_id')
+        not_none(admin_user, 'admin_user')
+        op = '$addToSet' if add else '$pull'
+        try:
+            res = self._db[_COL_NAMESPACES].update_one(
+                {_FLD_NS_ID: namespace_id.id},
+                {op: {_FLD_USERS: {_FLD_AUTHSOURCE: admin_user.authsource_id.id,
+                                   _FLD_NAME: admin_user.username}}})
+            if res.matched_count != 1:
+                raise NoSuchNamespaceError(namespace_id.id)
+            if res.modified_count != 1:
+                action = 'already administrates' if add else 'does not administrate'
+                ex = UserExistsError if add else NoSuchUserError  # might want diff exceps here
+                raise ex('User {}/{} {} namespace {}'.format(
+                    admin_user.authsource_id.id, admin_user.username, action, namespace_id.id))
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e

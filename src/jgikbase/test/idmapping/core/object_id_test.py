@@ -50,9 +50,14 @@ def test_namespace_id_hash():
 
 
 def test_namespace_init_pass():
-    ns = Namespace(NamespaceID('foo'), True, None)
+    ns = Namespace(NamespaceID('foo'), True)
     assert ns.namespace_id == NamespaceID('foo')
     assert ns.is_publicly_mappable is True
+    assert ns.authed_users == set()
+
+    ns = Namespace(NamespaceID('whee'), False, None)
+    assert ns.namespace_id == NamespaceID('whee')
+    assert ns.is_publicly_mappable is False
     assert ns.authed_users == set()
 
     ns = Namespace(NamespaceID('baz'), True, set())
