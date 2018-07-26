@@ -60,7 +60,7 @@ def test_user_init_pass():
 
 def test_user_init_fail():
     as_ = AuthsourceID('bar')
-    fail_user_init(None, 'foo', MissingParameterError('authsource_id'))
+    fail_user_init(None, 'foo', TypeError('authsource_id cannot be None'))
     fail_user_init(as_, None, MissingParameterError('username'))
     fail_user_init(as_, '       \t      \n   ', MissingParameterError('username'))
     fail_user_init(as_, LONG_STR + 'b', IllegalUsernameError(

@@ -19,7 +19,7 @@ def test_not_none_fail():
         not_none(None, 'my name')
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, MissingParameterError('my name'))
+        assert_exception_correct(got, TypeError('my name cannot be None'))
 
 
 def test_check_string_pass():
@@ -63,7 +63,7 @@ def test_no_Nones_in_iterable_pass():
 
 
 def test_no_Nones_in_iterable_fail():
-    fail_no_Nones_in_iterable(None, 'my name', MissingParameterError('my name'))
+    fail_no_Nones_in_iterable(None, 'my name', TypeError('my name cannot be None'))
     fail_no_Nones_in_iterable(['a', None, 'c'], 'thingy', TypeError('None item in thingy'))
     fail_no_Nones_in_iterable({'a', 'c', None}, 'thingy2', TypeError('None item in thingy2'))
 

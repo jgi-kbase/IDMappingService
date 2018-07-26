@@ -30,7 +30,7 @@ class IDMappingStorage:  # pragma: no cover
         :param token: the user's token after applying a hash function.
         :raises ValueError: if the token already exists in the database or the user is not a
             local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
-        :raises MissingParameterError: if any of the arguments are None.
+        :raises TypeError: if any of the arguments are None.
         :raises UserExistsError: if the user already exists.
         :raises IDMappingStorageError: if an unexpected error occurs.
         """
@@ -45,7 +45,7 @@ class IDMappingStorage:  # pragma: no cover
         :param token: the user's token after applying a hash function.
         :raises ValueError: if the token already exists in the database or the user is not a
             local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
-        :raises MissingParameterError: if any of the arguments are None.
+        :raises TypeError: if any of the arguments are None.
         :raises NoSuchUserError: if the user does not exist.
         :raises IDMappingStorageError: if an unexpected error occurs.
         """
@@ -57,7 +57,7 @@ class IDMappingStorage:  # pragma: no cover
         Get the user, if any, associated with a hashed token.
 
         :param token: the hashed token.
-        :raises MissingParameterError: if the token is None.
+        :raises TypeError: if the token is None.
         :raises InvalidTokenError: if the token does not exist in the storage system.
         :raises IDMappingStorageError: if an unexpected error occurs.
         """
@@ -78,9 +78,8 @@ class IDMappingStorage:  # pragma: no cover
         Create a new namespace. Once created, namespaces cannot be removed.
 
         :param namespace_id: The namespace to create.
-
-        Throws a :class:`jgikbase.idmapping.core.errors.NamespaceExistsError` if the
-        namespace already exists.
+        :raises TypeError: if the namespace ID is None.
+        :raises NamespaceExistsError: if the namespace already exists.
         """
         raise NotImplementedError()
 
@@ -146,8 +145,9 @@ class IDMappingStorage:  # pragma: no cover
         Get a particular namespace.
 
         :param namespace_id: the id of the namespace to get.
+        :raises TypeError: if the namespace ID is None.
+        :raises NoSuchNamespaceError: if the namespace does not exist.
         """
-        # TODO throw no such namespace
         raise NotImplementedError()
 
     @_abstractmethod

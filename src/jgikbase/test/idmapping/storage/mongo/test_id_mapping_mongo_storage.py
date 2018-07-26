@@ -7,7 +7,7 @@ from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
-    MissingParameterError, NamespaceExistsError, NoSuchNamespaceError
+    NamespaceExistsError, NoSuchNamespaceError
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 import re
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
@@ -40,7 +40,7 @@ def test_fail_startup():
         IDMappingMongoStorage(None)
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, MissingParameterError('db'))
+        assert_exception_correct(got, TypeError('db cannot be None'))
 
 # The following tests ensure that all indexes are created correctly. The collection names
 # are tested so that if a new collection is added the test will fail without altering
@@ -173,8 +173,8 @@ def test_create_update_and_get_user(idstorage):
 def test_create_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = User(LOCAL, 'u')
-    fail_create_user(idstorage, None, t, MissingParameterError('user'))
-    fail_create_user(idstorage, u, None, MissingParameterError('token'))
+    fail_create_user(idstorage, None, t, TypeError('user cannot be None'))
+    fail_create_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
 def test_create_user_fail_not_local(idstorage):
@@ -205,8 +205,8 @@ def fail_create_user(idstorage, user, token, expected):
 def test_update_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = User(LOCAL, 'u')
-    fail_update_user(idstorage, None, t, MissingParameterError('user'))
-    fail_update_user(idstorage, u, None, MissingParameterError('token'))
+    fail_update_user(idstorage, None, t, TypeError('user cannot be None'))
+    fail_update_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
 def test_update_user_fail_not_local(idstorage):
@@ -237,7 +237,7 @@ def fail_update_user(idstorage, user, token, expected):
 
 
 def test_get_user_fail_input_None(idstorage):
-    fail_get_user(idstorage, None, MissingParameterError('token'))
+    fail_get_user(idstorage, None, TypeError('token cannot be None'))
 
 
 def test_get_user_fail_no_such_token(idstorage):
@@ -291,7 +291,7 @@ def test_create_and_get_namespace(idstorage):
 
 
 def test_create_namespace_fail_input_None(idstorage):
-    fail_create_namespace(idstorage, None, MissingParameterError('namespace_id'))
+    fail_create_namespace(idstorage, None, TypeError('namespace_id cannot be None'))
 
 
 def test_create_namespace_fail_namespace_exists(idstorage):
@@ -309,7 +309,7 @@ def fail_create_namespace(idstorage, namespace_id, expected):
 
 
 def test_get_namespace_fail_input_None(idstorage):
-    fail_get_namespace(idstorage, None, MissingParameterError('namespace_id'))
+    fail_get_namespace(idstorage, None, TypeError('namespace_id cannot be None'))
 
 
 def test_get_namespace_fail_no_such_namespace(idstorage):
