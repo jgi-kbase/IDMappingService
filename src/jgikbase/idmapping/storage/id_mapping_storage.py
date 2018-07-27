@@ -71,6 +71,16 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
+    def user_exists(self, username: Username) -> bool:
+        '''
+        Check if a user exist in the system. Returns True if so.
+
+        :param username: the username to check.
+        :raises TypeError: if the username is None.
+        '''
+        raise NotImplementedError()
+
+    @_abstractmethod
     def create_namespace(self, namespace_id: NamespaceID) -> None:
         """
         Create a new namespace. Once created, namespaces cannot be removed.

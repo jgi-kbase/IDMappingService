@@ -287,6 +287,21 @@ def test_get_users(idstorage):
                                      Username('mrsentity')}
 
 
+def test_user_exists(idstorage):
+    idstorage.create_local_user(Username('foo'), HashedToken('t1'))
+
+    assert idstorage.user_exists(Username('foo')) is True
+    assert idstorage.user_exists(Username('bar')) is False
+
+
+def test_user_exists_fail(idstorage):
+    try:
+        idstorage.user_exists(None)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, TypeError('user cannot be None'))
+
+
 def test_create_and_get_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
     expected = Namespace(NamespaceID('foo'), False, None)
