@@ -167,22 +167,18 @@ def fail_startup(mongo, expected_msg):
 def test_create_update_and_get_user(idstorage):
     # create
     idstorage.create_local_user(Username('foo'), HashedToken('bar'))
-    u = idstorage.get_user(HashedToken('bar'))
-    assert u.name == 'foo'
+    assert idstorage.get_user(HashedToken('bar')) == Username('foo')
 
     # update
     idstorage.update_local_user(Username('foo'), HashedToken('bat'))
-    u = idstorage.get_user(HashedToken('bat'))
-    assert u.name == 'foo'
+    assert idstorage.get_user(HashedToken('bat')) == Username('foo')
 
     idstorage.update_local_user(Username('foo'), HashedToken('boo'))
-    u = idstorage.get_user(HashedToken('boo'))
-    assert u.name == 'foo'
+    assert idstorage.get_user(HashedToken('boo')) == Username('foo')
 
     # test different user
     idstorage.create_local_user(Username('foo1'), HashedToken('baz'))
-    u = idstorage.get_user(HashedToken('baz'))
-    assert u.name == 'foo1'
+    assert idstorage.get_user(HashedToken('baz')) == Username('foo1')
 
 
 def test_create_user_fail_input_None(idstorage):
