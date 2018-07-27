@@ -65,9 +65,6 @@ def test_username_init_fail():
             IllegalUsernameError('Illegal character in username foo1d' + c + ': ' + c))
 
 
-# TODO NOW use pytest.raises everywhere
-
-
 def fail_username_init(username, expected):
     with raises(Exception) as got:
         Username(username)
