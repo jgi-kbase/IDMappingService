@@ -131,17 +131,22 @@ def test_startup_with_2_config_docs(mongo):
         assert p.match(e.args[0]) is not None
 
 
+def test_startup_with_extra_corrupt_config_doc(mongo):
+    col = mongo.client[TEST_DB_NAME]['config']
+    col.drop()  # clear db independently of creating a idmapping mongo instance
+    col.insert_many([{'schema': 'schema', 'schemaver': 1, 'inupdate': False},
+                     {'schema': 'schemabad', 'schemaver': 2, 'inupdate': False}])
+
+    fail_startup(mongo, 'Multiple config objects found in the database. ' +
+                 'This should not happen, something is very wrong.')
+
+
 def test_startup_with_bad_schema_version(mongo):
     col = mongo.client[TEST_DB_NAME]['config']
     col.drop()  # clear db independently of creating a idmapping mongo instance
     col.insert_one({'schema': 'schema', 'schemaver': 4, 'inupdate': False})
 
-    try:
-        IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, StorageInitException(
-            'Incompatible database schema. Server is v1, DB is v4'))
+    fail_startup(mongo, 'Incompatible database schema. Server is v1, DB is v4')
 
 
 def test_startup_in_update(mongo):
@@ -149,13 +154,16 @@ def test_startup_in_update(mongo):
     col.drop()  # clear db independently of creating a idmapping mongo instance
     col.insert_one({'schema': 'schema', 'schemaver': 1, 'inupdate': True})
 
+    fail_startup(mongo, 'The database is in the middle of an update from v1 of the ' +
+                 'schema. Aborting startup.')
+
+
+def fail_startup(mongo, expected_msg):
     try:
         IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
         fail('expected exception')
     except Exception as got:
-        assert_exception_correct(got, StorageInitException(
-            'The database is in the middle of an update from v1 of the ' +
-            'schema. Aborting startup.'))
+        assert_exception_correct(got, StorageInitException(expected_msg))
 
 
 def test_create_update_and_get_user(idstorage):
