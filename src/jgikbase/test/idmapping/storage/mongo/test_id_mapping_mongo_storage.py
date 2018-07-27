@@ -500,11 +500,22 @@ def test_remove_mapping(idstorage):
     idstorage.add_mapping(ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bat'))
     idstorage.add_mapping(ObjectID(NamespaceID('baz'), 'bar'), ObjectID(NamespaceID('bar'), 'bat'))
 
+    # try removing mappings that don't exist
+    assert idstorage.remove_mapping(
+        ObjectID(NamespaceID('bar'), 'bar'), ObjectID(NamespaceID('baz'), 'bat')) is False
+    assert idstorage.remove_mapping(
+        ObjectID(NamespaceID('foo'), 'baz'), ObjectID(NamespaceID('baz'), 'bat')) is False
+    assert idstorage.remove_mapping(
+        ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('bat'), 'bat')) is False
+    assert idstorage.remove_mapping(
+        ObjectID(NamespaceID('foo'), 'bar'), ObjectID(NamespaceID('baz'), 'bag')) is False
+
     assert idstorage.find_mappings(ObjectID(NamespaceID('foo'), 'bar')) == \
         (set([ObjectID(NamespaceID('baz'), 'bat')]), set())
     assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bar')) == \
         (set([ObjectID(NamespaceID('bar'), 'bat')]), set())
 
+    # remove a mapping that does exist
     assert idstorage.remove_mapping(ObjectID(NamespaceID('foo'), 'bar'),
                                     ObjectID(NamespaceID('baz'), 'bat')) is True
 
@@ -512,6 +523,7 @@ def test_remove_mapping(idstorage):
     assert idstorage.find_mappings(ObjectID(NamespaceID('baz'), 'bar')) == \
         (set([ObjectID(NamespaceID('bar'), 'bat')]), set())
 
+    # try removing the same mapping
     assert idstorage.remove_mapping(ObjectID(NamespaceID('foo'), 'bar'),
                                     ObjectID(NamespaceID('baz'), 'bat')) is False
 

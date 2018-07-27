@@ -5,7 +5,7 @@ from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token, HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import raises
-from jgikbase.test.idmapping.core.tokens_test import isBase64
+from jgikbase.test.idmapping.core.tokens_test import is_base64
 
 
 def test_init_fail():
@@ -66,7 +66,7 @@ def test_create_user():
 
     t = LocalUserHandler(storage).create_user(Username('foo'))
 
-    assert isBase64(t.token) is True
+    assert is_base64(t.token) is True
     assert len(t.token) is 28
 
     assert storage.create_local_user.call_args_list == \
@@ -85,7 +85,7 @@ def test_new_token():
 
     t = LocalUserHandler(storage).new_token(Username('bar'))
 
-    assert isBase64(t.token) is True
+    assert is_base64(t.token) is True
     assert len(t.token) is 28
 
     assert storage.update_local_user.call_args_list == \

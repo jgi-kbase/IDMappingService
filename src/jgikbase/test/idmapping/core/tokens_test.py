@@ -61,11 +61,11 @@ def test_hash_token():
 
 def test_generate_token():
     t = tokens.generate_token()
-    assert isBase64(t.token) is True
+    assert is_base64(t.token) is True
     assert len(t.token) is 28
 
 
-def isBase64(s: str):
+def is_base64(s: str):
     try:
         if base64.b64encode(base64.b64decode(s.encode())) == s.encode():
             return True
