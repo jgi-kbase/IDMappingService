@@ -107,7 +107,7 @@ system.
 
 `[Auth source]` defines the source of authentication information and currently exists to
 provide for the possibility of alternative authentication sources in the future. In the first
-iteration of the service the only authentication source will be `Local`.
+iteration of the service the only authentication source will be `local`.
 
 #### List namespaces
 

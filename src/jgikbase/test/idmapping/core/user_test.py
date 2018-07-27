@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL
+from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL, Username
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import IllegalUsernameError, MissingParameterError,\
@@ -51,29 +51,60 @@ def test_authsource_hash():
     assert hash(AuthsourceID('foo')) != hash(AuthsourceID('bar'))
 
 
+def test_username_init_pass():
+    u = Username(LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
+    assert u.name == LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789'
+
+
+def test_username_init_fail():
+    fail_username_init(None, MissingParameterError('username'))
+    fail_username_init('       \t      \n   ', MissingParameterError('username'))
+    fail_username_init(LONG_STR + 'b', IllegalUsernameError(
+        'username ' + LONG_STR + 'b exceeds maximum length of 100'))
+    for c in '0123456789':
+        fail_username_init(c + 'foo',
+                           IllegalUsernameError('username ' + c + 'foo must start with a letter'))
+    for c in '*&@-+\n\t~_':
+        fail_username_init(
+            'foo1d' + c,
+            IllegalUsernameError('Illegal character in username foo1d' + c + ': ' + c))
+
+
+def fail_username_init(username, expected):
+    try:
+        Username(username)
+        fail('expected exception')
+    except Exception as got:
+        assert_exception_correct(got, expected)
+
+
+def test_username_equals():
+    assert Username('foo') == Username('foo')
+    assert Username('foo') != Username('bar')
+    assert Username('foo') != 'foo'
+
+
+def test_username_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(Username('foo')) == hash(Username('foo'))
+    assert hash(Username('bar')) == hash(Username('bar'))
+    assert hash(Username('foo')) != hash(Username('bar'))
+
+
 def test_user_init_pass():
-    u = User(AuthsourceID('foo'), LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
-    # yuck, but don't want to add a hash fn to authsource unless necessary
+    u = User(AuthsourceID('foo'), Username('bar'))
     assert u.authsource_id == AuthsourceID('foo')
-    assert u.username == LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789'
+    assert u.username == Username('bar')
 
 
 def test_user_init_fail():
-    as_ = AuthsourceID('bar')
-    fail_user_init(None, 'foo', TypeError('authsource_id cannot be None'))
-    fail_user_init(as_, None, MissingParameterError('username'))
-    fail_user_init(as_, '       \t      \n   ', MissingParameterError('username'))
-    fail_user_init(as_, LONG_STR + 'b', IllegalUsernameError(
-        'username ' + LONG_STR + 'b exceeds maximum length of 100'))
-    for c in '0123456789':
-        fail_user_init(as_, c + 'foo',
-                       IllegalUsernameError('username ' + c + 'foo must start with a letter'))
-    for c in '*&@-+\n\t~_':
-        fail_user_init(as_, 'foo1d' + c,
-                       IllegalUsernameError('Illegal character in username foo1d' + c + ': ' + c))
+    fail_user_init(None, Username('foo'), TypeError('authsource_id cannot be None'))
+    fail_user_init(AuthsourceID('bar'), None, TypeError('username cannot be None'))
 
 
-def fail_user_init(authsource: AuthsourceID, username: str, expected: Exception):
+def fail_user_init(authsource: AuthsourceID, username: Username, expected: Exception):
     try:
         User(authsource, username)
         fail('expected exception')
@@ -82,17 +113,21 @@ def fail_user_init(authsource: AuthsourceID, username: str, expected: Exception)
 
 
 def test_user_equals():
-    assert User(AuthsourceID('foo'), 'baz') == User(AuthsourceID('foo'), 'baz')
-    assert User(AuthsourceID('foo'), 'baz') != User(AuthsourceID('bar'), 'baz')
-    assert User(AuthsourceID('foo'), 'baz') != User(AuthsourceID('foo'), 'bar')
-    assert User(AuthsourceID('foo'), 'baz') != AuthsourceID('foo')
+    assert User(AuthsourceID('foo'), Username('baz')) == User(AuthsourceID('foo'), Username('baz'))
+    assert User(AuthsourceID('foo'), Username('baz')) != User(AuthsourceID('bar'), Username('baz'))
+    assert User(AuthsourceID('foo'), Username('baz')) != User(AuthsourceID('foo'), Username('bar'))
+    assert User(AuthsourceID('foo'), Username('baz')) != AuthsourceID('foo')
 
 
 def test_user_hash():
     # string hashes will change from instance to instance of the python interpreter, and therefore
     # tests can't be written that directly test the hash value. See
     # https://docs.python.org/3/reference/datamodel.html#object.__hash__
-    assert hash(User(AuthsourceID('foo'), 'bar')) == hash(User(AuthsourceID('foo'), 'bar'))
-    assert hash(User(AuthsourceID('bar'), 'foo')) == hash(User(AuthsourceID('bar'), 'foo'))
-    assert hash(User(AuthsourceID('baz'), 'foo')) != hash(User(AuthsourceID('bar'), 'foo'))
-    assert hash(User(AuthsourceID('bar'), 'fob')) != hash(User(AuthsourceID('bar'), 'foo'))
+    assert hash(User(AuthsourceID('foo'), Username('bar'))) == hash(
+        User(AuthsourceID('foo'), Username('bar')))
+    assert hash(User(AuthsourceID('bar'), Username('foo'))) == hash(
+        User(AuthsourceID('bar'), Username('foo')))
+    assert hash(User(AuthsourceID('baz'), Username('foo'))) != hash(
+        User(AuthsourceID('bar'), Username('foo')))
+    assert hash(User(AuthsourceID('bar'), Username('fob'))) != hash(
+        User(AuthsourceID('bar'), Username('foo')))

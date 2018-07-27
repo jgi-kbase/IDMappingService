@@ -6,7 +6,7 @@ Interface for a storage system for ID mappings.
 from abc import abstractmethod as _abstractmethod  # pragma: no cover
 from abc import ABCMeta as _ABCMeta  # pragma: no cover
 from jgikbase.idmapping.core.object_id import NamespaceID  # pragma: no cover
-from jgikbase.idmapping.core.user import User  # pragma: no cover
+from jgikbase.idmapping.core.user import User, Username  # pragma: no cover
 from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
 from typing import Iterable, Set, Tuple  # pragma: no cover
@@ -20,16 +20,15 @@ class IDMappingStorage:  # pragma: no cover
     __metaclass__ = _ABCMeta
 
     @_abstractmethod
-    def create_local_user(self, user: User, token: HashedToken) -> None:
+    def create_local_user(self, user: Username, token: HashedToken) -> None:
         """
         Create a user.
         Once created, users cannot be removed. The client programmer is responsible for
         ensuring that the token provided does not already exist in the database.
 
-        :param user: the user, which must be in the 'local' user scope.
+        :param user: the user.
         :param token: the user's token after applying a hash function.
-        :raises ValueError: if the token already exists in the database or the user is not a
-            local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
+        :raises ValueError: if the token already exists in the database.
         :raises TypeError: if any of the arguments are None.
         :raises UserExistsError: if the user already exists.
         :raises IDMappingStorageError: if an unexpected error occurs.
@@ -37,14 +36,13 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def update_local_user(self, user: User, token: HashedToken) -> None:
+    def update_local_user(self, user: Username, token: HashedToken) -> None:
         """
         Update an existing user's token.
 
-        :param user: the user, which must be in the 'local' user scope.
+        :param user: the user.
         :param token: the user's token after applying a hash function.
-        :raises ValueError: if the token already exists in the database or the user is not a
-            local user (e.g. uses the :const:`jgikbase.idmapping.core.user.LOCAL` authsource).
+        :raises ValueError: if the token already exists in the database.
         :raises TypeError: if any of the arguments are None.
         :raises NoSuchUserError: if the user does not exist.
         :raises IDMappingStorageError: if an unexpected error occurs.
@@ -52,7 +50,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_user(self, token: HashedToken) -> User:
+    def get_user(self, token: HashedToken) -> Username:
         """
         Get the user, if any, associated with a hashed token.
 
@@ -64,7 +62,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_users(self) -> Set[User]:
+    def get_users(self) -> Set[Username]:
         """
         Get all the users in the system.
 

@@ -48,6 +48,39 @@ A local authentication source (see :class:`jgikbase.idmapping.core.user.Authsour
 """
 
 
+class Username:
+    """
+    The name of a user.
+
+    :ivar name: the username.
+    """
+
+    def __init__(self, username: str) -> None:
+        """
+        Create a new user name.
+
+        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
+            than 100 characters.
+        :raises MissingParameterError: if the user name is None or whitespace only.
+        :raises IllegalUsernameError: if the user name does not meet the requirements.
+        """
+        try:
+            check_string(username, 'username', 'a-z0-9', 100)
+        except IllegalParameterError as e:
+            raise IllegalUsernameError(e.message) from e
+        if not username[0].isalpha():
+            raise IllegalUsernameError('username {} must start with a letter'.format(username))
+        self.name = username
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.name == self.name
+        return False
+
+    def __hash__(self):
+        return hash((self.name,))
+
+
 class User:
     """
     A user for the ID mapping system. Consists of a authentication source and a user name.
@@ -58,27 +91,16 @@ class User:
     :ivar username: the user name.
     """
 
-    _LEGAL_CHARS = 'a-z0-9'
-    _MAX_LEN = 100
-
-    def __init__(self, authsource_id: AuthsourceID, username: str) -> None:
+    def __init__(self, authsource_id: AuthsourceID, username: Username) -> None:
         """
         Create a new user.
 
         :param authsource_id: The authentication source for the user.
-        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
-            than 100 characters.
-        :raises TypeError: if the authsource ID is None.
-        :raises MissingParameterError: if the user name is None or whitespace only.
-        :raises IllegalUsernameError: if the user name does not meet the requirements.
+        :param username: The name of the user.
+        :raises TypeError: if any of the arguments are None.
         """
         not_none(authsource_id, 'authsource_id')
-        try:
-            check_string(username, 'username', self._LEGAL_CHARS, self._MAX_LEN)
-        except IllegalParameterError as e:
-            raise IllegalUsernameError(e.message) from e
-        if not username[0].isalpha():
-            raise IllegalUsernameError('username {} must start with a letter'.format(username))
+        not_none(username, 'username')
         self.authsource_id = authsource_id
         self.username = username
 
