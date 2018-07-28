@@ -44,8 +44,7 @@ class UserHandler:  # pragma: no cover
 class LocalUserHandler(UserHandler):
     """
     An implementation of :class:`jgikbase.idmapping.core.user_handler.UserHandler` for users
-    stored in the local database, e.g. with the :const:`jgikbase.idmapping.core.user.LOCAL`
-    authsource.
+    stored in the local database.
     """
 
     _LOCAL = AuthsourceID('local')

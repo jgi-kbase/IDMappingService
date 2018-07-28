@@ -56,6 +56,14 @@ class Token:
         '''
         return HashedToken(hashlib.sha256(self.token.encode()).hexdigest())
 
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.token == self.token
+        return False
+
+    def __hash__(self):
+        return hash((self.token,))
+
 
 def generate_token() -> Token:
     '''

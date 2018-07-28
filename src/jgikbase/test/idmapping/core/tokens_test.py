@@ -59,6 +59,21 @@ def test_hash_token():
     assert ht.token_hash == '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae'
 
 
+def test_token_equals():
+    assert Token('foo') == Token('foo')
+    assert Token('foo') != Token('bar')
+    assert Token('foo') != 'foo'
+
+
+def test_token_hash():
+    # string hashes will change from instance to instance of the python interpreter, and therefore
+    # tests can't be written that directly test the hash value. See
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
+    assert hash(Token('foo')) == hash(Token('foo'))
+    assert hash(Token('bar')) == hash(Token('bar'))
+    assert hash(Token('foo')) != hash(Token('bar'))
+
+
 def test_generate_token():
     t = tokens.generate_token()
     assert is_base64(t.token) is True
