@@ -18,6 +18,8 @@ class NamespaceID:
     :ivar id: the namespace ID.
     """
 
+    __slots__ = ['id']
+
     def __init__(self, id_: str) -> None:
         '''
         Create a namespace ID.
@@ -86,6 +88,8 @@ class ObjectID:
     :ivar namespace_id: The ID of the namespace.
     :ivar id: The ID of the data object.
     '''
+
+    __slots__ = ['namespace_id', 'id']
 
     def __init__(self, namespace_id: NamespaceID, data_id: str) -> None:
         """
