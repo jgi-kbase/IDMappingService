@@ -219,7 +219,7 @@ RETURNS:
 ]
 ```
 
-Any unusual characters, but especially slashes, in the IDs must be url-escaped.
+Any unusual characters, but especially slashes, in the ID must be url-escaped.
 
 #### Delete a mapping
 
