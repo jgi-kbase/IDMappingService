@@ -183,16 +183,17 @@ class IDMappingStorage:  # pragma: no cover
     def find_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
                       ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
-        Find mappings given a namespace / id combination. The first set of object IDs in the
-        returned tuple are mappings where the provided object ID is the primary object ID, and
-        the second set in the tuple are mappings where the provided object ID is the
-        secondary object ID.
+        Find mappings given a namespace / id combination.
+
         If the namespace or id does not exist, no results will be returned. The namespaces in the
         filter are ignored if they do not exist.
 
         :param oid: the namespace / id combination to match against.
         :param ns_filter: a list of namespaces with which to filter the results. Only results in
             these namespaces will be returned.
+        :returns: a tuple of sets of object IDs. The first set in the tuple contains mappings
+            where the provided object ID is the primary object ID, and the second set contains
+            mappings where the provided object ID is the secondary object ID.
         :raise TypeError: if the object ID is None or the filter contains None.
         """
         raise NotImplementedError()
