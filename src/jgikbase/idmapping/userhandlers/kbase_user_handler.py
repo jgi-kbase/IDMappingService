@@ -20,8 +20,6 @@ class KBaseUserHandler(UserHandler):
     :ivar auth_url: The KBase authentication service url.
     """
 
-    # TODO NOW caching
-
     _KBASE = AuthsourceID('kbase')
 
     def __init__(self, kbase_auth_url: str, kbase_token: Token) -> None:

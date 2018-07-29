@@ -50,6 +50,8 @@ class Namespace:
     :ivar authed_users: users that are authorized to administer the namespace.
     """
 
+    # TODO NS add user def/updatable attributes: free text desc, source (kbase/jgi), env (ci), db.
+
     def __init__(
             self,
             namespace_id: NamespaceID,
