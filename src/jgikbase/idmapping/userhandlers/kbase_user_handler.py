@@ -7,6 +7,7 @@ from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests
 from jgikbase.idmapping.core.errors import InvalidTokenError
+from typing import Tuple
 
 
 # WARNING - this is tested by mocking the requests library. The test suite never tests it against
@@ -22,20 +23,26 @@ class KBaseUserHandler(UserHandler):
 
     _KBASE = AuthsourceID('kbase')
 
-    def __init__(self, kbase_auth_url: str, kbase_token: Token) -> None:
+    def __init__(self, kbase_auth_url: str, kbase_token: Token, kbase_system_admin: str) -> None:
         '''
         Create the handler.
 
         :param kbase_auth_url: The url for the KBase authentication service.
         :param kbase_token: A valid KBase user token. This is used for check the validity of
             user names.
+        :param kbase_system_admin: the custom role the user must possess in the KBase auth
+            system to be considered an admin of the ID mapping service.
         '''
         not_none(kbase_auth_url, 'kbase_auth_url')
         not_none(kbase_token, 'kbase_token')
+        not_none(kbase_system_admin, 'kbase_system_admin')
         if not kbase_auth_url.endswith('/'):
             kbase_auth_url += '/'
         self.auth_url = kbase_auth_url
         self._token = kbase_token
+        self._kbase_system_admin = kbase_system_admin
+        # could get the server time from the auth server here and adjust for clock skew
+        # probably not worth the trouble
 
     def get_authsource_id(self) -> AuthsourceID:
         return self._KBASE
@@ -55,13 +62,17 @@ class KBaseUserHandler(UserHandler):
             # worry about it later.
             raise IOError('Error from KBase auth server: ' + j['error']['message'])
 
-    def get_user(self, token: Token) -> User:
+    def get_user(self, token: Token) -> Tuple[User, bool]:
         not_none(token, 'token')
         r = requests.get(self.auth_url + 'api/V2/token', headers={'Authorization': token.token})
         self._check_error(r)
-        j = r.json()
+        tokenres = r.json()
         # other keys: expires, cachefor
-        return User(self._KBASE, Username(j['user']))
+        r = requests.get(self.auth_url + 'api/V2/me', headers={'Authorization': token.token})
+        self._check_error(r)
+        mres = r.json()
+        return (User(self._KBASE, Username(tokenres['user'])),
+                self._kbase_system_admin in mres['customroles'])
 
     def is_valid_user(self, username: Username) -> bool:
         not_none(username, 'username')

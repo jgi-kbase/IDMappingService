@@ -4,7 +4,7 @@ from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.util import not_none
 from jgikbase.idmapping.core import tokens
-from typing import Dict
+from typing import Dict, Tuple
 
 
 class UserHandler:  # pragma: no cover
@@ -20,17 +20,21 @@ class UserHandler:  # pragma: no cover
         '''
         raise NotImplementedError()
 
+    # TODO CACHE return absolute & relative cache expiration times
     @_abstractmethod
-    def get_user(self, token: Token) -> User:
+    def get_user(self, token: Token) -> Tuple[User, bool]:
         '''
         Get a user given a token.
 
         :param token: the token.
         :raises InvalidTokenError: if the token is invalid.
         :raises TypeError: if the token is None.
+        :returns: a tuple of the user corresponding to the token, and a boolean describing
+            whether the handler claims they are a system admin (True) or not (False).
         '''
         raise NotImplementedError()
 
+    # TODO CACHE return absolute & relative cache expiration times
     @_abstractmethod
     def is_valid_user(self, username: Username) -> bool:
         '''
@@ -61,10 +65,10 @@ class LocalUserHandler(UserHandler):
     def get_authsource_id(self) -> AuthsourceID:
         return self._LOCAL
 
-    def get_user(self, token: Token) -> User:
+    def get_user(self, token: Token) -> Tuple[User, bool]:
         not_none(token, 'token')
-        # TODO ADMIN return admin status
-        return User(self._LOCAL, self._store.get_user(token.get_hashed_token())[0])
+        username, admin = self._store.get_user(token.get_hashed_token())
+        return (User(self._LOCAL, username), admin)
 
     def is_valid_user(self, username: Username) -> bool:
         not_none(username, 'username')

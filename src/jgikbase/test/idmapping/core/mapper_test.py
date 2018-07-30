@@ -172,7 +172,7 @@ def check_set_namespace_publicly_mappable(pub_value):
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
-    handler.get_user.return_value = User(AuthsourceID('asone'), Username('u'))
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False)
     storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
         User(AuthsourceID('astwo'), Username('u2')),
         User(AuthsourceID('asone'), Username('u')),
@@ -222,7 +222,7 @@ def test_set_namespace_publicly_mappable_fail_unauthed():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
-    handler.get_user.return_value = User(AuthsourceID('asone'), Username('u'))
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False)
     storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
         User(AuthsourceID('asone'), Username('u2')),
         User(AuthsourceID('asthree'), Username('u'))]))
