@@ -4,16 +4,14 @@ from jgikbase.idmapping.core.user_handler import LocalUserHandler
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token, HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
-from pytest import fail, raises
+from pytest import raises
 from jgikbase.test.idmapping.core.tokens_test import isBase64
 
 
 def test_init_fail():
-    try:
+    with raises(Exception) as got:
         LocalUserHandler(None)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, TypeError('storage cannot be None'))
+    assert_exception_correct(got.value, TypeError('storage cannot be None'))
 
 
 def test_get_authsource():

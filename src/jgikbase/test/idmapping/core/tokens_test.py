@@ -1,5 +1,5 @@
 from jgikbase.idmapping.core.tokens import HashedToken, Token
-from pytest import fail
+from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import MissingParameterError
 from jgikbase.idmapping.core import tokens
@@ -17,11 +17,9 @@ def test_hashed_token_init_fail():
 
 
 def fail_hashed_token_init(htoken: str, expected: Exception):
-    try:
+    with raises(Exception) as got:
         HashedToken(htoken)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_hashed_token_equals():
@@ -50,11 +48,9 @@ def test_token_init_fail():
 
 
 def fail_token_init(token: str, expected: Exception):
-    try:
+    with raises(Exception) as got:
         Token(token)
-        fail('expected exception')
-    except Exception as got:
-        assert_exception_correct(got, expected)
+    assert_exception_correct(got.value, expected)
 
 
 def test_hash_token():
