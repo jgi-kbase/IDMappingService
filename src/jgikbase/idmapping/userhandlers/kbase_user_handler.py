@@ -60,6 +60,7 @@ class KBaseUserHandler(UserHandler):
             try:
                 j = r.json()
             except Exception as e:  # @UnusedVariable
+                # TODO LOGGING log page text
                 raise IOError('Non-JSON response from KBase auth server, status code: ' +
                               str(r.status_code))
             # assume that if we get json then at least this is the auth server and we can
