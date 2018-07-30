@@ -21,18 +21,27 @@ class IDMapper:
     creating and deleting mappings, as well as listing namespaces and mappings.
     """
 
-    def __init__(self, user_handlers: Set[UserHandler], storage: IDMappingStorage) -> None:
+    def __init__(
+            self,
+            user_handlers: Set[UserHandler],
+            admin_authsources: Set[AuthsourceID],
+            storage: IDMappingStorage
+            ) -> None:
         """
         Create the mapper.
 
         :param user_handlers: the set of user handlers to query when looking up user names from
             tokens or checking that a provided user name is valid.
+        :param admin_authsources: the set of auth sources that are valid system admin sources.
+            The admin state returned by other auth sources will be ignored.
         :param storage: the mapping storage system.
         """
         no_Nones_in_iterable(user_handlers, 'user_handlers')
+        no_Nones_in_iterable(admin_authsources, 'admin_authsources')
         not_none(storage, 'storage')
         self._storage = storage
         self._handlers = {handler.get_authsource_id(): handler for handler in user_handlers}
+        self._admin_authsources = admin_authsources
 
     def _check_authsource_id(self, authsource_id):
         """
@@ -50,9 +59,12 @@ class IDMapper:
         """
         not_none(token, 'token')
         self._check_authsource_id(authsource_id)
+        if authsource_id not in self._admin_authsources:
+            raise UnauthorizedError(('Auth source {} is not configured as a provider of ' +
+                                    'system administration status').format(authsource_id.id))
         # TODO CACHE cache get_user results
         user, admin = self._handlers[authsource_id].get_user(token)
-        if not admin:  # TODO ADMIN check in allowed list of authsources
+        if not admin:
             raise UnauthorizedError('User {}/{} is not a system administrator'.format(
                 user.authsource_id.id, user.username.name))
 
