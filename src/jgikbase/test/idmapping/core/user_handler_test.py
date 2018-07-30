@@ -21,7 +21,7 @@ def test_get_authsource():
 
 def test_get_user():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    storage.get_user.return_value = Username('bar')
+    storage.get_user.return_value = (Username('bar'), False)
 
     assert LocalUserHandler(storage).get_user(Token('foo')) == \
         User(AuthsourceID('local'), Username('bar'))
@@ -88,7 +88,7 @@ def test_new_token():
     assert is_base64(t.token) is True
     assert len(t.token) is 28
 
-    assert storage.update_local_user.call_args_list == \
+    assert storage.update_local_user_token.call_args_list == \
         [((Username('bar'), t.get_hashed_token()), {})]
 
 
@@ -101,8 +101,9 @@ def test_new_token_fail():
 
 def test_get_users():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    storage.get_users.return_value = {Username('foo'), Username('bar')}
+    storage.get_users.return_value = {Username('foo'): False, Username('bar'): True}
 
-    assert LocalUserHandler(storage).get_users() == {Username('foo'), Username('bar')}
+    assert LocalUserHandler(storage).get_users() == {Username('foo'): False,
+                                                     Username('bar'): True}
 
     assert storage.get_users.call_args_list == [((), {})]

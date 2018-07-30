@@ -111,7 +111,7 @@ def test_startup_and_check_config_doc(idstorage, mongo):
     # check startup works with cfg object in place
     idmap = IDMappingMongoStorage(mongo.client[TEST_DB_NAME])
     idmap.create_local_user(Username('foo'), HashedToken('t'))
-    assert idmap.get_user(HashedToken('t')) == Username('foo')
+    assert idmap.get_user(HashedToken('t')) == (Username('foo'), False)
 
 
 def test_startup_with_2_config_docs(mongo):
@@ -167,18 +167,18 @@ def fail_startup(mongo, expected_msg):
 def test_create_update_and_get_user(idstorage):
     # create
     idstorage.create_local_user(Username('foo'), HashedToken('bar'))
-    assert idstorage.get_user(HashedToken('bar')) == Username('foo')
+    assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), False)
 
     # update
-    idstorage.update_local_user(Username('foo'), HashedToken('bat'))
-    assert idstorage.get_user(HashedToken('bat')) == Username('foo')
+    idstorage.update_local_user_token(Username('foo'), HashedToken('bat'))
+    assert idstorage.get_user(HashedToken('bat')) == (Username('foo'), False)
 
-    idstorage.update_local_user(Username('foo'), HashedToken('boo'))
-    assert idstorage.get_user(HashedToken('boo')) == Username('foo')
+    idstorage.update_local_user_token(Username('foo'), HashedToken('boo'))
+    assert idstorage.get_user(HashedToken('boo')) == (Username('foo'), False)
 
     # test different user
     idstorage.create_local_user(Username('foo1'), HashedToken('baz'))
-    assert idstorage.get_user(HashedToken('baz')) == Username('foo1')
+    assert idstorage.get_user(HashedToken('baz')) == (Username('foo1'), False)
 
 
 def test_create_user_fail_input_None(idstorage):
@@ -205,29 +205,28 @@ def fail_create_user(idstorage, user, token, expected):
     assert_exception_correct(got.value, expected)
 
 
-def test_update_user_fail_input_None(idstorage):
+def test_update_user_token_fail_input_None(idstorage):
     t = HashedToken('t')
     u = Username('u')
-    fail_update_user(idstorage, None, t, TypeError('username cannot be None'))
-    fail_update_user(idstorage, u, None, TypeError('token cannot be None'))
+    fail_update_user_token(idstorage, None, t, TypeError('username cannot be None'))
+    fail_update_user_token(idstorage, u, None, TypeError('token cannot be None'))
 
 
-def test_update_user_fail_duplicate_token(idstorage):
+def test_update_user_token_fail_duplicate_token(idstorage):
     idstorage.create_local_user(Username('u'), HashedToken('t'))
     idstorage.create_local_user(Username('u1'), HashedToken('t1'))
-    fail_update_user(idstorage, Username('u1'), HashedToken('t'),
-                     ValueError('The provided token already exists in the database'))
+    fail_update_user_token(idstorage, Username('u1'), HashedToken('t'),
+                           ValueError('The provided token already exists in the database'))
 
 
-def test_update_user_fail_no_such_user(idstorage):
+def test_update_user_token_fail_no_such_user(idstorage):
     idstorage.create_local_user(Username('u'), HashedToken('t'))
-    fail_update_user(idstorage, Username('u1'), HashedToken('t1'),
-                     NoSuchUserError('u1'))
+    fail_update_user_token(idstorage, Username('u1'), HashedToken('t1'), NoSuchUserError('u1'))
 
 
-def fail_update_user(idstorage, user, token, expected):
+def fail_update_user_token(idstorage, user, token, expected):
     with raises(Exception) as got:
-        idstorage.update_local_user(user, token)
+        idstorage.update_local_user_token(user, token)
     assert_exception_correct(got.value, expected)
 
 
@@ -246,6 +245,43 @@ def fail_get_user(idstorage, token, expected):
     assert_exception_correct(got.value, expected)
 
 
+def test_set_user_as_admin(idstorage):
+    idstorage.create_local_user(Username('foo'), HashedToken('bar'))
+
+    assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), False)
+
+    # set twice to check 2nd is no-op
+    idstorage.set_local_user_as_admin(Username('foo'), True)
+    idstorage.set_local_user_as_admin(Username('foo'), True)
+
+    assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), True)
+
+    idstorage.set_local_user_as_admin(Username('foo'), False)
+    idstorage.set_local_user_as_admin(Username('foo'), False)
+
+    assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), False)
+
+    idstorage.set_local_user_as_admin(Username('foo'), True)
+    idstorage.set_local_user_as_admin(Username('foo'), None)
+
+    assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), False)
+
+
+def set_user_as_admin_fail_None_input(idstorage):
+    fail_set_user_as_admin(idstorage, None, TypeError('username cannot be None'))
+
+
+def set_user_as_admin_fail_no_such_user(idstorage):
+    idstorage.create_local_user(Username('bar'))
+    fail_set_user_as_admin(idstorage, Username('foo'), NoSuchUserError('foo'))
+
+
+def fail_set_user_as_admin(idstorage, user, expected):
+    with raises(Exception) as got:
+        idstorage.set_user_as_admin(user, True)
+    assert_exception_correct(got.value, expected)
+
+
 def test_unparseable_duplicate_key_exception(idstorage):
     # this is a very naughty test reaching into the implementation
     with raises(Exception) as got:
@@ -255,18 +291,21 @@ def test_unparseable_duplicate_key_exception(idstorage):
 
 
 def test_get_users(idstorage):
-    assert idstorage.get_users() == set()
+    assert idstorage.get_users() == {}
 
     idstorage.create_local_user(Username('foo'), HashedToken('t1'))
 
-    assert idstorage.get_users() == {Username('foo')}
+    assert idstorage.get_users() == {Username('foo'): False}
 
     idstorage.create_local_user(Username('mrsentity'), HashedToken('t2'))
     idstorage.create_local_user(Username('mrsenigma'), HashedToken('t3'))
-    idstorage.update_local_user(Username('mrsenigma'), HashedToken('t4'))
+    idstorage.update_local_user_token(Username('mrsenigma'), HashedToken('t4'))
 
-    assert idstorage.get_users() == {Username('foo'), Username('mrsenigma'),
-                                     Username('mrsentity')}
+    idstorage.set_local_user_as_admin(Username('foo'), True)
+    idstorage.set_local_user_as_admin(Username('mrsenigma'), True)
+
+    assert idstorage.get_users() == {Username('foo'): True, Username('mrsenigma'): True,
+                                     Username('mrsentity'): False}
 
 
 def test_user_exists(idstorage):
