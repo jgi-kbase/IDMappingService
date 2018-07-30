@@ -25,6 +25,14 @@ class HashedToken:
         check_string(token_hash, 'token_hash')
         self.token_hash = token_hash
 
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return other.token_hash == self.token_hash
+        return False
+
+    def __hash__(self):
+        return hash((self.token_hash,))
+
 
 class Token:
     """
@@ -33,7 +41,7 @@ class Token:
     :ivar token: the token.
     """
 
-    def __init__(self, token) -> None:
+    def __init__(self, token: str) -> None:
         '''
         Create a token.
         :param token: the token string.
@@ -53,4 +61,4 @@ def generate_token() -> Token:
     '''
     Generates a 160 bit token in base64 format.
     '''
-    return Token(base64.b64encode(secrets.token_bytes(20)))
+    return Token(base64.b64encode(secrets.token_bytes(20)).decode())

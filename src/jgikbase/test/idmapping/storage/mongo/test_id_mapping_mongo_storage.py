@@ -2,7 +2,7 @@ from pytest import fail, fixture
 from jgikbase.test.idmapping.mongo_controller import MongoController
 from jgikbase.test.idmapping import test_utils
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
-from jgikbase.idmapping.core.user import User, AuthsourceID, LOCAL, Username
+from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.core.tokens import HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pymongo.errors import DuplicateKeyError
@@ -371,14 +371,14 @@ def test_add_and_remove_namespace_users(idstorage):
 
 
 def test_add_user_to_namespace_fail_inputs_None(idstorage):
-    u = User(LOCAL, 'u')
+    u = User(AuthsourceID('as'), 'u')
     n = NamespaceID('n')
     fail_add_namespace_user(idstorage, None, u, TypeError('namespace_id cannot be None'))
     fail_add_namespace_user(idstorage, n, None, TypeError('admin_user cannot be None'))
 
 
 def test_remove_user_from_namespace_fail_inputs_None(idstorage):
-    u = User(LOCAL, 'u')
+    u = User(AuthsourceID('as'), 'u')
     n = NamespaceID('n')
     fail_remove_namespace_user(idstorage, None, u, TypeError('namespace_id cannot be None'))
     fail_remove_namespace_user(idstorage, n, None, TypeError('admin_user cannot be None'))
@@ -386,30 +386,30 @@ def test_remove_user_from_namespace_fail_inputs_None(idstorage):
 
 def test_add_user_to_namespace_fail_no_such_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    fail_add_namespace_user(idstorage, NamespaceID('bar'), User(LOCAL, 'u'),
+    fail_add_namespace_user(idstorage, NamespaceID('bar'), User(AuthsourceID('as'), 'u'),
                             NoSuchNamespaceError('bar'))
 
 
 def test_remove_user_from_namespace_fail_no_such_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
-    fail_remove_namespace_user(idstorage, NamespaceID('bar'), User(LOCAL, 'u'),
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
+    fail_remove_namespace_user(idstorage, NamespaceID('bar'), User(AuthsourceID('as'), 'u'),
                                NoSuchNamespaceError('bar'))
 
 
 def test_add_user_to_namespace_fail_duplicate(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
-    fail_add_namespace_user(idstorage, NamespaceID('foo'), User(LOCAL, 'u'),
-                            UserExistsError('User local/u already administrates namespace foo'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
+    fail_add_namespace_user(idstorage, NamespaceID('foo'), User(AuthsourceID('as'), 'u'),
+                            UserExistsError('User as/u already administrates namespace foo'))
 
 
 def test_remove_user_from_namespace_fail_no_such_user(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(LOCAL, 'u'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
     fail_remove_namespace_user(
-        idstorage, NamespaceID('foo'), User(LOCAL, 'u1'),
-        NoSuchUserError('User local/u1 does not administrate namespace foo'))
+        idstorage, NamespaceID('foo'), User(AuthsourceID('as'), 'u1'),
+        NoSuchUserError('User as/u1 does not administrate namespace foo'))
 
 
 def fail_add_namespace_user(idstorage, namespace_id, user, expected):
@@ -449,7 +449,7 @@ def test_set_namespace_publicly_mappable_input_None(idstorage):
     fail_set_namespace_publicly_mappable(idstorage, None, TypeError('namespace_id cannot be None'))
 
 
-def test_set_namespace_publibly_mappable_no_such_namespace(idstorage):
+def test_set_namespace_publicly_mappable_no_such_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
     fail_set_namespace_publicly_mappable(idstorage, NamespaceID('bar'),
                                          NoSuchNamespaceError('bar'))

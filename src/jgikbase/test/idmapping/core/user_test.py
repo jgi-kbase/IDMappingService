@@ -1,4 +1,4 @@
-from jgikbase.idmapping.core.user import AuthsourceID, User, LOCAL, Username
+from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from pytest import fail
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import IllegalUsernameError, MissingParameterError,\
@@ -36,9 +36,6 @@ def fail_authsource_init(source: str, expected: Exception):
 def test_authsource_equals():
     assert AuthsourceID('foo') == AuthsourceID('foo')
     assert AuthsourceID('foo') != AuthsourceID('bar')
-    assert AuthsourceID('foo') != LOCAL
-    assert AuthsourceID('local') == LOCAL
-    assert LOCAL == LOCAL
     assert AuthsourceID('foo') != 'foo'
 
 
@@ -68,6 +65,9 @@ def test_username_init_fail():
         fail_username_init(
             'foo1d' + c,
             IllegalUsernameError('Illegal character in username foo1d' + c + ': ' + c))
+
+
+# TODO NOW use pytest.raises everywhere
 
 
 def fail_username_init(username, expected):
