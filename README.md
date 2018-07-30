@@ -13,3 +13,4 @@ Build status (master):
 * rename primary id to something more accurate - admin id? owned id?
 * update design doc with new names (object_id primarily)
 * caching for the user handlers
+* logging in core class - need a log interceptor

@@ -11,6 +11,7 @@ from jgikbase.idmapping.core.errors import NoSuchAuthsourceError, NoSuchUserErro
      UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
 
+# TODO NOW logging
 # TODO NOW implement rest of methods necessary for API
 
 
@@ -33,19 +34,6 @@ class IDMapper:
         self._storage = storage
         self._handlers = {handler.get_authsource_id(): handler for handler in user_handlers}
 
-    def create_namespace(self, namespace_id: NamespaceID) -> None:
-        """
-        Create a namespace. This method is unauthenticated and should not be exposed in a public
-        API.
-
-        :param namespace_id: The namespace to create.
-        :raises TypeError: if the namespace ID is None.
-        :raises NamespaceExistsError: if the namespace already exists.
-        """
-        not_none(namespace_id, 'namespace_id')
-        # TODO ADMIN take token, check user is admin
-        self._storage.create_namespace(namespace_id)
-
     def _check_authsource_id(self, authsource_id):
         """
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
@@ -54,6 +42,42 @@ class IDMapper:
         if authsource_id not in self._handlers:
             raise NoSuchAuthsourceError(authsource_id.id)
 
+    def _check_sys_admin(self, authsource_id: AuthsourceID, token: Token) -> None:
+        """
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises UnauthorizedError: if the user is not a system administrator.
+        """
+        not_none(token, 'token')
+        self._check_authsource_id(authsource_id)
+        # TODO CACHE cache get_user results
+        user, admin = self._handlers[authsource_id].get_user(token)
+        if not admin:  # TODO ADMIN check in allowed list of authsources
+            raise UnauthorizedError('User {}/{} is not a system administrator'.format(
+                user.authsource_id.id, user.username.name))
+
+    def create_namespace(
+            self,
+            authsource_id: AuthsourceID,
+            token: Token,
+            namespace_id: NamespaceID
+            ) -> None:
+        """
+        Create a namespace.
+
+        :param authsource_id: The authentication source to be used to look up the user token.
+        :param token: the user's token.
+        :param namespace_id: The namespace to create.
+        :raises TypeError: if any of the arguments are None.
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises NamespaceExistsError: if the namespace already exists.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises UnauthorizedError: if the user is not a system administrator.
+        """
+        not_none(namespace_id, 'namespace_id')
+        self._check_sys_admin(authsource_id, token)
+        self._storage.create_namespace(namespace_id)
+
     def _check_valid_user(self, user):
         """
         :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
@@ -61,46 +85,69 @@ class IDMapper:
         """
         not_none(user, 'user')
         self._check_authsource_id(user.authsource_id)
+        # TODO CACHE cache is valid user results
         if not self._handlers[user.authsource_id].is_valid_user(user.username):
             raise NoSuchUserError('{}/{}'.format(user.authsource_id.id, user.username.name))
 
-    def add_user_to_namespace(self, namespace_id: NamespaceID, user: User) -> None:
+    def add_user_to_namespace(
+            self,
+            authsource_id: AuthsourceID,
+            token: Token,
+            namespace_id: NamespaceID,
+            user: User
+            ) -> None:
         """
-        Add a user to a namespace. This method is unauthenticated and should not be exposed in a
-        public API.
+        Add a user to a namespace.
 
+        :param authsource_id: The authentication source to be used to look up the user token.
+        :param token: the user's token.
         :param namespace_id: the namespace to modify.
         :param user: the user.
         :raises TypeError: if any of the arguments are None.
-        :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource ID or the
+            user's authsource.
         :raises NoSuchNamespaceError: if the namespace does not exist.
         :raises NoSuchUserError: if the user is invalid according to the appropriate user handler.
         :raises UserExistsError: if the user already administrates the namespace.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises UnauthorizedError: if the user is not a system administrator.
         """
         not_none(namespace_id, 'namespace_id')
-        # TODO ADMIN take token, check user is admin
+        not_none(user, 'user')
+        self._check_sys_admin(authsource_id, token)
         self._check_valid_user(user)
         self._storage.add_user_to_namespace(namespace_id, user)
 
-    def remove_user_from_namespace(self, namespace_id: NamespaceID, user: User) -> None:
+    def remove_user_from_namespace(
+            self,
+            authsource_id: AuthsourceID,
+            token: Token,
+            namespace_id: NamespaceID,
+            user: User
+            ) -> None:
         """
-        Remove a user from a namespace. This method is unauthenticated and should not be exposed
-        in a public API.
+        Remove a user from a namespace.
 
+        :param authsource_id: The authentication source to be used to look up the user token.
+        :param token: the user's token.
         :param namespace_id: the namespace to modify.
         :param user: the user.
         :raises TypeError: if any of the arguments are None.
-        :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource ID or the
+            user's authsource.
         :raises NoSuchNamespaceError: if the namespace does not exist.
         :raises NoSuchUserError: if the user is invalid according to the appropriate user handler
            or the user does not administrate the namespace.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises UnauthorizedError: if the user is not a system administrator.
         """
         not_none(namespace_id, 'namespace_id')
-        # TODO ADMIN take token, check user is admin
+        not_none(user, 'user')
+        self._check_sys_admin(authsource_id, token)
         self._check_valid_user(user)
         self._storage.remove_user_from_namespace(namespace_id, user)
 
-    def _check_authed(self, user: User, nsid: NamespaceID) -> None:
+    def _check_authed_for_ns(self, user: User, nsid: NamespaceID) -> None:
         """
         :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
         :raises NoSuchNamespaceError: if the namespace does not exist.
@@ -136,6 +183,7 @@ class IDMapper:
         not_none(token, 'token')
         not_none(namespace_id, 'namespace_id')
         self._check_authsource_id(authsource_id)
+        # TODO CACHE cache get_user results
         user, _ = self._handlers[authsource_id].get_user(token)
-        self._check_authed(user, namespace_id)
+        self._check_authed_for_ns(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
