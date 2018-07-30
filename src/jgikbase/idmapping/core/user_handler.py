@@ -35,6 +35,7 @@ class UserHandler:  # pragma: no cover
     def is_valid_user(self, username: Username) -> bool:
         '''
         Check if a username is valid, which implies the user exists.
+
         :param username: the username to check.
         '''
         raise NotImplementedError()
