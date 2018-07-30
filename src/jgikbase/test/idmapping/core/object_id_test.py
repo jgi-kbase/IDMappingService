@@ -47,6 +47,15 @@ def test_namespace_id_hash():
     assert hash(NamespaceID('foo')) != hash(NamespaceID('bar'))
 
 
+def test_namespace_id_slots():
+    assert NamespaceID('foo').__slots__ == ['id']
+
+    with raises(Exception) as got:
+        NamespaceID('foo').attrib = 'whoops'
+    assert_exception_correct(got.value, AttributeError(
+        "'NamespaceID' object has no attribute 'attrib'"))
+
+
 def test_namespace_init_pass():
     ns = Namespace(NamespaceID('foo'), True)
     assert ns.namespace_id == NamespaceID('foo')
@@ -155,3 +164,12 @@ def test_object_id_hash():
     assert hash(ObjectID(NamespaceID('bar'), 'foo')) == hash(ObjectID(NamespaceID('bar'), 'foo'))
     assert hash(ObjectID(NamespaceID('baz'), 'foo')) != hash(ObjectID(NamespaceID('bar'), 'foo'))
     assert hash(ObjectID(NamespaceID('bar'), 'fob')) != hash(ObjectID(NamespaceID('bar'), 'foo'))
+
+
+def test_object_id_slots():
+    assert ObjectID(NamespaceID('bar'), 'foo').__slots__ == ['namespace_id', 'id']
+
+    with raises(Exception) as got:
+        ObjectID(NamespaceID('foo'), 'bar').attrib = 'whoops'
+    assert_exception_correct(got.value, AttributeError(
+        "'ObjectID' object has no attribute 'attrib'"))
