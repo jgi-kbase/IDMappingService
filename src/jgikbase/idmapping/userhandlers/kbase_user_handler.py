@@ -41,7 +41,15 @@ class KBaseUserHandler(UserHandler):
         self.auth_url = kbase_auth_url
         self._token = kbase_token
         self._kbase_system_admin = kbase_system_admin
-        # could get the server time from the auth server here and adjust for clock skew
+        r = requests.get(self.auth_url, headers={'Accept': 'application/json'})
+        self._check_error(r)
+        missing_keys = {'version', 'gitcommithash', 'servertime'} - r.json().keys()
+        if missing_keys:
+            raise IOError('{} does not appear to be the KBase auth server. '.format(
+                            kbase_auth_url) +
+                          'The root JSON response does not contain the expected keys {}'.format(
+                              sorted(missing_keys)))
+        # could use the server time to adjust for clock skew
         # probably not worth the trouble
 
     def get_authsource_id(self) -> AuthsourceID:
