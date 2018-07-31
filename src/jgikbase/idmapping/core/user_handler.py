@@ -4,7 +4,7 @@ from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.util import not_none
 from jgikbase.idmapping.core import tokens
-from typing import Set
+from typing import Dict
 
 
 class UserHandler:  # pragma: no cover
@@ -63,7 +63,8 @@ class LocalUserHandler(UserHandler):
 
     def get_user(self, token: Token) -> User:
         not_none(token, 'token')
-        return User(self._LOCAL, self._store.get_user(token.get_hashed_token()))
+        # TODO ADMIN return admin status
+        return User(self._LOCAL, self._store.get_user(token.get_hashed_token())[0])
 
     def is_valid_user(self, username: Username) -> bool:
         not_none(username, 'username')
@@ -92,11 +93,13 @@ class LocalUserHandler(UserHandler):
         '''
         not_none(username, 'username')
         t = tokens.generate_token()
-        self._store.update_local_user(username, t.get_hashed_token())
+        self._store.update_local_user_token(username, t.get_hashed_token())
         return t
 
-    def get_users(self) -> Set[Username]:
+    def get_users(self) -> Dict[Username, bool]:
         '''
         Get the users in the local storage system.
+
+        :returns: a mapping of username to a boolean denoting whether the user is an admin or not.
         '''
         return self._store.get_users()

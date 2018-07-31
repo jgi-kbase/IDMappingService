@@ -18,6 +18,8 @@ class NamespaceID:
     :ivar id: the namespace ID.
     """
 
+    __slots__ = ['id']
+
     def __init__(self, id_: str) -> None:
         '''
         Create a namespace ID.
@@ -47,6 +49,8 @@ class Namespace:
     :ivar is_publicly_mappable: whether the namespace is publicly mappable or not.
     :ivar authed_users: users that are authorized to administer the namespace.
     """
+
+    # TODO NS add user def/updatable attributes: free text desc, source (kbase/jgi), env (ci), db.
 
     def __init__(
             self,
@@ -86,6 +90,8 @@ class ObjectID:
     :ivar namespace_id: The ID of the namespace.
     :ivar id: The ID of the data object.
     '''
+
+    __slots__ = ['namespace_id', 'id']
 
     def __init__(self, namespace_id: NamespaceID, data_id: str) -> None:
         """

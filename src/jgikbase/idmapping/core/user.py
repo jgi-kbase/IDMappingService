@@ -46,6 +46,11 @@ class Username:
     :ivar name: the username.
     """
 
+    # TODO NOW allow marking users as admins that can create ns & add users to them.
+    # TODO ADMIN add config var specifying which auth sources can specify system admins
+    # TODO NOW cache all handler responses. Don't make handlers do own cache.
+    # TODO CONFIG specify handler classes in config & load dynamically
+
     def __init__(self, username: str) -> None:
         """
         Create a new user name.

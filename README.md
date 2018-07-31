@@ -12,4 +12,4 @@ Build status (master):
   * try mongo 4 - maybe wait for a couple bugfix versions
 * rename primary id to something more accurate - admin id? owned id?
 * update design doc with new names (object_id primarily)
-* caching for the KBase user handler if we want to actually use it in production.
+* caching for the user handlers

@@ -11,6 +11,7 @@ from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
 from typing import Iterable, Set, Tuple  # pragma: no cover
 from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
+from typing import Dict
 
 
 class IDMappingStorage:  # pragma: no cover
@@ -36,7 +37,18 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def update_local_user(self, username: Username, token: HashedToken) -> None:
+    def set_local_user_as_admin(self, username: Username, admin: bool) -> None:
+        '''
+        Mark a user as a system admin. Or not.
+
+        :param username: the name of the user to alter.
+        :param admin: True to give the user admin privileges, False to remove them. If the user
+            is already in the given state, no further action is taken.
+        '''
+        raise NotImplementedError()
+
+    @_abstractmethod
+    def update_local_user_token(self, username: Username, token: HashedToken) -> None:
         """
         Update an existing user's token.
 
@@ -50,7 +62,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_user(self, token: HashedToken) -> Username:
+    def get_user(self, token: HashedToken) -> Tuple[Username, bool]:
         """
         Get the user, if any, associated with a hashed token.
 
@@ -58,15 +70,18 @@ class IDMappingStorage:  # pragma: no cover
         :raises TypeError: if the token is None.
         :raises InvalidTokenError: if the token does not exist in the storage system.
         :raises IDMappingStorageError: if an unexpected error occurs.
+        :returns: a tuple of the username corresponding to the token and a boolean denoting
+            whether the user is an admin or not.
         """
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_users(self) -> Set[Username]:
+    def get_users(self) -> Dict[Username, bool]:
         """
         Get all the users in the system.
 
         :raises IDMappingStorageError: if an unexpected error occurs.
+        :returns: a mapping of username to a boolean denoting whether the user is an admin or not.
         """
         raise NotImplementedError()
 
@@ -183,16 +198,17 @@ class IDMappingStorage:  # pragma: no cover
     def find_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
                       ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
-        Find mappings given a namespace / id combination. The first set of object IDs in the
-        returned tuple are mappings where the provided object ID is the primary object ID, and
-        the second set in the tuple are mappings where the provided object ID is the
-        secondary object ID.
+        Find mappings given a namespace / id combination.
+
         If the namespace or id does not exist, no results will be returned. The namespaces in the
         filter are ignored if they do not exist.
 
         :param oid: the namespace / id combination to match against.
         :param ns_filter: a list of namespaces with which to filter the results. Only results in
             these namespaces will be returned.
+        :returns: a tuple of sets of object IDs. The first set in the tuple contains mappings
+            where the provided object ID is the primary object ID, and the second set contains
+            mappings where the provided object ID is the secondary object ID.
         :raise TypeError: if the object ID is None or the filter contains None.
         """
         raise NotImplementedError()

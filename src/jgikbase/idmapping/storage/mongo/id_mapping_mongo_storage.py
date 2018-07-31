@@ -46,6 +46,7 @@ _COL_MAPPINGS = 'map'
 _FLD_AUTHSOURCE = 'auth'
 _FLD_USER = 'user'
 _FLD_TOKEN = 'hshtkn'
+_FLD_ADMIN = 'admin'
 
 # namespace collection fields
 _FLD_NS_ID = 'nsid'
@@ -149,7 +150,8 @@ class IDMappingMongoStorage(_IDMappingStorage):
         not_none(token, 'token')
         try:
             self._db[_COL_USERS].insert_one({_FLD_USER: username.name,
-                                            _FLD_TOKEN: token.token_hash})
+                                             _FLD_TOKEN: token.token_hash,
+                                             _FLD_ADMIN: False})
         except DuplicateKeyError as e:
             coll, index = self._get_duplicate_location(e)
             if coll == _COL_USERS:
@@ -159,6 +161,17 @@ class IDMappingMongoStorage(_IDMappingStorage):
                     raise ValueError('The provided token already exists in the database')
             # this is impossible to test
             raise IDMappingStorageError('Unexpected duplicate key exception')
+        except PyMongoError as e:
+            raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
+
+    def set_local_user_as_admin(self, username: Username, admin: bool) -> None:
+        not_none(username, 'username')
+        admin = True if admin else False  # more readable than admin and True
+        try:
+            res = self._db[_COL_USERS].update_one({_FLD_USER: username.name},
+                                                  {'$set': {_FLD_ADMIN: admin}})
+            if res.matched_count != 1:  # don't care if user was updated or not, just found
+                raise NoSuchUserError(username.name)
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
@@ -188,7 +201,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             raise IDMappingStorageError('unable to parse duplicate key error: ' +
                                         e.args[0].split('dup key')[0])
 
-    def update_local_user(self, username: Username, token: HashedToken) -> None:
+    def update_local_user_token(self, username: Username, token: HashedToken) -> None:
         not_none(username, 'username')
         not_none(token, 'token')
         try:
@@ -203,7 +216,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
-    def get_user(self, token: HashedToken) -> Username:
+    def get_user(self, token: HashedToken) -> Tuple[Username, bool]:
         not_none(token, 'token')
         try:
             userdoc = self._db[_COL_USERS].find_one(
@@ -213,12 +226,12 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
         if not userdoc:
             raise InvalidTokenError()
-        return Username(userdoc[_FLD_USER])
+        return (Username(userdoc[_FLD_USER]), userdoc[_FLD_ADMIN])
 
-    def get_users(self) -> Set[Username]:
+    def get_users(self) -> Dict[Username, bool]:
         try:
             userdocs = self._db[_COL_USERS].find({}, {_FLD_TOKEN: 0})
-            return {Username(u[_FLD_USER]) for u in userdocs}
+            return {Username(u[_FLD_USER]): u[_FLD_ADMIN] for u in userdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
