@@ -40,7 +40,8 @@ def test_init_fail_auth_returned_error():
         m.get('http://my1stauthservice.com/',
               request_headers={'Accept': 'application/json'},
               status_code=401,
-              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
+              json={'error': {'apperror': 'Authentication failed',
+                              'message': '10000 Authentication failed: crap'}})
 
         fail_init('http://my1stauthservice.com', Token('foo'), 'admin',
                   IOError('Error from KBase auth server: 10000 Authentication failed: crap'))
@@ -130,7 +131,7 @@ def test_get_user_fail_invalid_token_token():
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
               status_code=401,
-              json={'error': {'appcode': 10020, 'message': '10020 Invalid token'}})
+              json={'error': {'apperror': 'Invalid token', 'message': '10020 Invalid token'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
@@ -143,7 +144,8 @@ def test_get_user_fail_auth_returned_other_error_token():
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
               status_code=401,
-              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
+              json={'error': {'apperror': 'Authentication failed',
+                              'message': '10000 Authentication failed: crap'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
@@ -178,7 +180,7 @@ def test_get_user_fail_invalid_token_me():
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
               status_code=401,
-              json={'error': {'appcode': 10020, 'message': '10020 Invalid token'}})
+              json={'error': {'apperror': 'Invalid token', 'message': '10020 Invalid token'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
@@ -196,7 +198,8 @@ def test_get_user_fail_auth_returned_other_error_me():
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
               status_code=401,
-              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
+              json={'error': {'apperror': 'Authentication failed',
+                              'message': '10000 Authentication failed: crap'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
@@ -249,7 +252,7 @@ def test_is_valid_user_fail_invalid_token():
         m.get('http://my1stauthservice.com/api/api/V2/users/?list=supausah3',
               request_headers={'Authorization': 'foo'},
               status_code=401,
-              json={'error': {'appcode': 10020, 'message': '10020 Invalid token'}})
+              json={'error': {'apperror': 'Invalid token', 'message': '10020 Invalid token'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
@@ -262,7 +265,8 @@ def test_is_valid_user_fail_auth_returned_other_error():
         m.get('http://my1stauthservice.com/api/api/V2/users/?list=supausah2',
               request_headers={'Authorization': 'baz'},
               status_code=400,
-              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
+              json={'error': {'apperror': 'Authentication failed',
+                              'message': '10000 Authentication failed: crap'}})
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('baz'), 'admin')
 
