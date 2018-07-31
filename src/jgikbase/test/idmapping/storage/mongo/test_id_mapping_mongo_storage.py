@@ -267,18 +267,18 @@ def test_set_user_as_admin(idstorage):
     assert idstorage.get_user(HashedToken('bar')) == (Username('foo'), False)
 
 
-def set_user_as_admin_fail_None_input(idstorage):
-    fail_set_user_as_admin(idstorage, None, TypeError('username cannot be None'))
+def test_set_local_user_as_admin_fail_None_input(idstorage):
+    fail_set_local_user_as_admin(idstorage, None, TypeError('username cannot be None'))
 
 
-def set_user_as_admin_fail_no_such_user(idstorage):
-    idstorage.create_local_user(Username('bar'))
-    fail_set_user_as_admin(idstorage, Username('foo'), NoSuchUserError('foo'))
+def test_set_local_user_as_admin_fail_no_such_user(idstorage):
+    idstorage.create_local_user(Username('bar'), HashedToken('whoo'))
+    fail_set_local_user_as_admin(idstorage, Username('foo'), NoSuchUserError('foo'))
 
 
-def fail_set_user_as_admin(idstorage, user, expected):
+def fail_set_local_user_as_admin(idstorage, user, expected):
     with raises(Exception) as got:
-        idstorage.set_user_as_admin(user, True)
+        idstorage.set_local_user_as_admin(user, True)
     assert_exception_correct(got.value, expected)
 
 
