@@ -6,6 +6,7 @@ from jgikbase.idmapping.core.util import not_none
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests
+from jgikbase.idmapping.core.errors import InvalidTokenError
 
 
 # WARNING - this is tested by mocking the requests library. The test suite never tests it against
@@ -50,9 +51,11 @@ class KBaseUserHandler(UserHandler):
                               str(r.status_code))
             # assume that if we get json then at least this is the auth server and we can
             # rely on the error structure.
+            if j['error']['appcode'] == 10020:
+                raise InvalidTokenError('KBase auth server reported token is invalid.')
+            # don't really see any other error codes we need to worry about - maybe disabled?
+            # worry about it later.
             raise IOError('Error from KBase auth server: ' + j['error']['message'])
-            # could check app codes here and respond appropriately,
-            # don't worry about it for now.
 
     def get_user(self, token: Token) -> User:
         not_none(token, 'token')

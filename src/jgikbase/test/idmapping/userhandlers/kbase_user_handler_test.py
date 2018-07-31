@@ -4,6 +4,7 @@ from jgikbase.idmapping.core.tokens import Token
 import requests_mock
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.errors import InvalidTokenError
 
 
 def test_init():
@@ -56,17 +57,30 @@ def test_get_user_fail_not_json():
                       IOError('Non-JSON response from KBase auth server, status code: 404'))
 
 
-def test_get_user_fail_auth_returned_error():
+def test_get_user_fail_invalid_token():
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
               status_code=401,
-              json={'error': {'message': '10020 Invalid token'}})
+              json={'error': {'appcode': 10020, 'message': '10020 Invalid token'}})
+
+        kbuh = KBaseUserHandler('http://my1stauthservice.com/api', Token('foo'))
+
+        fail_get_user(kbuh, Token('bar'), InvalidTokenError(
+            'KBase auth server reported token is invalid.'))
+
+
+def test_get_user_fail_auth_returned_other_error():
+    with requests_mock.Mocker() as m:
+        m.get('http://my1stauthservice.com/api/api/V2/token',
+              request_headers={'Authorization': 'bar'},
+              status_code=401,
+              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
 
         kbuh = KBaseUserHandler('http://my1stauthservice.com/api', Token('foo'))
 
         fail_get_user(kbuh, Token('bar'),
-                      IOError('Error from KBase auth server: 10020 Invalid token'))
+                      IOError('Error from KBase auth server: 10000 Authentication failed: crap'))
 
 
 def fail_get_user(kbuh, token, expected):
@@ -109,17 +123,30 @@ def test_is_valid_user_fail_not_json():
                            IOError('Non-JSON response from KBase auth server, status code: 502'))
 
 
-def test_is_valid_user_fail_auth_returned_error():
+def test_is_valid_user_fail_invalid_token():
+    with requests_mock.Mocker() as m:
+        m.get('http://my1stauthservice.com/api/api/V2/users/?list=supausah3',
+              request_headers={'Authorization': 'foo'},
+              status_code=401,
+              json={'error': {'appcode': 10020, 'message': '10020 Invalid token'}})
+
+        kbuh = KBaseUserHandler('http://my1stauthservice.com/api', Token('foo'))
+
+        fail_is_valid_user(kbuh, Username('supausah3'), InvalidTokenError(
+            'KBase auth server reported token is invalid.'))
+
+
+def test_is_valid_user_fail_auth_returned_other_error():
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/users/?list=supausah2',
               request_headers={'Authorization': 'baz'},
               status_code=400,
-              json={'error': {'message': '10010 No authentication token'}})
+              json={'error': {'appcode': 10000, 'message': '10000 Authentication failed: crap'}})
 
         kbuh = KBaseUserHandler('http://my1stauthservice.com/api', Token('baz'))
 
-        fail_is_valid_user(kbuh, Username('supausah2'),
-                           IOError('Error from KBase auth server: 10010 No authentication token'))
+        fail_is_valid_user(kbuh, Username('supausah2'), IOError(
+            'Error from KBase auth server: 10000 Authentication failed: crap'))
 
 
 def fail_is_valid_user(kbuh, username, expected):
