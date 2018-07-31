@@ -144,17 +144,17 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise StorageInitException('Connection to database failed: ' + str(e)) from e
 
-    def create_local_user(self, user: Username, token: HashedToken) -> None:
-        not_none(user, 'user')
+    def create_local_user(self, username: Username, token: HashedToken) -> None:
+        not_none(username, 'username')
         not_none(token, 'token')
         try:
-            self._db[_COL_USERS].insert_one({_FLD_USER: user.name,
+            self._db[_COL_USERS].insert_one({_FLD_USER: username.name,
                                             _FLD_TOKEN: token.token_hash})
         except DuplicateKeyError as e:
             coll, index = self._get_duplicate_location(e)
             if coll == _COL_USERS:
                 if index == _FLD_USER + '_1':
-                    raise UserExistsError(user.name)
+                    raise UserExistsError(username.name)
                 elif index == _FLD_TOKEN + '_1':
                     raise ValueError('The provided token already exists in the database')
             # this is impossible to test
@@ -188,14 +188,14 @@ class IDMappingMongoStorage(_IDMappingStorage):
             raise IDMappingStorageError('unable to parse duplicate key error: ' +
                                         e.args[0].split('dup key')[0])
 
-    def update_local_user(self, user: Username, token: HashedToken) -> None:
-        not_none(user, 'user')
+    def update_local_user(self, username: Username, token: HashedToken) -> None:
+        not_none(username, 'username')
         not_none(token, 'token')
         try:
-            res = self._db[_COL_USERS].update_one({_FLD_USER: user.name},
+            res = self._db[_COL_USERS].update_one({_FLD_USER: username.name},
                                                   {'$set': {_FLD_TOKEN: token.token_hash}})
             if res.matched_count != 1:  # don't care if user was updated or not, just found
-                raise NoSuchUserError(user.name)
+                raise NoSuchUserError(username.name)
         except DuplicateKeyError as e:
             # since only the token can cause a duplicate key error here, we assume something
             # crazy isn't going and just raise that exception
@@ -222,10 +222,10 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
-    def user_exists(self, user: Username) -> bool:
-        not_none(user, 'user')
+    def user_exists(self, username: Username) -> bool:
+        not_none(username, 'username')
         try:
-            return self._db[_COL_USERS].count_documents({_FLD_USER: user.name}) == 1
+            return self._db[_COL_USERS].count_documents({_FLD_USER: username.name}) == 1
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
@@ -282,10 +282,10 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
-    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publically_mappable: bool
+    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publicly_mappable: bool
                                         ) -> None:
         not_none(namespace_id, 'namespace_id')
-        pm = True if publically_mappable else False  # more readable than 'and True'
+        pm = True if publicly_mappable else False  # more readable than 'and True'
         try:
             res = self._db[_COL_NAMESPACES].update_one({_FLD_NS_ID: namespace_id.id},
                                                        {'$set': {_FLD_PUB_MAP: pm}})

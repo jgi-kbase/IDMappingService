@@ -184,7 +184,7 @@ def test_create_update_and_get_user(idstorage):
 def test_create_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = Username('u')
-    fail_create_user(idstorage, None, t, TypeError('user cannot be None'))
+    fail_create_user(idstorage, None, t, TypeError('username cannot be None'))
     fail_create_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
@@ -208,7 +208,7 @@ def fail_create_user(idstorage, user, token, expected):
 def test_update_user_fail_input_None(idstorage):
     t = HashedToken('t')
     u = Username('u')
-    fail_update_user(idstorage, None, t, TypeError('user cannot be None'))
+    fail_update_user(idstorage, None, t, TypeError('username cannot be None'))
     fail_update_user(idstorage, u, None, TypeError('token cannot be None'))
 
 
@@ -279,7 +279,7 @@ def test_user_exists(idstorage):
 def test_user_exists_fail(idstorage):
     with raises(Exception) as got:
         idstorage.user_exists(None)
-    assert_exception_correct(got.value, TypeError('user cannot be None'))
+    assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
 def test_create_and_get_namespace(idstorage):

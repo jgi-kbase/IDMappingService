@@ -20,13 +20,13 @@ class IDMappingStorage:  # pragma: no cover
     __metaclass__ = _ABCMeta
 
     @_abstractmethod
-    def create_local_user(self, user: Username, token: HashedToken) -> None:
+    def create_local_user(self, username: Username, token: HashedToken) -> None:
         """
         Create a user.
         Once created, users cannot be removed. The client programmer is responsible for
         ensuring that the token provided does not already exist in the database.
 
-        :param user: the user.
+        :param username: the user name.
         :param token: the user's token after applying a hash function.
         :raises ValueError: if the token already exists in the database.
         :raises TypeError: if any of the arguments are None.
@@ -36,11 +36,11 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def update_local_user(self, user: Username, token: HashedToken) -> None:
+    def update_local_user(self, username: Username, token: HashedToken) -> None:
         """
         Update an existing user's token.
 
-        :param user: the user.
+        :param username: the user name.
         :param token: the user's token after applying a hash function.
         :raises ValueError: if the token already exists in the database.
         :raises TypeError: if any of the arguments are None.
@@ -119,13 +119,13 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publically_mappable: bool
+    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publicly_mappable: bool
                                         ) -> None:
         """
         Set the publicly mappable flag on a namespace.
 
         :param namespace_id: The namespace to alter.
-        :param publically_mappable: True to set the namespace to publicly mappable, False or None
+        :param publicly_mappable: True to set the namespace to publicly mappable, False or None
             to prevent public mapping.
         :raises TypeError: if namespace_id is None.
         :raises NoSuchNamespaceError: if the namespace does not exist.
