@@ -45,6 +45,9 @@ class ErrorType(Enum):
     NO_SUCH_NAMESPACE =      (50010, "No such namespace")  # noqa: E222 @IgnorePep8
     """ There is no namespace with the specified name. """
 
+    NO_SUCH_AUTHSOURCE =     (50020, "No such authentication source")  # noqa: E222 @IgnorePep8
+    """ The requested authentication source does not exist. """
+
     UNSUPPORTED_OP =         (60000, "Unsupported operation")  # noqa: E222 @IgnorePep8
     """ The requested operation is not supported. """
 
@@ -107,6 +110,15 @@ class NoSuchNamespaceError(NoDataException):
         super().__init__(ErrorType.NO_SUCH_NAMESPACE, message)
 
 
+class NoSuchAuthsourceError(NoDataException):
+    """
+    An error thrown when an authentication source does not exist.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(ErrorType.NO_SUCH_AUTHSOURCE, message)
+
+
 class NamespaceExistsError(IDMappingError):
     """
     An error thrown when a namespace already exists.
@@ -142,6 +154,15 @@ class InvalidTokenError(AuthenticationError):
 
     def __init__(self, message: str=None) -> None:
         super().__init__(ErrorType.INVALID_TOKEN, message)
+
+
+class UnauthorizedError(IDMappingError):
+    """
+    An error thrown when a user attempts a disallowed action.
+    """
+
+    def __init__(self, message: str=None) -> None:
+        super().__init__(ErrorType.UNAUTHORIZED, message)
 
 
 class MissingParameterError(IDMappingError):

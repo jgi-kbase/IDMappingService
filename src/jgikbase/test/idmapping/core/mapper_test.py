@@ -1,0 +1,238 @@
+from unittest.mock import create_autospec
+from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
+from jgikbase.idmapping.core.mapper import IDMapper
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from pytest import raises
+from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.user_handler import UserHandler
+from jgikbase.idmapping.core.user import AuthsourceID, Username, User
+from jgikbase.idmapping.core.errors import NoSuchAuthsourceError, NoSuchUserError, \
+    UnauthorizedError
+from jgikbase.idmapping.core.tokens import Token
+
+
+def test_init_fail():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    fail_init(None, storage, TypeError('user_handlers cannot be None'))
+    fail_init(set([handler, None]), storage, TypeError('None item in user_handlers'))
+    fail_init(set(), None, TypeError('storage cannot be None'))
+
+
+def fail_init(handlers, storage, expected):
+    with raises(Exception) as got:
+        IDMapper(handlers, storage)
+    assert_exception_correct(got.value, expected)
+
+
+def test_create_namespace():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    idm = IDMapper(set(), storage)
+
+    idm.create_namespace(NamespaceID('foo'))
+
+    assert storage.create_namespace.call_args_list == [((NamespaceID('foo'),), {})]
+
+
+def test_create_namespace_fail():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    idm = IDMapper(set(), storage)
+
+    with raises(Exception) as got:
+        idm.create_namespace(None)
+    assert_exception_correct(got.value, TypeError('namespace_id cannot be None'))
+
+
+def test_add_user_to_namespace():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.is_valid_user.return_value = True
+
+    idm.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1')))
+
+    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {})]
+    assert storage.add_user_to_namespace.call_args_list == \
+        [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
+
+
+def test_add_user_to_namespace_fail_None_input():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+
+    idm = IDMapper(set(), storage)
+
+    fail_add_user_to_namespace(idm, None, User(AuthsourceID('as'), Username('u')),
+                               TypeError('namespace_id cannot be None'))
+    fail_add_user_to_namespace(idm, NamespaceID('n'), None,
+                               TypeError('user cannot be None'))
+
+
+def test_add_user_to_namespace_fail_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    fail_add_user_to_namespace(idm, NamespaceID('n'), User(AuthsourceID('astwo'), Username('u')),
+                               NoSuchAuthsourceError('astwo'))
+
+
+def test_add_user_to_namespace_fail_no_such_user():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.is_valid_user.return_value = False
+
+    fail_add_user_to_namespace(idm, NamespaceID('n'), User(AuthsourceID('asone'), Username('u')),
+                               NoSuchUserError('asone/u'))
+
+
+def fail_add_user_to_namespace(idmapper, namespace_id, user, expected):
+    with raises(Exception) as got:
+        idmapper.add_user_to_namespace(namespace_id, user)
+    assert_exception_correct(got.value, expected)
+
+
+def test_remove_user_from_namespace():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.is_valid_user.return_value = True
+
+    idm.remove_user_from_namespace(NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1')))
+
+    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {})]
+    assert storage.remove_user_from_namespace.call_args_list == \
+        [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
+
+
+def test_remove_user_from_namespace_fail_None_input():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+
+    idm = IDMapper(set(), storage)
+
+    fail_remove_user_from_namespace(idm, None, User(AuthsourceID('as'), Username('u')),
+                                    TypeError('namespace_id cannot be None'))
+    fail_remove_user_from_namespace(idm, NamespaceID('n'), None,
+                                    TypeError('user cannot be None'))
+
+
+def test_remove_user_from_namespace_fail_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    fail_remove_user_from_namespace(
+        idm, NamespaceID('n'), User(AuthsourceID('astwo'), Username('u')),
+        NoSuchAuthsourceError('astwo'))
+
+
+def test_remove_user_from_namespace_fail_no_such_user():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.is_valid_user.return_value = False
+
+    fail_remove_user_from_namespace(
+        idm, NamespaceID('n'), User(AuthsourceID('asone'), Username('u')),
+        NoSuchUserError('asone/u'))
+
+
+def fail_remove_user_from_namespace(idmapper, namespace_id, user, expected):
+    with raises(Exception) as got:
+        idmapper.remove_user_from_namespace(namespace_id, user)
+    assert_exception_correct(got.value, expected)
+
+
+def test_set_namespace_publicly_mappable():
+    check_set_namespace_publicly_mappable(True)
+    check_set_namespace_publicly_mappable(False)
+
+
+def check_set_namespace_publicly_mappable(pub_value):
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.get_user.return_value = User(AuthsourceID('asone'), Username('u'))
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
+        User(AuthsourceID('astwo'), Username('u2')),
+        User(AuthsourceID('asone'), Username('u')),
+        User(AuthsourceID('asthree'), Username('u'))]))
+
+    idm.set_namespace_publicly_mappable(
+        AuthsourceID('asone'),
+        Token('t'),
+        NamespaceID('n'),
+        pub_value)
+
+    assert handler.get_user.call_args_list == [((Token('t'),), {})]
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n'),), {})]
+    assert storage.set_namespace_publicly_mappable.call_args_list == \
+        [((NamespaceID('n'), pub_value), {})]
+
+
+def test_set_namespace_publicly_mappable_fail_None_input():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    idm = IDMapper(set(), storage)
+
+    aid = AuthsourceID('asone')
+    t = Token('t')
+    n = NamespaceID('id')
+    e = ' cannot be None'
+
+    fail_set_namespace_publicly_mappable(idm, None, t, n, TypeError('authsource_id' + e))
+    fail_set_namespace_publicly_mappable(idm, aid, None, n, TypeError('token' + e))
+    fail_set_namespace_publicly_mappable(idm, aid, t, None, TypeError('namespace_id' + e))
+
+
+def test_set_namespace_publicly_mappable_fail_no_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    fail_set_namespace_publicly_mappable(idm, AuthsourceID('astwo'), Token('t'), NamespaceID('n'),
+                                         NoSuchAuthsourceError('astwo'))
+
+
+def test_set_namespace_publicly_mappable_fail_unauthed():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+
+    handler.get_authsource_id.return_value = AuthsourceID('asone')
+    idm = IDMapper(set([handler]), storage)
+
+    handler.get_user.return_value = User(AuthsourceID('asone'), Username('u'))
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
+        User(AuthsourceID('asone'), Username('u2')),
+        User(AuthsourceID('asthree'), Username('u'))]))
+
+    fail_set_namespace_publicly_mappable(
+        idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
+        UnauthorizedError('User asone/u may not administrate namespace n'))
+
+
+def fail_set_namespace_publicly_mappable(idmapper, auth_id, token, namespace_id, expected):
+    with raises(Exception) as got:
+        idmapper.set_namespace_publicly_mappable(auth_id, token, namespace_id, False)
+    assert_exception_correct(got.value, expected)
