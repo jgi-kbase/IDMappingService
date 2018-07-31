@@ -7,7 +7,7 @@ from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests
 from jgikbase.idmapping.core.errors import InvalidTokenError
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 # WARNING - this is tested by mocking the requests library. The test suite never tests it against
@@ -28,7 +28,7 @@ class KBaseUserHandler(UserHandler):
         Create the handler.
 
         :param kbase_auth_url: The url for the KBase authentication service.
-        :param kbase_token: A valid KBase user token. This is used for check the validity of
+        :param kbase_token: A valid KBase user token. This is used for checking the validity of
             user names.
         :param kbase_system_admin: the custom role the user must possess in the KBase auth
             system to be considered an admin of the ID mapping service.
@@ -71,7 +71,7 @@ class KBaseUserHandler(UserHandler):
             # worry about it later.
             raise IOError('Error from KBase auth server: ' + j['error']['message'])
 
-    def get_user(self, token: Token) -> Tuple[User, bool]:
+    def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
         not_none(token, 'token')
         r = requests.get(self.auth_url + 'api/V2/token', headers={'Authorization': token.token})
         self._check_error(r)
@@ -81,12 +81,14 @@ class KBaseUserHandler(UserHandler):
         self._check_error(r)
         mres = r.json()
         return (User(self._KBASE, Username(tokenres['user'])),
-                self._kbase_system_admin in mres['customroles'])
+                self._kbase_system_admin in mres['customroles'],
+                tokenres['expires'] // 1000,
+                tokenres['cachefor'] // 1000)
 
-    def is_valid_user(self, username: Username) -> bool:
+    def is_valid_user(self, username: Username) -> Tuple[bool, Optional[int], Optional[int]]:
         not_none(username, 'username')
         r = requests.get(self.auth_url + 'api/V2/users/?list=' + username.name,
                          headers={'Authorization': self._token.token})
         self._check_error(r)
         j = r.json()
-        return len(j) == 1
+        return (len(j) == 1, None, 3600)

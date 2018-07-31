@@ -4,7 +4,7 @@ from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.util import not_none
 from jgikbase.idmapping.core import tokens
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 
 class UserHandler:  # pragma: no cover
@@ -20,27 +20,32 @@ class UserHandler:  # pragma: no cover
         '''
         raise NotImplementedError()
 
-    # TODO CACHE return absolute & relative cache expiration times
     @_abstractmethod
-    def get_user(self, token: Token) -> Tuple[User, bool]:
+    def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
         '''
         Get a user given a token.
 
         :param token: the token.
         :raises InvalidTokenError: if the token is invalid.
         :raises TypeError: if the token is None.
-        :returns: a tuple of the user corresponding to the token, and a boolean describing
-            whether the handler claims they are a system admin (True) or not (False).
+        :returns: a tuple of 1) the user corresponding to the token, 2) a boolean describing
+            whether the handler claims they are a system admin (True) or not (False), 3)
+            a unix epoch timestamp in seconds providing an absolute limit for the cache lifetime
+            of this result, and 4) a relative cache expiration time in seconds.
+            One of 3) and 4) may be None, but not both.
         '''
         raise NotImplementedError()
 
-    # TODO CACHE return absolute & relative cache expiration times
     @_abstractmethod
-    def is_valid_user(self, username: Username) -> bool:
+    def is_valid_user(self, username: Username) -> Tuple[bool, Optional[int], Optional[int]]:
         '''
         Check if a username is valid, which implies the user exists.
 
         :param username: the username to check.
+        :returns: a tuple of 1) a boolean describing whether the user exists or not, 2)
+            a unix epoch timestamp in seconds providing an absolute limit for the cache lifetime
+            of this result, and 3) a relative cache expiration time in seconds.
+            One of 2) and 3) may be None, but not both.
         '''
         raise NotImplementedError()
 
@@ -65,14 +70,14 @@ class LocalUserHandler(UserHandler):
     def get_authsource_id(self) -> AuthsourceID:
         return self._LOCAL
 
-    def get_user(self, token: Token) -> Tuple[User, bool]:
+    def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
         not_none(token, 'token')
         username, admin = self._store.get_user(token.get_hashed_token())
-        return (User(self._LOCAL, username), admin)
+        return (User(self._LOCAL, username), admin, None, 300)
 
-    def is_valid_user(self, username: Username) -> bool:
+    def is_valid_user(self, username: Username) -> Tuple[bool, Optional[int], Optional[int]]:
         not_none(username, 'username')
-        return self._store.user_exists(username)
+        return (self._store.user_exists(username), None, 3600)
 
     def create_user(self, username: Username) -> Token:
         '''
