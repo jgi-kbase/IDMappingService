@@ -28,34 +28,82 @@ def fail_init(handlers, storage, expected):
 
 def test_create_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    idm = IDMapper(set(), storage)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
 
-    idm.create_namespace(NamespaceID('foo'))
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+    idm = IDMapper(set([handler]), storage)
 
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), True)
+
+    idm.create_namespace(AuthsourceID('as'), Token('bar'), NamespaceID('foo'))
+
+    assert handler.get_user.call_args_list == [((Token('bar'),), {})]
     assert storage.create_namespace.call_args_list == [((NamespaceID('foo'),), {})]
 
 
-def test_create_namespace_fail():
+def test_create_namespace_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     idm = IDMapper(set(), storage)
 
+    as_ = AuthsourceID('foo')
+    t = Token('t')
+    n = NamespaceID('n')
+
+    fail_create_namespace(idm, None, t, n, TypeError('authsource_id cannot be None'))
+    fail_create_namespace(idm, as_, None, n, TypeError('token cannot be None'))
+    fail_create_namespace(idm, as_, t, None, TypeError('namespace_id cannot be None'))
+
+
+def test_create_namespace_fail_no_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    fail_create_namespace(idm, AuthsourceID('bs'), Token('t'), NamespaceID('n'),
+                          NoSuchAuthsourceError('bs'))
+
+
+def test_create_namespace_fail_not_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+
+    fail_create_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
+                          UnauthorizedError('User as/foo is not a system administrator'))
+
+
+def fail_create_namespace(idm, authsource, token, namespace_id, expected):
     with raises(Exception) as got:
-        idm.create_namespace(None)
-    assert_exception_correct(got.value, TypeError('namespace_id cannot be None'))
+        idm.create_namespace(authsource, token, namespace_id)
+    assert_exception_correct(got.value, expected)
 
 
 def test_add_user_to_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler1 = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler2 = create_autospec(UserHandler, spec_set=True, instance=True)
 
-    handler.get_authsource_id.return_value = AuthsourceID('asone')
-    idm = IDMapper(set([handler]), storage)
+    handler1.get_authsource_id.return_value = AuthsourceID('asone')
+    handler2.get_authsource_id.return_value = AuthsourceID('astwo')
+    idm = IDMapper(set([handler1, handler2]), storage)
 
-    handler.is_valid_user.return_value = True
+    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True)
+    handler1.is_valid_user.return_value = True
 
-    idm.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1')))
+    idm.add_user_to_namespace(
+        AuthsourceID('astwo'),
+        Token('t'),
+        NamespaceID('ns1'),
+        User(AuthsourceID('asone'), Username('u1')))
 
-    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {})]
+    assert handler2.get_user.call_args_list == [((Token('t'),), {})]
+    assert handler1.is_valid_user.call_args_list == [((Username('u1'),), {})]
     assert storage.add_user_to_namespace.call_args_list == \
         [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
 
@@ -65,10 +113,40 @@ def test_add_user_to_namespace_fail_None_input():
 
     idm = IDMapper(set(), storage)
 
-    fail_add_user_to_namespace(idm, None, User(AuthsourceID('as'), Username('u')),
-                               TypeError('namespace_id cannot be None'))
-    fail_add_user_to_namespace(idm, NamespaceID('n'), None,
-                               TypeError('user cannot be None'))
+    as_ = AuthsourceID('a')
+    t = Token('t')
+    n = NamespaceID('n')
+    u = User(AuthsourceID('b'), Username('u'))
+
+    fail_add_user_to_namespace(idm, None, t, n, u, TypeError('authsource_id cannot be None'))
+    fail_add_user_to_namespace(idm, as_, None, n, u, TypeError('token cannot be None'))
+    fail_add_user_to_namespace(idm, as_, t, None, u, TypeError('namespace_id cannot be None'))
+    fail_add_user_to_namespace(idm, as_, t, n, None, TypeError('user cannot be None'))
+
+
+def test_add_user_to_namespace_fail_no_admin_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    fail_add_user_to_namespace(idm, AuthsourceID('bs'), Token('t'), NamespaceID('n'),
+                               User(AuthsourceID('b'), Username('u')), NoSuchAuthsourceError('bs'))
+
+
+def test_add_user_to_namespace_fail_not_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+
+    fail_add_user_to_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
+                               User(AuthsourceID('b'), Username('u')),
+                               UnauthorizedError('User as/foo is not a system administrator'))
 
 
 def test_add_user_to_namespace_fail_authsource():
@@ -78,7 +156,10 @@ def test_add_user_to_namespace_fail_authsource():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
-    fail_add_user_to_namespace(idm, NamespaceID('n'), User(AuthsourceID('astwo'), Username('u')),
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
+
+    fail_add_user_to_namespace(idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
+                               User(AuthsourceID('astwo'), Username('u')),
                                NoSuchAuthsourceError('astwo'))
 
 
@@ -89,30 +170,40 @@ def test_add_user_to_namespace_fail_no_such_user():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
     handler.is_valid_user.return_value = False
 
-    fail_add_user_to_namespace(idm, NamespaceID('n'), User(AuthsourceID('asone'), Username('u')),
+    fail_add_user_to_namespace(idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
+                               User(AuthsourceID('asone'), Username('u')),
                                NoSuchUserError('asone/u'))
 
 
-def fail_add_user_to_namespace(idmapper, namespace_id, user, expected):
+def fail_add_user_to_namespace(idmapper, authsource, token, namespace_id, user, expected):
     with raises(Exception) as got:
-        idmapper.add_user_to_namespace(namespace_id, user)
+        idmapper.add_user_to_namespace(authsource, token, namespace_id, user)
     assert_exception_correct(got.value, expected)
 
 
 def test_remove_user_from_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler1 = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler2 = create_autospec(UserHandler, spec_set=True, instance=True)
 
-    handler.get_authsource_id.return_value = AuthsourceID('asone')
-    idm = IDMapper(set([handler]), storage)
+    handler1.get_authsource_id.return_value = AuthsourceID('asone')
+    handler2.get_authsource_id.return_value = AuthsourceID('astwo')
+    idm = IDMapper(set([handler1, handler2]), storage)
 
-    handler.is_valid_user.return_value = True
+    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True)
+    handler1.is_valid_user.return_value = True
 
-    idm.remove_user_from_namespace(NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1')))
+    idm.remove_user_from_namespace(
+        AuthsourceID('astwo'),
+        Token('t'),
+        NamespaceID('ns1'),
+        User(AuthsourceID('asone'), Username('u1')))
 
-    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {})]
+    assert handler2.get_user.call_args_list == [((Token('t'),), {})]
+    assert handler1.is_valid_user.call_args_list == [((Username('u1'),), {})]
     assert storage.remove_user_from_namespace.call_args_list == \
         [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
 
@@ -122,10 +213,41 @@ def test_remove_user_from_namespace_fail_None_input():
 
     idm = IDMapper(set(), storage)
 
-    fail_remove_user_from_namespace(idm, None, User(AuthsourceID('as'), Username('u')),
-                                    TypeError('namespace_id cannot be None'))
-    fail_remove_user_from_namespace(idm, NamespaceID('n'), None,
-                                    TypeError('user cannot be None'))
+    as_ = AuthsourceID('a')
+    t = Token('t')
+    n = NamespaceID('n')
+    u = User(AuthsourceID('b'), Username('u'))
+
+    fail_remove_user_from_namespace(idm, None, t, n, u, TypeError('authsource_id cannot be None'))
+    fail_remove_user_from_namespace(idm, as_, None, n, u, TypeError('token cannot be None'))
+    fail_remove_user_from_namespace(idm, as_, t, None, u, TypeError('namespace_id cannot be None'))
+    fail_remove_user_from_namespace(idm, as_, t, n, None, TypeError('user cannot be None'))
+
+
+def test_remove_user_from_namespace_fail_no_admin_authsource():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    fail_remove_user_from_namespace(idm, AuthsourceID('bs'), Token('t'), NamespaceID('n'),
+                                    User(AuthsourceID('b'), Username('u')),
+                                    NoSuchAuthsourceError('bs'))
+
+
+def test_remove_user_from_namespace_fail_not_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    idm = IDMapper(set([handler]), storage)
+
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+
+    fail_remove_user_from_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
+                                    User(AuthsourceID('b'), Username('u')),
+                                    UnauthorizedError('User as/foo is not a system administrator'))
 
 
 def test_remove_user_from_namespace_fail_authsource():
@@ -135,8 +257,11 @@ def test_remove_user_from_namespace_fail_authsource():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
+
     fail_remove_user_from_namespace(
-        idm, NamespaceID('n'), User(AuthsourceID('astwo'), Username('u')),
+        idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
+        User(AuthsourceID('astwo'), Username('u')),
         NoSuchAuthsourceError('astwo'))
 
 
@@ -147,16 +272,18 @@ def test_remove_user_from_namespace_fail_no_such_user():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), storage)
 
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
     handler.is_valid_user.return_value = False
 
     fail_remove_user_from_namespace(
-        idm, NamespaceID('n'), User(AuthsourceID('asone'), Username('u')),
+        idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
+        User(AuthsourceID('asone'), Username('u')),
         NoSuchUserError('asone/u'))
 
 
-def fail_remove_user_from_namespace(idmapper, namespace_id, user, expected):
+def fail_remove_user_from_namespace(idmapper, authsource, token, namespace_id, user, expected):
     with raises(Exception) as got:
-        idmapper.remove_user_from_namespace(namespace_id, user)
+        idmapper.remove_user_from_namespace(authsource, token, namespace_id, user)
     assert_exception_correct(got.value, expected)
 
 
