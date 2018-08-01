@@ -95,9 +95,9 @@ class UserHandlerSet:
         """
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         """
-        not_none(authsource_id, 'authsource_id')  # TODO NOW test
+        not_none(authsource_id, 'authsource_id')
         if authsource_id not in self._handlers:
-            raise NoSuchAuthsourceError(authsource_id.id)  # TODO NOW test
+            raise NoSuchAuthsourceError(authsource_id.id)
 
     def _calc_ttl(self, epoch, rel):  # TODO NOW TEST
         if not rel and not epoch:
@@ -113,7 +113,7 @@ class UserHandlerSet:
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
         """
-        not_none(token, 'token')  # TODO NOW test
+        not_none(token, 'token')
         self._check_authsource_id(authsource_id)
         # None default causes a key error
         cacheres = self._user_cache.get((authsource_id, token), default=False)
@@ -127,7 +127,7 @@ class UserHandlerSet:
         """
         :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
         """
-        not_none(user, 'user')  # TODO NOW test
+        not_none(user, 'user')
         self._check_authsource_id(user.authsource_id)
         # None default causes a key error
         exists = self._valid_cache.get(user, default=False)

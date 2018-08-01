@@ -7,6 +7,7 @@ from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import raises
 from jgikbase.test.idmapping.core.tokens_test import is_base64
 import time
+from jgikbase.idmapping.core.errors import NoSuchAuthsourceError
 
 
 def test_set_init_fail():
@@ -78,6 +79,28 @@ def check_set_get_user_default_cache_ttl(hset, handler, timer, timervals):
         (User(AuthsourceID('as'), Username('u')), True)
 
     assert handler.get_user.call_args_list == [((Token('t'),), {}), ((Token('t'),), {})]
+
+
+def test_set_get_user_fail_None_input():
+    hset = UserHandlerSet(set())
+    fail_set_get_user(hset, None, Token('t'), TypeError('authsource_id cannot be None'))
+    fail_set_get_user(hset, AuthsourceID('a'), None, TypeError('token cannot be None'))
+
+
+def test_set_get_user_no_authsource():
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    fail_set_get_user(UserHandlerSet(set([handler])),
+                      AuthsourceID('bs'),
+                      Token('t'),
+                      NoSuchAuthsourceError('bs'))
+
+
+def fail_set_get_user(hset, authsource_id, token, expected):
+    with raises(Exception) as got:
+        hset.get_user(authsource_id, token)
+    assert_exception_correct(got.value, expected)
 
 
 def test_set_is_valid_user_default_cache_ttl():
@@ -155,6 +178,26 @@ def test_set_is_valid_user_invalid_user():
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is False
 
     assert handler.is_valid_user.call_args_list == [((Username('u'),), {}), ((Username('u'),), {})]
+
+
+def test_set_is_valid_user_None_inputs():
+    hset = UserHandlerSet(set())
+    fail_set_is_valid_user(hset, None, TypeError('user cannot be None'))
+
+
+def test_set_is_valid_user_no_authsource():
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    fail_set_is_valid_user(UserHandlerSet(set([handler])),
+                           User(AuthsourceID('bs'), Username('n')),
+                           NoSuchAuthsourceError('bs'))
+
+
+def fail_set_is_valid_user(hset, user, expected):
+    with raises(Exception) as got:
+        hset.is_valid_user(user)
+    assert_exception_correct(got.value, expected)
 
 
 def test_local_init_fail():
