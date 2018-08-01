@@ -19,12 +19,17 @@ def test_get_authsource():
     assert LocalUserHandler(storage).get_authsource_id() == AuthsourceID('local')
 
 
-def test_get_user():
+def test_get_user_admin():
+    check_get_user_admin(True)
+    check_get_user_admin(False)
+
+
+def check_get_user_admin(isadmin):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    storage.get_user.return_value = (Username('bar'), False)
+    storage.get_user.return_value = (Username('bar'), isadmin)
 
     assert LocalUserHandler(storage).get_user(Token('foo')) == \
-        User(AuthsourceID('local'), Username('bar'))
+        (User(AuthsourceID('local'), Username('bar')), isadmin)
 
     thash = '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae'
     assert storage.get_user.call_args_list == [((HashedToken(thash),), {})]

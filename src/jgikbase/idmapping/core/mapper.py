@@ -43,6 +43,7 @@ class IDMapper:
         :raises NamespaceExistsError: if the namespace already exists.
         """
         not_none(namespace_id, 'namespace_id')
+        # TODO ADMIN take token, check user is admin
         self._storage.create_namespace(namespace_id)
 
     def _check_authsource_id(self, authsource_id):
@@ -77,6 +78,7 @@ class IDMapper:
         :raises UserExistsError: if the user already administrates the namespace.
         """
         not_none(namespace_id, 'namespace_id')
+        # TODO ADMIN take token, check user is admin
         self._check_valid_user(user)
         self._storage.add_user_to_namespace(namespace_id, user)
 
@@ -94,6 +96,7 @@ class IDMapper:
            or the user does not administrate the namespace.
         """
         not_none(namespace_id, 'namespace_id')
+        # TODO ADMIN take token, check user is admin
         self._check_valid_user(user)
         self._storage.remove_user_from_namespace(namespace_id, user)
 
@@ -133,6 +136,6 @@ class IDMapper:
         not_none(token, 'token')
         not_none(namespace_id, 'namespace_id')
         self._check_authsource_id(authsource_id)
-        user = self._handlers[authsource_id].get_user(token)
+        user, _ = self._handlers[authsource_id].get_user(token)
         self._check_authed(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
