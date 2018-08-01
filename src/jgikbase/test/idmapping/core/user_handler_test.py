@@ -29,8 +29,28 @@ def test_set_get_user_default_cache_ttl():
 
     hset = UserHandlerSet(set([handler]), timer)
 
+    check_set_get_user_default_cache_ttl(hset, handler, timer, [0, 299, 300, 301])
+
+
+def test_set_get_user_default_cache_ttl_set_ttl():
+    check_set_get_user_default_cache_ttl_set_ttl(100, [0, 99, 100, 101])
+    check_set_get_user_default_cache_ttl_set_ttl(500, [0, 499, 500, 501])
+
+
+def check_set_get_user_default_cache_ttl_set_ttl(ttl, timervals):
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer, cache_user_expiration=ttl)
+
+    check_set_get_user_default_cache_ttl(hset, handler, timer, timervals)
+
+
+def check_set_get_user_default_cache_ttl(hset, handler, timer, timervals):
+
     handler.get_user.return_value = (User(AuthsourceID('as'), Username('u')), False, None, None)
-    timer.return_value = 0
+    timer.return_value = timervals[0]
 
     # user will not be in cache
     assert hset.get_user(AuthsourceID('as'), Token('t')) == \
@@ -38,21 +58,21 @@ def test_set_get_user_default_cache_ttl():
 
     # user is now cached
     handler.get_user.return_value = None  # should cause error if called from now on
-    timer.return_value = 299  # just below default cache time of 300
+    timer.return_value = timervals[1]  # just below default cache time
 
     assert hset.get_user(AuthsourceID('as'), Token('t')) == \
         (User(AuthsourceID('as'), Username('u')), False)
 
     # now expire the user
     handler.get_user.return_value = (User(AuthsourceID('as'), Username('u')), True, None, None)
-    timer.return_value = 300
+    timer.return_value = timervals[2]
 
     assert hset.get_user(AuthsourceID('as'), Token('t')) == \
         (User(AuthsourceID('as'), Username('u')), True)
 
     # get the user again, should be cached.
     handler.get_user.return_value = None  # should cause error if called from now on
-    timer.return_value = 301
+    timer.return_value = timervals[3]
 
     assert hset.get_user(AuthsourceID('as'), Token('t')) == \
         (User(AuthsourceID('as'), Username('u')), True)
@@ -67,27 +87,47 @@ def test_set_is_valid_user_default_cache_ttl():
 
     hset = UserHandlerSet(set([handler]), timer)
 
+    check_set_is_valid_user_default_cache_ttl(hset, handler, timer, [0, 3599, 3600, 3601])
+
+
+def test_set_is_valid_user_default_cache_ttl_set_ttl():
+    check_set_is_valid_user_default_cache_ttl_set_ttl(100, [0, 99, 100, 101])
+    check_set_is_valid_user_default_cache_ttl_set_ttl(10000, [0, 9999, 10000, 10001])
+
+
+def check_set_is_valid_user_default_cache_ttl_set_ttl(ttl, timervals):
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer, cache_is_valid_expiration=ttl)
+
+    check_set_is_valid_user_default_cache_ttl(hset, handler, timer, timervals)
+
+
+def check_set_is_valid_user_default_cache_ttl(hset, handler, timer, timervals):
+
     handler.is_valid_user.return_value = (True, None, None)
-    timer.return_value = 0
+    timer.return_value = timervals[0]
 
     # user will not be in cache
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is True
 
     # user is now cached
     handler.is_valid_user.return_value = None  # should cause error if called from now on
-    timer.return_value = 3599  # just below default cache time of 3600
+    timer.return_value = timervals[1]  # just below default cache time
 
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is True
 
     # now expire the user
     handler.is_valid_user.return_value = (True, None, None)
-    timer.return_value = 3600
+    timer.return_value = timervals[2]
 
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is True
 
     # get the user again, should be cached
     handler.is_valid_user.return_value = None  # should cause error if called from now on
-    timer.return_value = 3601
+    timer.return_value = timervals[3]
 
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is True
 

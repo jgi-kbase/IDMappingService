@@ -64,7 +64,7 @@ class UserHandlerSet:
             self,
             user_handlers: Set[UserHandler],
             cache_timer: Callable[[], int]=None,
-            cache_max_size: int=10000,  # TODO NOW test max size and different default exp
+            cache_max_size: int=10000,  # TODO NOW test max size
             cache_user_expiration: int=300,
             cache_is_valid_expiration: int=3600
             ) -> None:
