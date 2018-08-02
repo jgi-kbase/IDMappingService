@@ -131,6 +131,58 @@ def test_set_get_user_cache_max_count():
                                                ((Token('t1'),), {})]
 
 
+def test_set_get_user_rel_ttl():
+    check_set_get_user_handler_ttl(None, 3, [100, 102, 103])
+
+
+def test_set_get_user_epoch_ttl():
+    check_set_get_user_handler_ttl(1003, None, [1000, 1002, 1003])
+
+
+def test_set_get_user_epoch_lt_rel_ttl():
+    # tests the case where both epoch and relative ttls are provided, but the epoch ttl is
+    # closer than the relative ttl.
+    check_set_get_user_handler_ttl(1003, 6, [1000, 1002, 1003])
+
+
+def test_set_get_user_rel_lt_epoch_ttl():
+    # tests the case where both epoch and relative ttls are provided, but the relative ttl is
+    # closer than the epoch ttl.
+    check_set_get_user_handler_ttl(1007, 4, [1000, 1003, 1004])
+
+
+def check_set_get_user_handler_ttl(epoch, rel, timervals):
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer)
+
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), False, epoch, rel)
+    timer.return_value = timervals[0]
+
+    # cache user for X secs
+    assert hset.get_user(AuthsourceID('as'), Token('t')) == \
+        (User(AuthsourceID('as'), Username('u1')), False)
+
+    # force an error if the handler is called
+    handler.get_user.return_value = None
+    timer.return_value = timervals[1]
+
+    assert hset.get_user(AuthsourceID('as'), Token('t')) == \
+        (User(AuthsourceID('as'), Username('u1')), False)
+
+    # expect handler call at Y sec
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), True, epoch, rel)
+    timer.return_value = timervals[2]
+
+    assert hset.get_user(AuthsourceID('as'), Token('t')) == \
+        (User(AuthsourceID('as'), Username('u1')), True)
+
+    # check correct number of calls to get_user
+    assert handler.get_user.call_args_list == [((Token('t'),), {}), ((Token('t'),), {})]
+
+
 def test_set_get_user_fail_None_input():
     hset = UserHandlerSet(set())
     fail_set_get_user(hset, None, Token('t'), TypeError('authsource_id cannot be None'))
