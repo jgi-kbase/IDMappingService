@@ -81,6 +81,56 @@ def check_set_get_user_default_cache_ttl(hset, handler, timer, timervals):
     assert handler.get_user.call_args_list == [((Token('t'),), {}), ((Token('t'),), {})]
 
 
+def test_set_get_user_cache_max_count():
+    # testing the default of 10k is just silly, not going to bother.
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer, cache_max_size=2)
+
+    # add user 1
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), False, None, None)
+    timer.return_value = 0
+
+    assert hset.get_user(AuthsourceID('as'), Token('t1')) == \
+        (User(AuthsourceID('as'), Username('u1')), False)
+
+    # add user 2
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u2')), True, None, None)
+    timer.return_value = 1
+
+    assert hset.get_user(AuthsourceID('as'), Token('t2')) == \
+        (User(AuthsourceID('as'), Username('u2')), True)
+
+    # add user 3, user 1 should now be evicted from the cache
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u3')), False, None, None)
+    timer.return_value = 2
+
+    assert hset.get_user(AuthsourceID('as'), Token('t3')) == \
+        (User(AuthsourceID('as'), Username('u3')), False)
+
+    # should only need a handler call for user 1 at this point
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), True, None, None)
+    timer.return_value = 3
+
+    # get the 3 users. Get user 1 last otherwise it'll evict user 2 from the cache
+    assert hset.get_user(AuthsourceID('as'), Token('t2')) == \
+        (User(AuthsourceID('as'), Username('u2')), True)
+
+    assert hset.get_user(AuthsourceID('as'), Token('t3')) == \
+        (User(AuthsourceID('as'), Username('u3')), False)
+
+    assert hset.get_user(AuthsourceID('as'), Token('t1')) == \
+        (User(AuthsourceID('as'), Username('u1')), True)
+
+    # check that the calls to get_user are as expected:
+    assert handler.get_user.call_args_list == [((Token('t1'),), {}),
+                                               ((Token('t2'),), {}),
+                                               ((Token('t3'),), {}),
+                                               ((Token('t1'),), {})]
+
+
 def test_set_get_user_fail_None_input():
     hset = UserHandlerSet(set())
     fail_set_get_user(hset, None, Token('t'), TypeError('authsource_id cannot be None'))
@@ -178,6 +228,50 @@ def test_set_is_valid_user_invalid_user():
     assert hset.is_valid_user(User(AuthsourceID('as'), Username('u'))) is False
 
     assert handler.is_valid_user.call_args_list == [((Username('u'),), {}), ((Username('u'),), {})]
+
+
+def test_set_is_valid_user_cache_max_count():
+    # testing the default of 10k is just silly, not going to bother.
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer, cache_max_size=2)
+
+    # add user 1
+    handler.is_valid_user.return_value = (True, None, None)
+    timer.return_value = 0
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u1'))) is True
+
+    # add user 2. Don't need another return value for is_valid_user, has to be True to cache
+    timer.return_value = 1
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u2'))) is True
+
+    # add user 3, user 1 should now be evicted from the cache
+    timer.return_value = 2
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u3'))) is True
+
+    # force an assert fail if is_valid_user is called early:
+    handler.is_valid_user.return_value = (False, None, None)
+    timer.return_value = 3
+
+    # get the 3 users. Get user 1 last otherwise it'll evict user 2 from the cache
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u2'))) is True
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u3'))) is True
+
+    # get user 1
+    handler.is_valid_user.return_value = (True, None, None)
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u1'))) is True
+
+    # check that the calls to is_valid_user are as expected:
+    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {}),
+                                                    ((Username('u2'),), {}),
+                                                    ((Username('u3'),), {}),
+                                                    ((Username('u1'),), {})]
 
 
 def test_set_is_valid_user_None_inputs():

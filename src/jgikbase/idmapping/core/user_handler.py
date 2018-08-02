@@ -57,14 +57,14 @@ class UserHandler:  # pragma: no cover
 
 class UserHandlerSet:
     """
-    A container for a number of user handlers that provides caching for the handlers.
+    A container for a number of user handlers that provides caching for said handlers.
     """
 
     def __init__(
             self,
             user_handlers: Set[UserHandler],
             cache_timer: Callable[[], int]=None,
-            cache_max_size: int=10000,  # TODO NOW test max size
+            cache_max_size: int=10000,
             cache_user_expiration: int=300,
             cache_is_valid_expiration: int=3600
             ) -> None:
