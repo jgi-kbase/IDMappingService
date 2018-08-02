@@ -6,7 +6,7 @@ from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
 from jgikbase.idmapping.core.user import AuthsourceID, Username, User
-from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
+from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError, NoSuchNamespaceError
 from jgikbase.idmapping.core.tokens import Token
 
 
@@ -458,7 +458,7 @@ def check_create_mapping(targetns: Namespace):
 
     handlers.get_user.return_value = (User(AuthsourceID('a'), Username('n')), False)
     storage.get_namespace.side_effect = [
-        Namespace(NamespaceID('n1'), True, set([
+        Namespace(NamespaceID('n1'), False, set([
             User(AuthsourceID('a'), Username('n')), User(AuthsourceID('a'), Username('n2'))])),
         targetns]
 
@@ -503,8 +503,7 @@ def test_create_mapping_fail_unauthed_for_admin_namespace():
     fail_create_mapping(idm, AuthsourceID('a'), Token('t'),
                         ObjectID(NamespaceID('n1'), 'o1'),
                         ObjectID(NamespaceID('n2'), 'o2'),
-                        UnauthorizedError(
-                            'User a/n may not administrate namespace n1'))
+                        UnauthorizedError('User a/n may not administrate namespace n1'))
 
 
 def test_create_mapping_fail_unauthed_for_other_namespace():
@@ -523,11 +522,93 @@ def test_create_mapping_fail_unauthed_for_other_namespace():
     fail_create_mapping(idm, AuthsourceID('a'), Token('t'),
                         ObjectID(NamespaceID('n1'), 'o1'),
                         ObjectID(NamespaceID('n2'), 'o2'),
-                        UnauthorizedError(
-                            'User a/n may not administrate namespace n2'))
+                        UnauthorizedError('User a/n may not administrate namespace n2'))
 
 
 def fail_create_mapping(idm, authsource_id, token, oid1, oid2, expected):
     with raises(Exception) as got:
         idm.create_mapping(authsource_id, token, oid1, oid2)
+    assert_exception_correct(got.value, expected)
+
+
+def test_delete_mapping():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    handlers.get_user.return_value = (User(AuthsourceID('a'), Username('n')), False)
+    storage.get_namespace.side_effect = [
+        Namespace(NamespaceID('n1'), False, set([
+            User(AuthsourceID('a'), Username('n')), User(AuthsourceID('a'), Username('n2'))])),
+        Namespace(NamespaceID('n2'), False)]
+
+    idm.remove_mapping(AuthsourceID('a'), Token('t'),
+                       ObjectID(NamespaceID('n1'), 'o1'),
+                       ObjectID(NamespaceID('n2'), 'o2'))
+
+    assert handlers.get_user.call_args_list == [((AuthsourceID('a'), Token('t'),), {})]
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n1'),), {}),
+                                                    ((NamespaceID('n2'),), {})]
+    assert storage.remove_mapping.call_args_list == [((ObjectID(NamespaceID('n1'), 'o1'),
+                                                       ObjectID(NamespaceID('n2'), 'o2')), {})]
+
+
+def test_remove_mapping_fail_None_input():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    a = AuthsourceID('a')
+    t = Token('t')
+    o1 = ObjectID(NamespaceID('n2'), 'o1')
+    o2 = ObjectID(NamespaceID('n2'), 'o2')
+
+    # authsource id is checked by the handler set
+    fail_remove_mapping(idm, a, None, o1, o2, TypeError('token cannot be None'))
+    fail_remove_mapping(idm, a, t, None, o2, TypeError('administrative_oid cannot be None'))
+    fail_remove_mapping(idm, a, t, o1, None, TypeError('oid cannot be None'))
+
+
+def test_remove_mapping_fail_unauthed_for_admin_namespace():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    handlers.get_user.return_value = (User(AuthsourceID('a'), Username('n')), False)
+    storage.get_namespace.return_value = Namespace(NamespaceID('n1'), True, set([
+            User(AuthsourceID('a'), Username('n1')), User(AuthsourceID('a'), Username('n2'))]))
+
+    fail_remove_mapping(idm, AuthsourceID('a'), Token('t'),
+                        ObjectID(NamespaceID('n1'), 'o1'),
+                        ObjectID(NamespaceID('n2'), 'o2'),
+                        UnauthorizedError('User a/n may not administrate namespace n1'))
+
+
+def test_remove_mapping_fail_no_such_other_namespace():
+    # since the return value of the 2nd get namespace call isn't used, and the reason for the
+    # call is to check the namespace exists, we explicitly test the call is made by throwing
+    # an exception.
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    handlers.get_user.return_value = (User(AuthsourceID('a'), Username('n')), False)
+    storage.get_namespace.side_effect = [
+        Namespace(NamespaceID('n1'), False, set([
+            User(AuthsourceID('a'), Username('n')), User(AuthsourceID('a'), Username('n2'))])),
+        NoSuchNamespaceError('n2')]
+
+    fail_remove_mapping(idm, AuthsourceID('a'), Token('t'),
+                        ObjectID(NamespaceID('n1'), 'o1'),
+                        ObjectID(NamespaceID('n2'), 'o2'),
+                        NoSuchNamespaceError('n2'))
+
+
+def fail_remove_mapping(idm, authsource_id, token, oid1, oid2, expected):
+    with raises(Exception) as got:
+        idm.remove_mapping(authsource_id, token, oid1, oid2)
     assert_exception_correct(got.value, expected)
