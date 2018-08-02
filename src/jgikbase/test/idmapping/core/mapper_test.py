@@ -37,7 +37,7 @@ def test_create_namespace():
     handler.get_authsource_id.return_value = AuthsourceID('as')
     idm = IDMapper(set([handler]), set([AuthsourceID('as')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), True)
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), True, 7, 10)
 
     idm.create_namespace(AuthsourceID('as'), Token('bar'), NamespaceID('foo'))
 
@@ -87,7 +87,7 @@ def test_create_namespace_fail_not_admin():
 
     idm = IDMapper(set([handler]), set([AuthsourceID('as')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False, 7, 10)
 
     fail_create_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
                           UnauthorizedError('User as/foo is not a system administrator'))
@@ -108,8 +108,8 @@ def test_add_user_to_namespace():
     handler2.get_authsource_id.return_value = AuthsourceID('astwo')
     idm = IDMapper(set([handler1, handler2]), set([AuthsourceID('astwo')]), storage)
 
-    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True)
-    handler1.is_valid_user.return_value = True
+    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True, 7, 10)
+    handler1.is_valid_user.return_value = (True, 7, 10)
 
     idm.add_user_to_namespace(
         AuthsourceID('astwo'),
@@ -171,7 +171,7 @@ def test_add_user_to_namespace_fail_not_admin():
 
     idm = IDMapper(set([handler]), set([AuthsourceID('as')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False, 7, 10)
 
     fail_add_user_to_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
                                User(AuthsourceID('as'), Username('u')),
@@ -185,7 +185,7 @@ def test_add_user_to_namespace_fail_authsource():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True, 7, 10)
 
     fail_add_user_to_namespace(idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
                                User(AuthsourceID('astwo'), Username('u')),
@@ -199,8 +199,8 @@ def test_add_user_to_namespace_fail_no_such_user():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
-    handler.is_valid_user.return_value = False
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True, 7, 10)
+    handler.is_valid_user.return_value = (False, 7, 10)
 
     fail_add_user_to_namespace(idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
                                User(AuthsourceID('asone'), Username('u')),
@@ -222,8 +222,8 @@ def test_remove_user_from_namespace():
     handler2.get_authsource_id.return_value = AuthsourceID('astwo')
     idm = IDMapper(set([handler1, handler2]), set([AuthsourceID('astwo')]), storage)
 
-    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True)
-    handler1.is_valid_user.return_value = True
+    handler2.get_user.return_value = (User(AuthsourceID('astwo'), Username('foo')), True, 7, 10)
+    handler1.is_valid_user.return_value = (True, 7, 10)
 
     idm.remove_user_from_namespace(
         AuthsourceID('astwo'),
@@ -285,7 +285,7 @@ def test_remove_user_from_namespace_fail_not_admin():
 
     idm = IDMapper(set([handler]), set([AuthsourceID('as')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False)
+    handler.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), False, 7, 10)
 
     fail_remove_user_from_namespace(idm, AuthsourceID('as'), Token('t'), NamespaceID('n'),
                                     User(AuthsourceID('as'), Username('u')),
@@ -299,7 +299,7 @@ def test_remove_user_from_namespace_fail_authsource():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True, 7, 10)
 
     fail_remove_user_from_namespace(
         idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
@@ -314,8 +314,8 @@ def test_remove_user_from_namespace_fail_no_such_user():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True)
-    handler.is_valid_user.return_value = False
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('bar')), True, 7, 10)
+    handler.is_valid_user.return_value = (False, 7, 10)
 
     fail_remove_user_from_namespace(
         idm, AuthsourceID('asone'), Token('t'), NamespaceID('n'),
@@ -341,7 +341,7 @@ def check_set_namespace_publicly_mappable(pub_value):
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False)
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False, 7, 10)
     storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
         User(AuthsourceID('astwo'), Username('u2')),
         User(AuthsourceID('asone'), Username('u')),
@@ -391,7 +391,7 @@ def test_set_namespace_publicly_mappable_fail_unauthed():
     handler.get_authsource_id.return_value = AuthsourceID('asone')
     idm = IDMapper(set([handler]), set([AuthsourceID('asone')]), storage)
 
-    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False)
+    handler.get_user.return_value = (User(AuthsourceID('asone'), Username('u')), False, 7, 10)
     storage.get_namespace.return_value = Namespace(NamespaceID('n'), False, set([
         User(AuthsourceID('asone'), Username('u2')),
         User(AuthsourceID('asthree'), Username('u'))]))

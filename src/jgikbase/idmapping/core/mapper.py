@@ -63,7 +63,7 @@ class IDMapper:
             raise UnauthorizedError(('Auth source {} is not configured as a provider of ' +
                                     'system administration status').format(authsource_id.id))
         # TODO CACHE cache get_user results
-        user, admin = self._handlers[authsource_id].get_user(token)
+        user, admin, _, _ = self._handlers[authsource_id].get_user(token)
         if not admin:
             raise UnauthorizedError('User {}/{} is not a system administrator'.format(
                 user.authsource_id.id, user.username.name))
@@ -98,7 +98,7 @@ class IDMapper:
         not_none(user, 'user')
         self._check_authsource_id(user.authsource_id)
         # TODO CACHE cache is valid user results
-        if not self._handlers[user.authsource_id].is_valid_user(user.username):
+        if not self._handlers[user.authsource_id].is_valid_user(user.username)[0]:
             raise NoSuchUserError('{}/{}'.format(user.authsource_id.id, user.username.name))
 
     def add_user_to_namespace(
@@ -196,6 +196,6 @@ class IDMapper:
         not_none(namespace_id, 'namespace_id')
         self._check_authsource_id(authsource_id)
         # TODO CACHE cache get_user results
-        user, _ = self._handlers[authsource_id].get_user(token)
+        user, _, _, _ = self._handlers[authsource_id].get_user(token)
         self._check_authed_for_ns(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)

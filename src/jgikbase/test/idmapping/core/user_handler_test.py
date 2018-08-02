@@ -29,7 +29,7 @@ def check_get_user_admin(isadmin):
     storage.get_user.return_value = (Username('bar'), isadmin)
 
     assert LocalUserHandler(storage).get_user(Token('foo')) == \
-        (User(AuthsourceID('local'), Username('bar')), isadmin)
+        (User(AuthsourceID('local'), Username('bar')), isadmin, None, 300)
 
     thash = '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae'
     assert storage.get_user.call_args_list == [((HashedToken(thash),), {})]
@@ -48,11 +48,11 @@ def test_is_valid_user():
 
     luh = LocalUserHandler(storage)
 
-    assert luh.is_valid_user(Username('foo')) is True
+    assert luh.is_valid_user(Username('foo')) == (True, None, 3600)
 
     storage.user_exists.return_value = False
 
-    assert luh.is_valid_user(Username('bar')) is False
+    assert luh.is_valid_user(Username('bar')) == (False, None, 3600)
 
     assert storage.user_exists.call_args_list == [
         ((Username('foo'),), {}),

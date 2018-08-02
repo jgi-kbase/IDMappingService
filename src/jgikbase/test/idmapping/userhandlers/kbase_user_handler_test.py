@@ -95,7 +95,7 @@ def check_get_user(isadmin, customroles):
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
-              json={'user': 'u1'})
+              json={'user': 'u1', 'expires': 4800, 'cachefor': 5600})
 
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
@@ -104,7 +104,7 @@ def check_get_user(isadmin, customroles):
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'mapping_admin')
 
         assert kbuh.get_user(Token('bar')) == \
-            (User(AuthsourceID('kbase'), Username('u1')), isadmin)
+            (User(AuthsourceID('kbase'), Username('u1')), isadmin, 4, 5)
 
 
 def test_get_user_fail_None_input():
@@ -155,7 +155,7 @@ def test_get_user_fail_not_json_me():
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
-              json={'user': 'u1'})
+              json={'user': 'u1', 'expires': 2000, 'cachefor': 3000})
 
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
@@ -173,7 +173,7 @@ def test_get_user_fail_invalid_token_me():
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
-              json={'user': 'u1'})
+              json={'user': 'u1', 'expires': 2000, 'cachefor': 3000})
 
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
@@ -191,7 +191,7 @@ def test_get_user_fail_auth_returned_other_error_me():
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
-              json={'user': 'u1'})
+              json={'user': 'u1', 'expires': 2000, 'cachefor': 3000})
 
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
@@ -223,7 +223,7 @@ def check_is_valid_user(json, result):
 
         kbuh = get_user_handler('http://my1stauthservice.com/api/', Token('foo'), 'admin')
 
-        assert kbuh.is_valid_user(Username('imauser')) is result
+        assert kbuh.is_valid_user(Username('imauser')) == (result, None, 3600)
 
 
 def test_is_valid_user_fail_None_input():
