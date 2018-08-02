@@ -3,7 +3,7 @@ The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
-from typing import Set, cast, Tuple
+from typing import Set, cast, Tuple, Iterable
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from jgikbase.idmapping.core.user import User, AuthsourceID
@@ -11,7 +11,6 @@ from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
 
 # TODO NOW logging
-# TODO NOW implement rest of methods necessary for API
 
 
 class IDMapper:
@@ -303,3 +302,28 @@ class IDMapper:
         self._check_authed_for_ns(user, adminns)
         self._storage.get_namespace(oid.namespace_id)  # check for existence
         self._storage.remove_mapping(administrative_oid, oid)
+
+    def get_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
+                     ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
+        """
+        Find mappings given a namespace / id combination.
+
+        If the id does not exist, no results will be returned.
+
+        :param oid: the namespace / id combination to match against.
+        :param ns_filter: a list of namespaces with which to filter the results. Only results in
+            these namespaces will be returned.
+        :returns: a tuple of sets of object IDs. The first set in the tuple contains mappings
+            where the provided object ID is the administrative object ID, and the second set
+            contains the remainder of the mappings.
+        :raise TypeError: if the object ID is None or the filter contains None.
+        :raise NoSuchNamespaceError: if any of the namespaces do not exist.
+        """
+        not_none(oid, 'oid')
+        check = [oid.namespace_id]
+        if ns_filter:
+            no_Nones_in_iterable(ns_filter, 'ns_filter')
+            check.extend(ns_filter)
+        # check for existence
+        self._storage.get_namespaces(check)  # check for existence
+        return self._storage.find_mappings(oid, ns_filter=ns_filter)
