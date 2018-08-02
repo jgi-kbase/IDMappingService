@@ -65,7 +65,7 @@ class KBaseUserHandler(UserHandler):
                               str(r.status_code))
             # assume that if we get json then at least this is the auth server and we can
             # rely on the error structure.
-            if j['error']['appcode'] == 10020:
+            if j['error']['apperror'] == 'Invalid token':
                 raise InvalidTokenError('KBase auth server reported token is invalid.')
             # don't really see any other error codes we need to worry about - maybe disabled?
             # worry about it later.
