@@ -2,7 +2,7 @@ from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
-from jgikbase.idmapping.core.user import AuthsourceID, User
+from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 
 
 def test_namespace_id_init_pass():
@@ -72,16 +72,16 @@ def test_namespace_init_pass():
     assert ns.is_publicly_mappable is True
     assert ns.authed_users == set()
 
-    ns = Namespace(NamespaceID('foo'), False, set([User(AuthsourceID('bar'), 'baz')]))
+    ns = Namespace(NamespaceID('foo'), False, set([User(AuthsourceID('bar'), Username('baz'))]))
     assert ns.namespace_id == NamespaceID('foo')
     assert ns.is_publicly_mappable is False
-    assert ns.authed_users == set([User(AuthsourceID('bar'), 'baz')])
+    assert ns.authed_users == set([User(AuthsourceID('bar'), Username('baz'))])
 
 
 def test_namespace_init_fail():
     nsid = NamespaceID('foo')
     fail_namespace_init(None, None, TypeError('namespace_id cannot be None'))
-    fail_namespace_init(nsid, set([User(AuthsourceID('as'), 'foo'), None]),
+    fail_namespace_init(nsid, set([User(AuthsourceID('as'), Username('foo')), None]),
                         TypeError('None item in authed_users'))
 
 
@@ -89,6 +89,13 @@ def fail_namespace_init(id_, authed_users, expected):
     with raises(Exception) as got:
         Namespace(id_, True, authed_users)
     assert_exception_correct(got.value, expected)
+
+
+def test_namespace_without_users():
+    ns = Namespace(NamespaceID('n'), True, set([User(AuthsourceID('a'), Username('u')),
+                                                User(AuthsourceID('b'), Username('b'))]))
+    assert ns.without_users() == Namespace(NamespaceID('n'), True, set())
+    assert ns.without_users() == Namespace(NamespaceID('n'), True, None)
 
 
 def test_namespace_equals():

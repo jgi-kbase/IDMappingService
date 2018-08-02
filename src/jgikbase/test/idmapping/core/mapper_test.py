@@ -317,3 +317,88 @@ def fail_set_namespace_publicly_mappable(idmapper, auth_id, token, namespace_id,
     with raises(Exception) as got:
         idmapper.set_namespace_publicly_mappable(auth_id, token, namespace_id, False)
     assert_exception_correct(got.value, expected)
+
+
+def test_get_namespace_no_auth():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), True, set([
+        User(AuthsourceID('a'), Username('u')), User(AuthsourceID('a'), Username('u1'))]))
+
+    assert idm.get_namespace(NamespaceID('n')) == Namespace(NamespaceID('n'), True)
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n'), ), {})]
+
+
+def test_get_namespace_not_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), True, set([
+        User(AuthsourceID('a'), Username('u')), User(AuthsourceID('a'), Username('u1'))]))
+    handlers.get_user.return_value = (User(AuthsourceID('b'), Username('u2')), False)
+
+    assert idm.get_namespace(NamespaceID('n'), AuthsourceID('b'), Token('t')) == Namespace(
+        NamespaceID('n'), True, None)
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n'), ), {})]
+    assert handlers.get_user.call_args_list == [((AuthsourceID('b'), Token('t')), {})]
+
+
+def test_get_namespace_sysadmin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), True, set([
+        User(AuthsourceID('a'), Username('u')), User(AuthsourceID('a'), Username('u1'))]))
+    handlers.get_user.return_value = (User(AuthsourceID('b'), Username('u2')), True)
+
+    assert idm.get_namespace(NamespaceID('n'), AuthsourceID('b'), Token('t')) == Namespace(
+        NamespaceID('n'), True, set([
+            User(AuthsourceID('a'), Username('u')), User(AuthsourceID('a'), Username('u1'))]))
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n'), ), {})]
+    assert handlers.get_user.call_args_list == [((AuthsourceID('b'), Token('t')), {})]
+
+
+def test_get_namespace_ns_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespace.return_value = Namespace(NamespaceID('n'), True, set([
+        User(AuthsourceID('a'), Username('u')), User(AuthsourceID('b'), Username('u1'))]))
+    handlers.get_user.return_value = (User(AuthsourceID('b'), Username('u1')), False)
+
+    assert idm.get_namespace(NamespaceID('n'), AuthsourceID('b'), Token('t')) == Namespace(
+        NamespaceID('n'), True, set([
+            User(AuthsourceID('a'), Username('u')), User(AuthsourceID('b'), Username('u1'))]))
+    assert storage.get_namespace.call_args_list == [((NamespaceID('n'), ), {})]
+    assert handlers.get_user.call_args_list == [((AuthsourceID('b'), Token('t')), {})]
+
+
+def test_get_namespace_fail_None_input():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    n = NamespaceID('n')
+    a = AuthsourceID('a')
+    t = Token('t')
+
+    e = 'If token or authsource_id is specified, both must be specified'
+    fail_get_namespace(idm, None, a, t, TypeError('namespace_id cannot be None'))
+    fail_get_namespace(idm, n, None, t, TypeError(e))
+    fail_get_namespace(idm, n, a, None, TypeError(e))
+
+
+def fail_get_namespace(idm, namespace_id, authsource_id, token, expected):
+    with raises(Exception) as got:
+        idm.get_namespace(namespace_id, authsource_id, token)
+    assert_exception_correct(got.value, expected)

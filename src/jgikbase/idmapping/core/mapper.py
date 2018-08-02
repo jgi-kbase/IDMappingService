@@ -3,7 +3,7 @@ The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
-from typing import Set
+from typing import Set, cast
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID
 from jgikbase.idmapping.core.user import User, AuthsourceID
@@ -184,3 +184,33 @@ class IDMapper:
         user, _ = self._handlers.get_user(authsource_id, token)
         self._check_authed_for_ns(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
+
+    def get_namespace(
+            self,
+            namespace_id: NamespaceID,
+            authsource_id: AuthsourceID=None,
+            token: Token=None):
+        '''
+        Get a namespace. If user credentials are provided and the user is a system admin or an
+        admin of the namespace, the namespace user list will be returned. Otherwise, the user
+        list will be empty.
+
+        :param namespace_id: the ID of the namepspace to get.
+        :param authsource_id: the authsource of the provided token.
+        :param token: the user's token.
+        :raises TypeError: if the namespace ID is None or only one of the authsource ID or token
+            are supplied.
+        :raises NoSuchNamespaceError: if the namespace does not exist.
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises InvalidTokenError: if the token is invalid.
+        '''
+        not_none(namespace_id, 'namespace_id')
+        if bool(authsource_id) ^ bool(token):  # xor
+            raise TypeError('If token or authsource_id is specified, both must be specified')
+        ns = self._storage.get_namespace(namespace_id)
+        if token:
+            authsource_id = cast(AuthsourceID, authsource_id)  # mypy doesn't understand the xor
+            user, admin = self._handlers.get_user(authsource_id, token)
+            if admin or user in ns.authed_users:
+                return ns
+        return ns.without_users()
