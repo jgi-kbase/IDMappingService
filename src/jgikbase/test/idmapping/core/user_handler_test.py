@@ -326,6 +326,56 @@ def test_set_is_valid_user_cache_max_count():
                                                     ((Username('u1'),), {})]
 
 
+def test_set_is_valid_user_rel_ttl():
+    check_set_is_valid_user_handler_ttl(None, 3, [100, 102, 103])
+
+
+def test_set_is_valid_user_epoch_ttl():
+    check_set_is_valid_user_handler_ttl(1003, None, [1000, 1002, 1003])
+
+
+def test_set_is_valid_user_epoch_lt_rel_ttl():
+    # tests the case where both epoch and relative ttls are provided, but the epoch ttl is
+    # closer than the relative ttl.
+    check_set_is_valid_user_handler_ttl(1003, 6, [1000, 1002, 1003])
+
+
+def test_set_is_valid_user_rel_lt_epoch_ttl():
+    # tests the case where both epoch and relative ttls are provided, but the relative ttl is
+    # closer than the epoch ttl.
+    check_set_is_valid_user_handler_ttl(1007, 4, [1000, 1003, 1004])
+
+
+def check_set_is_valid_user_handler_ttl(epoch, rel, timervals):
+    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    timer = create_autospec(time.time, spec_set=True)
+    handler.get_authsource_id.return_value = AuthsourceID('as')
+
+    hset = UserHandlerSet(set([handler]), timer)
+
+    handler.is_valid_user.return_value = (True, epoch, rel)
+    timer.return_value = timervals[0]
+
+    # cache user for X secs
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u1'))) is True
+
+    # force an error if the handler is called
+    handler.is_valid_user.return_value = None
+    timer.return_value = timervals[1]
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u1'))) is True
+
+    # expect handler call at Y sec
+    handler.is_valid_user.return_value = (True, epoch, rel)
+    timer.return_value = timervals[2]
+
+    assert hset.is_valid_user(User(AuthsourceID('as'), Username('u1'))) is True
+
+    # check correct number of calls to get_user
+    assert handler.is_valid_user.call_args_list == [((Username('u1'),), {}),
+                                                    ((Username('u1'),), {})]
+
+
 def test_set_is_valid_user_None_inputs():
     hset = UserHandlerSet(set())
     fail_set_is_valid_user(hset, None, TypeError('user cannot be None'))

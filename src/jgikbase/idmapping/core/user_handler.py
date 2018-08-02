@@ -99,7 +99,7 @@ class UserHandlerSet:
         if authsource_id not in self._handlers:
             raise NoSuchAuthsourceError(authsource_id.id)
 
-    def _calc_ttl(self, epoch, rel):  # TODO NOW TEST
+    def _calc_ttl(self, epoch, rel):
         if not rel and not epoch:
             return None
         if not rel:
