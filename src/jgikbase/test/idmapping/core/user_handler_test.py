@@ -492,6 +492,23 @@ def test_local_new_token_fail():
     assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
+def test_local_set_user_as_admin():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+
+    LocalUserHandler(storage).set_user_as_admin(Username('n'), True)
+    LocalUserHandler(storage).set_user_as_admin(Username('r'), False)
+
+    assert storage.set_local_user_as_admin.call_args_list == [((Username('n'), True), {}),
+                                                              ((Username('r'), False), {})]
+
+
+def test_local_set_user_as_admin_fail():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    with raises(Exception) as got:
+        LocalUserHandler(storage).set_user_as_admin(None, True)
+    assert_exception_correct(got.value, TypeError('username cannot be None'))
+
+
 def test_local_get_users():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     storage.get_users.return_value = {Username('foo'): False, Username('bar'): True}
