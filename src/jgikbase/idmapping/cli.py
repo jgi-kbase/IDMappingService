@@ -59,9 +59,7 @@ class IDMappingCLI:
         :returns: the exit code for the program.
         """
         a = self._parse_args()
-        if not a.list_users and not a.user:
-            self._stderr.write('One of {} or {} must be specified.\n'.format(
-                self._LIST, self._USER))
+        if not self._check_inputs(a):
             return 1
         try:
             luh = self._builder.build_local_user_handler(Path(a.config))
@@ -70,16 +68,8 @@ class IDMappingCLI:
             return 1
         if a.list_users:
             return self._list_users(luh, a.verbose)
-        # ok, so user must have a value at this point
-        if sum((a.create, bool(a.admin), a.new_token)) != 1:
-            self._stderr.write('Exactly one of {}, {}, or {} must be specified.\n'.format(
-                self._CREATE, self._NEW_TOKEN, self._ADMIN))
-            return 1
-        try:
-            u = Username(a.user)
-        except Exception as e:
-            self._handle_error(e, a.verbose)
-            return 1
+        # ok, so user must have a valid value at this point
+        u = Username(a.user)
         if a.create:
             return self._create_user(luh, u, a.verbose)
 #         if a.new_token:
@@ -87,6 +77,27 @@ class IDMappingCLI:
         if a.admin:
             return self._admin(luh, u, a.admin, a.verbose)
         return 0
+
+    def _check_inputs(self, args):
+        if sum((args.list_users, bool(args.user))) != 1:
+            self._stderr.write('Exactly one of {} or {} must be specified.\n'.format(
+                self._LIST, self._USER))
+            return False
+        if args.user:
+            if sum((args.create, bool(args.admin), args.new_token)) != 1:
+                self._stderr.write('Exactly one of {}, {}, or {} must be specified.\n'.format(
+                    self._CREATE, self._NEW_TOKEN, self._ADMIN))
+                return False
+            if args.admin and args.admin not in [self._TRUE, self._FALSE]:
+                self._stderr.write("{} must have a value of '{}' or '{}'.\n".format(
+                    self._ADMIN, self._TRUE, self._FALSE))
+                return False
+            try:
+                Username(args.user)
+            except Exception as e:
+                self._handle_error(e, args.verbose)
+                return False
+        return True
 
     def _list_users(self, local_user_handler: LocalUserHandler, verbose):
         try:
@@ -120,17 +131,12 @@ class IDMappingCLI:
             username: Username,
             admin: str,
             verbose):
-        if admin not in [self._TRUE, self._FALSE]:
-            self._stderr.write("{} must have a value of '{}' or '{}'\n".format(
-                self._ADMIN, self._TRUE, self._FALSE))
-            return 1
         try:
             local_user_handler.set_user_as_admin(username, admin == self._TRUE)
-            self._stdout.write("Set user {}'s admin state to {}.\n".format(
-                username.name, admin))
         except Exception as e:
             self._handle_error(e, verbose)
             return 1
+        self._stdout.write("Set user {}'s admin state to {}.\n".format(username.name, admin))
         return 0
 
     def _parse_args(self) -> argparse.Namespace:
