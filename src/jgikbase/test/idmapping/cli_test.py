@@ -6,6 +6,8 @@ from jgikbase.idmapping.core.user import Username
 from pathlib import Path
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.idmapping.core.tokens import Token
+from jgikbase.idmapping.core.errors import UserExistsError
 
 # TODO CLI at some point, test usage and invalid args. Since argparse calls exit() when this
 # happens, it'll need exec() tests, or futzing with argparse.
@@ -142,7 +144,22 @@ def test_fail_user_no_op():
 
     assert out.write.call_args_list == []
     assert err.write.call_args_list == [
-        (('One of --create, --new-token, or --admin must be specified.\n',), {})]
+        (('Exactly one of --create, --new-token, or --admin must be specified.\n',), {})]
+
+
+def test_fail_user_multi_op():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    assert IDMappingCLI(builder, ['--user', 'foo', '--create', '--new-token'], out, err
+                        ).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [
+        (('Exactly one of --create, --new-token, or --admin must be specified.\n',), {})]
 
 
 def test_fail_user_illegal_admin_value():
@@ -246,3 +263,56 @@ def test_user_fail_set_admin_verbose():
     assert err.write.call_args_list[0] == (('Error: this is improbable\n',), {})
     assert 'Traceback' in err.write.call_args_list[1][0][0]
     assert 'OSError: this is improbable' in err.write.call_args_list[1][0][0]
+
+
+def test_user_create():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.create_user.return_value = Token('tokenwhee')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--create'], out, err).execute() == 0
+
+    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert luh.create_user.call_args_list == [((Username('foo'),), {})]
+
+    assert out.write.call_args_list == [(
+        ('Created user foo with token:\ntokenwhee\n',), {})]
+    assert err.write.call_args_list == []
+
+
+def test_user_fail_create():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.create_user.side_effect = UserExistsError('foo')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--create'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [(('Error: 40000 User already exists: foo\n',), {})]
+
+
+def test_user_fail_create_verbose():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.create_user.side_effect = UserExistsError('foo')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--create', '--verbose'], out, err
+                        ).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert len(err.write.call_args_list) == 2
+    assert err.write.call_args_list[0] == (('Error: 40000 User already exists: foo\n',), {})
+    assert 'Traceback' in err.write.call_args_list[1][0][0]
+    assert 'UserExistsError: 40000 User already exists: foo' in err.write.call_args_list[1][0][0]
