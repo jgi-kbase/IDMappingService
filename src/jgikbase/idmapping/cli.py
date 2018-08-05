@@ -72,11 +72,9 @@ class IDMappingCLI:
         u = Username(a.user)
         if a.create:
             return self._create_user(luh, u, a.verbose)
-#         if a.new_token:
-#             return self._new_token(luh, u, admin, a.verbose)
-        if a.admin:
-            return self._admin(luh, u, a.admin, a.verbose)
-        return 0
+        if a.new_token:
+            return self._new_token(luh, u, a.verbose)
+        return self._admin(luh, u, a.admin, a.verbose)
 
     def _check_inputs(self, args):
         if sum((args.list_users, bool(args.user))) != 1:
@@ -123,6 +121,20 @@ class IDMappingCLI:
             self._handle_error(e, verbose)
             return 1
         self._stdout.write('Created user {} with token:\n{}\n'.format(username.name, t.token))
+        return 0
+
+    def _new_token(
+            self,
+            local_user_handler: LocalUserHandler,
+            username: Username,
+            verbose):
+        try:
+            t = local_user_handler.new_token(username)
+        except Exception as e:
+            self._handle_error(e, verbose)
+            return 1
+        self._stdout.write("Replaced user {}'s token with token:\n{}\n".format(
+            username.name, t.token))
         return 0
 
     def _admin(
