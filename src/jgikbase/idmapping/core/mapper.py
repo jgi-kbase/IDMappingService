@@ -23,7 +23,7 @@ class IDMapper:
 
     def __init__(
             self,
-            user_handlers: Set[UserHandler],
+            user_handlers: Set[UserHandler],  # TODO CACHE use handler set
             admin_authsources: Set[AuthsourceID],
             storage: IDMappingStorage
             ) -> None:

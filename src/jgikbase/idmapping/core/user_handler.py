@@ -2,9 +2,12 @@ from abc import ABCMeta as _ABCMeta, abstractmethod as _abstractmethod
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.util import not_none
+from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core import tokens
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Set, Callable
+from jgikbase.idmapping.core.errors import NoSuchAuthsourceError
+import time
+from cacheout.lru import LRUCache
 
 
 class UserHandler:  # pragma: no cover
@@ -31,8 +34,9 @@ class UserHandler:  # pragma: no cover
         :returns: a tuple of 1) the user corresponding to the token, 2) a boolean describing
             whether the handler claims they are a system admin (True) or not (False), 3)
             a unix epoch timestamp in seconds providing an absolute limit for the cache lifetime
-            of this result, and 4) a relative cache expiration time in seconds.
-            One of 3) and 4) may be None, but not both.
+            of this result, and 4) a relative cache expiration time in seconds. If both 3) and 4)
+            are None, the process implementing the cache must make its own decisions regarding
+            the cache lifetime.
         '''
         raise NotImplementedError()
 
@@ -44,10 +48,94 @@ class UserHandler:  # pragma: no cover
         :param username: the username to check.
         :returns: a tuple of 1) a boolean describing whether the user exists or not, 2)
             a unix epoch timestamp in seconds providing an absolute limit for the cache lifetime
-            of this result, and 3) a relative cache expiration time in seconds.
-            One of 2) and 3) may be None, but not both.
+            of this result, and 3) a relative cache expiration time in seconds. If both 3) and 4)
+            are None, the process implementing the cache must make its own decisions regarding
+            the cache lifetime.
         '''
         raise NotImplementedError()
+
+
+class UserHandlerSet:
+    """
+    A container for a number of user handlers that provides caching for said handlers.
+    """
+
+    def __init__(
+            self,
+            user_handlers: Set[UserHandler],
+            cache_timer: Callable[[], int]=None,
+            cache_max_size: int=10000,
+            cache_user_expiration: int=300,
+            cache_is_valid_expiration: int=3600
+            ) -> None:
+        """
+        Create the handler set.
+
+        The cache_* parameters are mainly provided for testing purposes.
+
+        :param user_handlers: the set of user handlers to query when looking up user names from
+            tokens or checking that a provided user name is valid.
+        :param cache_timer: the timer used for cache expiration. Defaults to time.time.
+        :param cache_max_size: the maximum size of the token -> user and username -> validity
+            caches.
+        :param cache_user_expiration: the default expiration time for the token -> user cache in
+            seconds. This time can be overridden by a user handler on a per token basis.
+        :param cache_is_valid_expiration: the default expiration time for the  username ->
+            validity cache. This time can be overridden by a user handler on a per user basis.
+        """
+        no_Nones_in_iterable(user_handlers, 'user_handlers')
+        self._handlers = {handler.get_authsource_id(): handler for handler in user_handlers}
+        self._cache_timer = time.time if not cache_timer else cache_timer
+        self._user_cache = LRUCache(timer=self._cache_timer, maxsize=cache_max_size,
+                                    ttl=cache_user_expiration)
+        self._valid_cache = LRUCache(timer=self._cache_timer, maxsize=cache_max_size,
+                                     ttl=cache_is_valid_expiration)
+
+    def _check_authsource_id(self, authsource_id: AuthsourceID) -> None:
+        """
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        """
+        not_none(authsource_id, 'authsource_id')
+        if authsource_id not in self._handlers:
+            raise NoSuchAuthsourceError(authsource_id.id)
+
+    def _calc_ttl(self, epoch, rel):
+        if not rel and not epoch:
+            return None
+        if not rel:
+            return epoch - self._cache_timer()
+        if not epoch:
+            return rel
+        return min(epoch - self._cache_timer(), rel)
+
+    def get_user(self, authsource_id: AuthsourceID, token: Token) -> Tuple[User, bool]:
+        """
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises InvalidTokenError: if the token is invalid.
+        """
+        not_none(token, 'token')
+        self._check_authsource_id(authsource_id)
+        # None default causes a key error
+        cacheres = self._user_cache.get((authsource_id, token), default=False)
+        if cacheres:
+            return cacheres
+        user, admin, epoch, rel = self._handlers[authsource_id].get_user(token)
+        self._user_cache.set((authsource_id, token), (user, admin), ttl=self._calc_ttl(epoch, rel))
+        return (user, admin)
+
+    def is_valid_user(self, user: User) -> bool:
+        """
+        :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
+        """
+        not_none(user, 'user')
+        self._check_authsource_id(user.authsource_id)
+        # None default causes a key error
+        exists = self._valid_cache.get(user, default=False)
+        if not exists:
+            exists, epoch, rel = self._handlers[user.authsource_id].is_valid_user(user.username)
+            if exists:
+                self._valid_cache.set(user, True, ttl=self._calc_ttl(epoch, rel))
+        return exists
 
 
 class LocalUserHandler(UserHandler):

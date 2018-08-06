@@ -76,7 +76,6 @@ class KBaseUserHandler(UserHandler):
         r = requests.get(self.auth_url + 'api/V2/token', headers={'Authorization': token.token})
         self._check_error(r)
         tokenres = r.json()
-        # other keys: expires, cachefor
         r = requests.get(self.auth_url + 'api/V2/me', headers={'Authorization': token.token})
         self._check_error(r)
         mres = r.json()

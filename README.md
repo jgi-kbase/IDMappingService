@@ -10,5 +10,4 @@ Build status (master):
 * travis
   * docker build
   * try mongo 4 - maybe wait for a couple bugfix versions
-* caching for the user handlers
 * logging in core class - need a log interceptor
