@@ -1,7 +1,7 @@
 """
 A ID mapper service user handler for KBase (https://kbase.us) user accounts.
 """
-from jgikbase.idmapping.core.user_handler import UserHandler
+from jgikbase.idmapping.core.user_lookup import UserHandler
 from jgikbase.idmapping.core.arg_check import not_none
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token

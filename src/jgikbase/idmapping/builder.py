@@ -2,7 +2,7 @@
 Contains code for building the core ID mapping code given a configuration.
 """
 from jgikbase.idmapping.config import KBaseConfig
-from jgikbase.idmapping.core.user_handler import LocalUserHandler, UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import LocalUserHandler, UserHandlerSet
 from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
 from pymongo.errors import ConnectionFailure

@@ -1,6 +1,6 @@
 from unittest.mock import create_autospec
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.user_handler import LocalUserHandler, UserHandlerSet, UserHandler
+from jgikbase.idmapping.core.user_lookup import LocalUserHandler, UserHandlerSet, UserHandler
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token, HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
