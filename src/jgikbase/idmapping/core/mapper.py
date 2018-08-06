@@ -2,13 +2,12 @@
 The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.user_handler import UserHandler
+from jgikbase.idmapping.core.user_handler import UserHandlerSet
 from typing import Set
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID
 from jgikbase.idmapping.core.user import User, AuthsourceID
-from jgikbase.idmapping.core.errors import NoSuchAuthsourceError, NoSuchUserError, \
-     UnauthorizedError
+from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
 
 # TODO NOW logging
@@ -23,7 +22,7 @@ class IDMapper:
 
     def __init__(
             self,
-            user_handlers: Set[UserHandler],  # TODO CACHE use handler set
+            user_handlers: UserHandlerSet,
             admin_authsources: Set[AuthsourceID],
             storage: IDMappingStorage
             ) -> None:
@@ -36,20 +35,12 @@ class IDMapper:
             The admin state returned by other auth sources will be ignored.
         :param storage: the mapping storage system.
         """
-        no_Nones_in_iterable(user_handlers, 'user_handlers')
+        not_none(user_handlers, 'user_handlers')
         no_Nones_in_iterable(admin_authsources, 'admin_authsources')
         not_none(storage, 'storage')
         self._storage = storage
-        self._handlers = {handler.get_authsource_id(): handler for handler in user_handlers}
+        self._handlers = user_handlers
         self._admin_authsources = admin_authsources
-
-    def _check_authsource_id(self, authsource_id):
-        """
-        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
-        """
-        not_none(authsource_id, 'authsource_id')
-        if authsource_id not in self._handlers:
-            raise NoSuchAuthsourceError(authsource_id.id)
 
     def _check_sys_admin(self, authsource_id: AuthsourceID, token: Token) -> None:
         """
@@ -58,12 +49,10 @@ class IDMapper:
         :raises UnauthorizedError: if the user is not a system administrator.
         """
         not_none(token, 'token')
-        self._check_authsource_id(authsource_id)
         if authsource_id not in self._admin_authsources:
             raise UnauthorizedError(('Auth source {} is not configured as a provider of ' +
                                     'system administration status').format(authsource_id.id))
-        # TODO CACHE cache get_user results
-        user, admin, _, _ = self._handlers[authsource_id].get_user(token)
+        user, admin = self._handlers.get_user(authsource_id, token)
         if not admin:
             raise UnauthorizedError('User {}/{} is not a system administrator'.format(
                 user.authsource_id.id, user.username.name))
@@ -96,9 +85,7 @@ class IDMapper:
         :raises NoSuchUserError: if the user is invalid according to the appropriate user handler.
         """
         not_none(user, 'user')
-        self._check_authsource_id(user.authsource_id)
-        # TODO CACHE cache is valid user results
-        if not self._handlers[user.authsource_id].is_valid_user(user.username)[0]:
+        if not self._handlers.is_valid_user(user):
             raise NoSuchUserError('{}/{}'.format(user.authsource_id.id, user.username.name))
 
     def add_user_to_namespace(
@@ -194,8 +181,6 @@ class IDMapper:
         """
         not_none(token, 'token')
         not_none(namespace_id, 'namespace_id')
-        self._check_authsource_id(authsource_id)
-        # TODO CACHE cache get_user results
-        user, _, _, _ = self._handlers[authsource_id].get_user(token)
+        user, _ = self._handlers.get_user(authsource_id, token)
         self._check_authed_for_ns(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
