@@ -1,7 +1,7 @@
 """
-A ID mapper service user handler for KBase (https://kbase.us) user accounts.
+A ID mapper service user lookup handler for KBase (https://kbase.us) user accounts.
 """
-from jgikbase.idmapping.core.user_lookup import UserHandler
+from jgikbase.idmapping.core.user_lookup import UserLookup
 from jgikbase.idmapping.core.arg_check import not_none
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
@@ -14,9 +14,9 @@ from typing import Tuple, Optional
 # an actual KBase auth server. If you make changes, you must manually test that everything works
 # against a live server.
 
-class KBaseUserHandler(UserHandler):
+class KBaseUserLookup(UserLookup):
     """
-    A user handler for the ID mapping service.
+    A user lookup handler for the ID mapping service.
 
     :ivar auth_url: The KBase authentication service url.
     """
@@ -25,7 +25,7 @@ class KBaseUserHandler(UserHandler):
 
     def __init__(self, kbase_auth_url: str, kbase_token: Token, kbase_system_admin: str) -> None:
         '''
-        Create the handler.
+        Create the lookup handler.
 
         :param kbase_auth_url: The url for the KBase authentication service.
         :param kbase_token: A valid KBase user token. This is used for checking the validity of

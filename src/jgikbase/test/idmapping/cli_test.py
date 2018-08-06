@@ -1,7 +1,7 @@
 from jgikbase.idmapping.builder import IDMappingBuilder, IDMappingBuildException
 from unittest.mock import create_autospec, Mock
 from jgikbase.idmapping.cli import IDMappingCLI
-from jgikbase.idmapping.core.user_lookup import LocalUserHandler
+from jgikbase.idmapping.core.user_lookup import LocalUserLookup
 from jgikbase.idmapping.core.user import Username
 from pathlib import Path
 from pytest import raises
@@ -57,7 +57,7 @@ def test_too_much_input():
 
 def test_fail_build():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -74,7 +74,7 @@ def test_fail_build():
 
 def test_fail_build_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -93,7 +93,7 @@ def test_fail_build_verbose():
 
 def test_list_users():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -114,7 +114,7 @@ def test_list_users():
 
 def test_fail_list_users():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -129,7 +129,7 @@ def test_fail_list_users():
 
 def test_fail_list_users_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -147,7 +147,7 @@ def test_fail_list_users_verbose():
 
 def test_alternate_config_location():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -169,7 +169,7 @@ def test_alternate_config_location():
 
 def test_fail_user_no_op():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -183,7 +183,7 @@ def test_fail_user_no_op():
 
 def test_fail_user_multi_op():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -198,7 +198,7 @@ def test_fail_user_multi_op():
 
 def test_fail_user_illegal_admin_value():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -212,7 +212,7 @@ def test_fail_user_illegal_admin_value():
 
 def test_fail_user_illegal_username():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -226,7 +226,7 @@ def test_fail_user_illegal_username():
 
 def test_fail_user_illegal_username_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -249,7 +249,7 @@ def test_user_set_admin():
 
 def check_user_set_admin(adminstr, adminbool):
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -267,7 +267,7 @@ def check_user_set_admin(adminstr, adminbool):
 
 def test_user_fail_set_admin():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -282,7 +282,7 @@ def test_user_fail_set_admin():
 
 def test_user_fail_set_admin_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -301,7 +301,7 @@ def test_user_fail_set_admin_verbose():
 
 def test_user_create():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -320,7 +320,7 @@ def test_user_create():
 
 def test_user_fail_create():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -335,7 +335,7 @@ def test_user_fail_create():
 
 def test_user_fail_create_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -354,7 +354,7 @@ def test_user_fail_create_verbose():
 
 def test_user_new_token():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -373,7 +373,7 @@ def test_user_new_token():
 
 def test_user_fail_new_token():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
@@ -388,7 +388,7 @@ def test_user_fail_new_token():
 
 def test_user_fail_new_token_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 

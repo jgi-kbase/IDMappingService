@@ -4,7 +4,7 @@ from jgikbase.idmapping.core.mapper import IDMapper
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
-from jgikbase.idmapping.core.user_lookup import UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import UserLookupSet
 from jgikbase.idmapping.core.user import AuthsourceID, Username, User
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError, NoSuchNamespaceError
 from jgikbase.idmapping.core.tokens import Token
@@ -12,11 +12,11 @@ from jgikbase.idmapping.core.tokens import Token
 
 def test_init_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     a = AuthsourceID('a')
 
-    fail_init(None, set(), storage, TypeError('user_handlers cannot be None'))
+    fail_init(None, set(), storage, TypeError('user_lookup cannot be None'))
     fail_init(handlers, None, storage, TypeError('admin_authsources cannot be None'))
     fail_init(handlers, set([a, None]), storage, TypeError('None item in admin_authsources'))
     fail_init(handlers, set(), None, TypeError('storage cannot be None'))
@@ -30,7 +30,7 @@ def fail_init(handlers, admin_authsources, storage, expected):
 
 def test_create_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('as')]), storage)
 
@@ -44,7 +44,7 @@ def test_create_namespace():
 
 def test_create_namespace_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
     idm = IDMapper(handlers, set(), storage)
 
     as_ = AuthsourceID('foo')
@@ -58,7 +58,7 @@ def test_create_namespace_fail_None_input():
 
 def test_create_namespace_fail_no_admin_authsource_provider():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('bs')]), storage)
 
@@ -68,7 +68,7 @@ def test_create_namespace_fail_no_admin_authsource_provider():
 
 def test_create_namespace_fail_not_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('as')]), storage)
 
@@ -86,7 +86,7 @@ def fail_create_namespace(idm, authsource, token, namespace_id, expected):
 
 def test_add_user_to_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('astwo')]), storage)
 
@@ -108,7 +108,7 @@ def test_add_user_to_namespace():
 
 def test_add_user_to_namespace_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -125,7 +125,7 @@ def test_add_user_to_namespace_fail_None_input():
 
 def test_add_user_to_namespace_fail_no_admin_authsource_provider():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('bs')]), storage)
 
@@ -137,7 +137,7 @@ def test_add_user_to_namespace_fail_no_admin_authsource_provider():
 
 def test_add_user_to_namespace_fail_not_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('as')]), storage)
 
@@ -150,7 +150,7 @@ def test_add_user_to_namespace_fail_not_admin():
 
 def test_add_user_to_namespace_fail_no_such_user():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('asone')]), storage)
 
@@ -170,7 +170,7 @@ def fail_add_user_to_namespace(idmapper, authsource, token, namespace_id, user, 
 
 def test_remove_user_from_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('astwo')]), storage)
 
@@ -189,7 +189,7 @@ def test_remove_user_from_namespace():
 
 def test_remove_user_from_namespace_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -206,7 +206,7 @@ def test_remove_user_from_namespace_fail_None_input():
 
 def test_remove_user_from_namespace_fail_no_admin_authsource_provider():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('bs')]), storage)
 
@@ -218,7 +218,7 @@ def test_remove_user_from_namespace_fail_no_admin_authsource_provider():
 
 def test_remove_user_from_namespace_fail_not_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('as')]), storage)
 
@@ -242,7 +242,7 @@ def test_set_namespace_publicly_mappable():
 
 def check_set_namespace_publicly_mappable(pub_value):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('asone')]), storage)
 
@@ -266,7 +266,7 @@ def check_set_namespace_publicly_mappable(pub_value):
 
 def test_set_namespace_publicly_mappable_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
     idm = IDMapper(handlers, set(), storage)
 
     aid = AuthsourceID('asone')
@@ -281,7 +281,7 @@ def test_set_namespace_publicly_mappable_fail_None_input():
 
 def test_set_namespace_publicly_mappable_fail_unauthed():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set([AuthsourceID('asone')]), storage)
 
@@ -303,7 +303,7 @@ def fail_set_namespace_publicly_mappable(idmapper, auth_id, token, namespace_id,
 
 def test_get_namespace_no_auth():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -316,7 +316,7 @@ def test_get_namespace_no_auth():
 
 def test_get_namespace_not_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -332,7 +332,7 @@ def test_get_namespace_not_admin():
 
 def test_get_namespace_sysadmin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -349,7 +349,7 @@ def test_get_namespace_sysadmin():
 
 def test_get_namespace_ns_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -366,7 +366,7 @@ def test_get_namespace_ns_admin():
 
 def test_get_namespace_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -388,7 +388,7 @@ def fail_get_namespace(idm, namespace_id, authsource_id, token, expected):
 
 def test_get_namespaces_empty():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -400,7 +400,7 @@ def test_get_namespaces_empty():
 
 def test_get_namespaces_only_public():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -413,7 +413,7 @@ def test_get_namespaces_only_public():
 
 def test_get_namespaces_only_private():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -426,7 +426,7 @@ def test_get_namespaces_only_private():
 
 def test_get_namespaces_both():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -452,7 +452,7 @@ def test_create_mapping_privately_mappable():
 
 def check_create_mapping(targetns: Namespace):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -475,7 +475,7 @@ def check_create_mapping(targetns: Namespace):
 
 def test_create_mapping_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -492,7 +492,7 @@ def test_create_mapping_fail_None_input():
 
 def test_create_mapping_fail_unauthed_for_admin_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -508,7 +508,7 @@ def test_create_mapping_fail_unauthed_for_admin_namespace():
 
 def test_create_mapping_fail_unauthed_for_other_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -533,7 +533,7 @@ def fail_create_mapping(idm, authsource_id, token, oid1, oid2, expected):
 
 def test_delete_mapping():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -556,7 +556,7 @@ def test_delete_mapping():
 
 def test_remove_mapping_fail_None_input():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -573,7 +573,7 @@ def test_remove_mapping_fail_None_input():
 
 def test_remove_mapping_fail_unauthed_for_admin_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -592,7 +592,7 @@ def test_remove_mapping_fail_no_such_other_namespace():
     # call is to check the namespace exists, we explicitly test the call is made by throwing
     # an exception.
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -616,7 +616,7 @@ def fail_remove_mapping(idm, authsource_id, token, oid1, oid2, expected):
 
 def test_get_mappings():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -636,7 +636,7 @@ def test_get_mappings():
 
 def test_get_mappings_with_filter():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -670,7 +670,7 @@ def test_get_mappings_with_filter():
 
 def test_get_mappings_fail_None_inputs():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
@@ -683,7 +683,7 @@ def test_get_mappings_fail_None_inputs():
 
 def test_get_mappings_fail_no_namespace():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+    handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
     idm = IDMapper(handlers, set(), storage)
 
