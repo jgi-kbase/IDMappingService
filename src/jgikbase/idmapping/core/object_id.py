@@ -72,6 +72,12 @@ class Namespace:
         self.authed_users = frozenset(authed_users) if authed_users else frozenset()
         no_Nones_in_iterable(self.authed_users, 'authed_users')
 
+    def without_users(self):
+        '''
+        Returns a copy of this namespace with an empty authed_users field.
+        '''
+        return Namespace(self.namespace_id, self.is_publicly_mappable, None)
+
     def __eq__(self, other):
         if type(self) is type(other):
             return (self.namespace_id == other.namespace_id and
