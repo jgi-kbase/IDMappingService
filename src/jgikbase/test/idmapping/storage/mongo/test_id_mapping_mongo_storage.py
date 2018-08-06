@@ -369,19 +369,21 @@ def test_add_and_remove_namespace_users(idstorage):
     idstorage.create_namespace(nsid)
     assert idstorage.get_namespace(NamespaceID('foo')) == Namespace(NamespaceID('foo'), False)
 
-    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('asone'), 'u1'))
-    users = set([User(AuthsourceID('asone'), 'u1')])
+    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('asone'), Username('u1')))
+    users = set([User(AuthsourceID('asone'), Username('u1'))])
     assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
 
-    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('astwo'), 'u2'))
-    users.add(User(AuthsourceID('astwo'), 'u2'))
+    idstorage.add_user_to_namespace(nsid, User(AuthsourceID('astwo'), Username('u2')))
+    users.add(User(AuthsourceID('astwo'), Username('u2')))
     assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
 
-    idstorage.remove_user_from_namespace(NamespaceID('foo'), User(AuthsourceID('asone'), 'u1'))
-    users = set([User(AuthsourceID('astwo'), 'u2')])
+    idstorage.remove_user_from_namespace(NamespaceID('foo'),
+                                         User(AuthsourceID('asone'), Username('u1')))
+    users = set([User(AuthsourceID('astwo'), Username('u2'))])
     assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False, users)
 
-    idstorage.remove_user_from_namespace(NamespaceID('foo'), User(AuthsourceID('astwo'), 'u2'))
+    idstorage.remove_user_from_namespace(NamespaceID('foo'),
+                                         User(AuthsourceID('astwo'), Username('u2')))
     assert idstorage.get_namespace(nsid) == Namespace(NamespaceID('foo'), False)
 
 
@@ -401,29 +403,30 @@ def test_remove_user_from_namespace_fail_inputs_None(idstorage):
 
 def test_add_user_to_namespace_fail_no_such_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    fail_add_namespace_user(idstorage, NamespaceID('bar'), User(AuthsourceID('as'), 'u'),
+    fail_add_namespace_user(idstorage, NamespaceID('bar'), User(AuthsourceID('as'), Username('u')),
                             NoSuchNamespaceError('bar'))
 
 
 def test_remove_user_from_namespace_fail_no_such_namespace(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
-    fail_remove_namespace_user(idstorage, NamespaceID('bar'), User(AuthsourceID('as'), 'u'),
-                               NoSuchNamespaceError('bar'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), Username('u')))
+    fail_remove_namespace_user(
+        idstorage, NamespaceID('bar'), User(AuthsourceID('as'), Username('u')),
+        NoSuchNamespaceError('bar'))
 
 
 def test_add_user_to_namespace_fail_duplicate(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
-    fail_add_namespace_user(idstorage, NamespaceID('foo'), User(AuthsourceID('as'), 'u'),
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), Username('u')))
+    fail_add_namespace_user(idstorage, NamespaceID('foo'), User(AuthsourceID('as'), Username('u')),
                             UserExistsError('User as/u already administrates namespace foo'))
 
 
 def test_remove_user_from_namespace_fail_no_such_user(idstorage):
     idstorage.create_namespace(NamespaceID('foo'))
-    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), 'u'))
+    idstorage.add_user_to_namespace(NamespaceID('foo'), User(AuthsourceID('as'), Username('u')))
     fail_remove_namespace_user(
-        idstorage, NamespaceID('foo'), User(AuthsourceID('as'), 'u1'),
+        idstorage, NamespaceID('foo'), User(AuthsourceID('as'), Username('u1')),
         NoSuchUserError('User as/u1 does not administrate namespace foo'))
 
 
@@ -475,18 +478,21 @@ def fail_set_namespace_publicly_mappable(idstorage, namespace_id, expected):
 def set_up_data_for_get_namespaces(idstorage):
     idstorage.create_namespace(NamespaceID('ns1'))
     idstorage.set_namespace_publicly_mappable(NamespaceID('ns1'), True)
-    idstorage.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('as'), 'u'))
+    idstorage.add_user_to_namespace(NamespaceID('ns1'), User(AuthsourceID('as'), Username('u')))
 
     idstorage.create_namespace(NamespaceID('ns2'))
 
     idstorage.create_namespace(NamespaceID('ns3'))
-    idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('as'), 'u'))
-    idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('astwo'), 'u3'))
+    idstorage.add_user_to_namespace(NamespaceID('ns3'), User(AuthsourceID('as'), Username('u')))
+    idstorage.add_user_to_namespace(NamespaceID('ns3'),
+                                    User(AuthsourceID('astwo'), Username('u3')))
 
-    expected = [Namespace(NamespaceID('ns1'), True, set([User(AuthsourceID('as'), 'u')])),
+    expected = [Namespace(NamespaceID('ns1'), True,
+                          set([User(AuthsourceID('as'), Username('u'))])),
                 Namespace(NamespaceID('ns2'), False),
-                Namespace(NamespaceID('ns3'), False, set([User(AuthsourceID('as'), 'u'),
-                                                          User(AuthsourceID('astwo'), 'u3')]))]
+                Namespace(NamespaceID('ns3'), False,
+                          set([User(AuthsourceID('as'), Username('u')),
+                               User(AuthsourceID('astwo'), Username('u3'))]))]
     return expected
 
 

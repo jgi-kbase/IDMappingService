@@ -265,7 +265,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
         return self._to_ns(nsdoc)
 
     def _to_user_set(self, userdocs) -> Set[User]:
-        return {User(AuthsourceID(u[_FLD_AUTHSOURCE]), u[_FLD_NAME]) for u in userdocs}
+        return {User(AuthsourceID(u[_FLD_AUTHSOURCE]), Username(u[_FLD_NAME])) for u in userdocs}
 
     def add_user_to_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
         self._modify_namespace_users(True, namespace_id, admin_user)
@@ -284,14 +284,15 @@ class IDMappingMongoStorage(_IDMappingStorage):
             res = self._db[_COL_NAMESPACES].update_one(
                 {_FLD_NS_ID: namespace_id.id},
                 {op: {_FLD_USERS: {_FLD_AUTHSOURCE: admin_user.authsource_id.id,
-                                   _FLD_NAME: admin_user.username}}})
+                                   _FLD_NAME: admin_user.username.name}}})
             if res.matched_count != 1:
                 raise NoSuchNamespaceError(namespace_id.id)
             if res.modified_count != 1:
                 action = 'already administrates' if add else 'does not administrate'
                 ex = UserExistsError if add else NoSuchUserError  # might want diff exceps here
                 raise ex('User {}/{} {} namespace {}'.format(
-                    admin_user.authsource_id.id, admin_user.username, action, namespace_id.id))
+                    admin_user.authsource_id.id, admin_user.username.name, action,
+                    namespace_id.id))
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
