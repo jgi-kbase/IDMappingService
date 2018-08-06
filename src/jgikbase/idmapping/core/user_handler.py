@@ -2,7 +2,7 @@ from abc import ABCMeta as _ABCMeta, abstractmethod as _abstractmethod
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.user import User, AuthsourceID, Username
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
+from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core import tokens
 from typing import Dict, Tuple, Optional, Set, Callable
 from jgikbase.idmapping.core.errors import NoSuchAuthsourceError
