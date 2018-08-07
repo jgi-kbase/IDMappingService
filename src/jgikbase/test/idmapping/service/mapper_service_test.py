@@ -5,7 +5,8 @@ from jgikbase.idmapping.builder import IDMappingBuilder
 from jgikbase.idmapping.core.object_id import Namespace, NamespaceID
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
-from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError
+from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
+    UnauthorizedError
 
 
 def build_app():
@@ -127,3 +128,113 @@ def test_method_not_allowed():
                   }
         }
     assert resp.status_code == 405
+
+
+def test_not_found():
+    cli, _ = build_app()
+
+    resp = cli.get('/api/v1/nothinghere')
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 404,
+                  'httpstatus': 'Not Found',
+                  'message': ('404 Not Found: The requested URL was not found on the server.  ' +
+                              'If you entered the URL manually please check your spelling ' +
+                              'and try again.')
+                  }
+        }
+    assert resp.status_code == 404
+
+
+def test_create_namespace_put():
+    cli, mapper = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo', headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.create_namespace.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo')), {})]
+
+
+def test_create_namespace_post():
+    cli, mapper = build_app()
+
+    resp = cli.post('/api/v1/namespace/foo', headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.create_namespace.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo')), {})]
+
+
+def test_create_namespace_fail_no_token():
+    cli, _ = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo')
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 401,
+                  'appcode': 10010,
+                  'apperror': 'No authentication token',
+                  'httpstatus': 'Unauthorized',
+                  'message': '10010 No authentication token'
+                  }
+        }
+    assert resp.status_code == 401
+
+
+def test_create_namespace_fail_munged_auth():
+    cli, _ = build_app()
+    resp = cli.post('/api/v1/namespace/foo', headers={'Authorization': 'astoketoketoke'})
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'Expected authsource and token in header.')
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_namespace_fail_illegal_ns_id():
+    cli, _ = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo&bar', headers={'Authorization': 'source tokey'})
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'Illegal character in namespace id foo&bar: &')
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_namespace_fail_unauthorized():
+    cli, mapper = build_app()
+
+    mapper.create_namespace.side_effect = UnauthorizedError('YOU SHALL NOT PASS')
+
+    resp = cli.put('/api/v1/namespace/foo', headers={'Authorization': 'source tokey'})
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 403,
+                  'httpstatus': 'Forbidden',
+                  'appcode': 20000,
+                  'apperror': 'Unauthorized',
+                  'message': '20000 Unauthorized: YOU SHALL NOT PASS'
+                  }
+        }
+    assert resp.status_code == 403
+
+    assert mapper.create_namespace.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo')), {})]

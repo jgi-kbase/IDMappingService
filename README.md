@@ -13,3 +13,4 @@ Build status (master):
 * logging in core class - need a log interceptor
 * documentation
 * integration tests
+* gunicorn app
