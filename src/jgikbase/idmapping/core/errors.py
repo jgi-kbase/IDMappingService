@@ -147,6 +147,15 @@ class AuthenticationError(IDMappingError):
         super().__init__(error_type, message)
 
 
+class NoTokenError(AuthenticationError):
+    """
+    An error thrown when a token is required but not provided.
+    """
+
+    def __init__(self, message: str=None) -> None:
+        super().__init__(ErrorType.NO_TOKEN, message)
+
+
 class InvalidTokenError(AuthenticationError):
     """
     An error thrown when a provided token is invalid.

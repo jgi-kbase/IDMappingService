@@ -10,7 +10,7 @@ from jgikbase.idmapping.core.user import User, AuthsourceID
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
 
-# TODO NOW logging
+# TODO LOG useful info (not errors) like user X added user Y to namespace Z
 
 
 class IDMapper:
