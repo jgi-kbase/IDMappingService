@@ -46,7 +46,7 @@ def _get_auth(request, required=True) -> Optional[Tuple[AuthsourceID, Token]]:
         if required:
             raise NoTokenError()
         return None
-    auth = auth.strip().split()
+    auth = auth.strip().split()  # TODO NOW test strip
     if len(auth) != 2:
         raise IllegalParameterError('Expected authsource and token in header.')
     return AuthsourceID(auth[0]), Token(auth[1])
