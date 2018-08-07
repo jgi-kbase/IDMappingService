@@ -324,6 +324,5 @@ class IDMapper:
         if ns_filter:
             no_Nones_in_iterable(ns_filter, 'ns_filter')
             check.extend(ns_filter)
-        # check for existence
         self._storage.get_namespaces(check)  # check for existence
         return self._storage.find_mappings(oid, ns_filter=ns_filter)

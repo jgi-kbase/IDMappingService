@@ -83,8 +83,14 @@ def test_kb_config_maximal_config():
     p = mock_path_to_file('path', [
         '[idmapping]', 'mongo-host=foo', 'mongo-db=bar', 'mongo-user=u', 'mongo-pwd=p',
         'dont-trust-x-ip-headers=true',
-        'authentication-enabled=   authone,   auththree, \t  authtwo   ',
-        'authentication-admin-enabled=   authone,   autha, \t  authbcd   '])
+        'authentication-enabled=   authone,   auththree, \t  authtwo  , local ',
+        'authentication-admin-enabled=   authone,   autha, \t  authbcd   ',
+        'auth-source-authone-factory-module=  some.module  \t  ',
+        'auth-source-authtwo-factory-module=   some.other.module    \t ',
+        'auth-source-authtwo-init-key=  val    \t  ',
+        'auth-source-authtwo-init-whee=  whoo    \t  ',
+        'auth-source-auththree-factory-module=   some.other.other.module    \t ',
+        'auth-source-auththree-init-x=Y'])
     c = KBaseConfig(p)
 
     assert c.mongo_host == 'foo'
@@ -92,9 +98,13 @@ def test_kb_config_maximal_config():
     assert c.mongo_user == 'u'
     assert c.mongo_pwd == 'p'
     assert c.auth_enabled == set([AuthsourceID('authone'), AuthsourceID('authtwo'),
-                                  AuthsourceID('auththree')])
+                                  AuthsourceID('auththree'), AuthsourceID('local')])
     assert c.auth_admin_enabled == set([AuthsourceID('authone'), AuthsourceID('authbcd'),
                                         AuthsourceID('autha')])
+    assert c.lookup_configs == {AuthsourceID('authone'): ('some.module', {}),
+                                AuthsourceID('authtwo'): ('some.other.module', {'key': 'val',
+                                                                                'whee': 'whoo'}),
+                                AuthsourceID('auththree'): ('some.other.other.module', {'x': 'Y'})}
     assert c.ignore_ip_headers is True
 
 
@@ -185,6 +195,30 @@ def test_kb_config_fail_illegal_authsource_admin():
            'section idmapping, has whitespace-only entry')
     contents = ['[idmapping]', 'mongo-host=foo', 'mongo-db=bar',
                 'authentication-admin-enabled= foo,   bar,  , bleah, yay']
+    fail_kb_config(mock_path_to_file('path/2/whee', contents, True), IDMappingConfigError(err))
+
+
+def test_kb_config_fail_auth_source_unexpected_key():
+    err = ('Unexpected parameter auth-source-foo-boratrulez in configuration file path/2/whee, ' +
+           'section idmapping')
+    contents = ['[idmapping]', 'mongo-host=foo', 'mongo-db=bar',
+                'authentication-enabled= foo',
+                'auth-source-foo-boratrulez= yes. yes he does']
+    fail_kb_config(mock_path_to_file('path/2/whee', contents, True), IDMappingConfigError(err))
+
+
+def test_kb_config_fail_auth_source_missing_factory():
+    err = ('Required parameter auth-source-foo-factory-module not provided in ' +
+           'configuration file path/2/whee, section idmapping')
+    contents = ['[idmapping]', 'mongo-host=foo', 'mongo-db=bar',
+                'authentication-enabled= foo',
+                'auth-source-foo-init-borat= yes. yes he does']
+    fail_kb_config(mock_path_to_file('path/2/whee', contents, True), IDMappingConfigError(err))
+
+    contents = ['[idmapping]', 'mongo-host=foo', 'mongo-db=bar',
+                'authentication-enabled= foo',
+                'auth-source-foo-init-borat= yes. yes he does'
+                'auth-source-foo-factory-module=    \t    ']
     fail_kb_config(mock_path_to_file('path/2/whee', contents, True), IDMappingConfigError(err))
 
 
