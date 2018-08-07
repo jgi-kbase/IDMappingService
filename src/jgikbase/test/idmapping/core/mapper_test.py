@@ -612,3 +612,96 @@ def fail_remove_mapping(idm, authsource_id, token, oid1, oid2, expected):
     with raises(Exception) as got:
         idm.remove_mapping(authsource_id, token, oid1, oid2)
     assert_exception_correct(got.value, expected)
+
+
+def test_get_mappings():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set([Namespace(NamespaceID('n'), False)])
+    storage.find_mappings.return_value = (
+        set([ObjectID(NamespaceID('n1'), 'o1'), ObjectID(NamespaceID('n2'), 'o2')]),
+        set([ObjectID(NamespaceID('n3'), 'o3'), ObjectID(NamespaceID('n4'), 'o4')]))
+
+    assert idm.get_mappings(ObjectID(NamespaceID('n'), 'o')) == (
+        set([ObjectID(NamespaceID('n1'), 'o1'), ObjectID(NamespaceID('n2'), 'o2')]),
+        set([ObjectID(NamespaceID('n3'), 'o3'), ObjectID(NamespaceID('n4'), 'o4')]))
+
+    assert storage.get_namespaces.call_args_list == [(([NamespaceID('n')],), {})]
+    assert storage.find_mappings.call_args_list == [((ObjectID(NamespaceID('n'), 'o'),),
+                                                     {'ns_filter': None})]
+
+
+def test_get_mappings_with_filter():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set([Namespace(NamespaceID('n'), False),
+                                               Namespace(NamespaceID('n1'), False),
+                                               Namespace(NamespaceID('n2'), False),
+                                               Namespace(NamespaceID('n3'), False),
+                                               Namespace(NamespaceID('n4'), False)])
+    storage.find_mappings.return_value = (
+        set([ObjectID(NamespaceID('n1'), 'o1'), ObjectID(NamespaceID('n2'), 'o2')]),
+        set([ObjectID(NamespaceID('n3'), 'o3'), ObjectID(NamespaceID('n4'), 'o4')]))
+
+    assert idm.get_mappings(
+        ObjectID(NamespaceID('n'), 'o'), [NamespaceID('n1'), NamespaceID('n2'),
+                                          NamespaceID('n4'), NamespaceID('n4')]) == (
+        set([ObjectID(NamespaceID('n1'), 'o1'), ObjectID(NamespaceID('n2'), 'o2')]),
+        set([ObjectID(NamespaceID('n3'), 'o3'), ObjectID(NamespaceID('n4'), 'o4')]))
+
+    assert storage.get_namespaces.call_args_list == [(([NamespaceID('n'),
+                                                        NamespaceID('n1'),
+                                                        NamespaceID('n2'),
+                                                        NamespaceID('n4'),
+                                                        NamespaceID('n4')],), {})]
+    assert storage.find_mappings.call_args_list == [((ObjectID(NamespaceID('n'), 'o'),),
+                                                     {'ns_filter': [
+                                                         NamespaceID('n1'),
+                                                         NamespaceID('n2'),
+                                                         NamespaceID('n4'),
+                                                         NamespaceID('n4')]})]
+
+
+def test_get_mappings_fail_None_inputs():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    oid = ObjectID(NamespaceID('n'), 'o')
+    n = NamespaceID('n')
+
+    fail_get_mappings(idm, None, set([n]), TypeError('oid cannot be None'))
+    fail_get_mappings(idm, oid, set([n, None]), TypeError('None item in ns_filter'))
+
+
+def test_get_mappings_fail_no_namespace():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.side_effect = NoSuchNamespaceError('n3')
+
+    fail_get_mappings(idm, ObjectID(NamespaceID('n'), 'o'), [
+                      NamespaceID('n1'), NamespaceID('n2'),
+                      NamespaceID('n4'), NamespaceID('n4')],
+                      NoSuchNamespaceError('n3'))
+
+    assert storage.get_namespaces.call_args_list == [(([NamespaceID('n'),
+                                                        NamespaceID('n1'),
+                                                        NamespaceID('n2'),
+                                                        NamespaceID('n4'),
+                                                        NamespaceID('n4')],), {})]
+
+
+def fail_get_mappings(idm, oid, filters, expected):
+    with raises(Exception) as got:
+        idm.get_mappings(oid, filters)
+    assert_exception_correct(got.value, expected)
