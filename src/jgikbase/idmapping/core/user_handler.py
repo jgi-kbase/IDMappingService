@@ -18,14 +18,14 @@ class UserHandler:  # pragma: no cover
 
     @_abstractmethod
     def get_authsource_id(self) -> AuthsourceID:
-        '''
+        """
         Get the ID of the authentication source that this handler handles.
-        '''
+        """
         raise NotImplementedError()
 
     @_abstractmethod
     def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
-        '''
+        """
         Get a user given a token.
 
         :param token: the token.
@@ -37,21 +37,22 @@ class UserHandler:  # pragma: no cover
             of this result, and 4) a relative cache expiration time in seconds. If both 3) and 4)
             are None, the process implementing the cache must make its own decisions regarding
             the cache lifetime.
-        '''
+        """
         raise NotImplementedError()
 
     @_abstractmethod
     def is_valid_user(self, username: Username) -> Tuple[bool, Optional[int], Optional[int]]:
-        '''
+        """
         Check if a username is valid, which implies the user exists.
 
         :param username: the username to check.
+        :raises TypeError: if the argument is None.
         :returns: a tuple of 1) a boolean describing whether the user exists or not, 2)
             a unix epoch timestamp in seconds providing an absolute limit for the cache lifetime
             of this result, and 3) a relative cache expiration time in seconds. If both 3) and 4)
             are None, the process implementing the cache must make its own decisions regarding
             the cache lifetime.
-        '''
+        """
         raise NotImplementedError()
 
 
@@ -110,8 +111,15 @@ class UserHandlerSet:
 
     def get_user(self, authsource_id: AuthsourceID, token: Token) -> Tuple[User, bool]:
         """
+        Get a user given the user's token.
+
+        :param authsource_id: the authsource where the user resides.
+        :param token: the users's token.
+        :raises TypeError: if any of the arguments are None.
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
+        :returns: a tuple of the user and a boolean indicating whether the authsource claims
+            the user is a mapping service system admin.
         """
         not_none(token, 'token')
         self._check_authsource_id(authsource_id)
@@ -125,6 +133,9 @@ class UserHandlerSet:
 
     def is_valid_user(self, user: User) -> bool:
         """
+        Check whether a given user exists.
+
+        :param user: the user to check.
         :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
         """
         not_none(user, 'user')

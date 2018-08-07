@@ -11,3 +11,5 @@ Build status (master):
   * docker build
   * try mongo 4 - maybe wait for a couple bugfix versions
 * logging in core class - need a log interceptor
+* documentation
+* integration tests

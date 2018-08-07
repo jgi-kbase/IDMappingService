@@ -5,7 +5,7 @@ from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
 from typing import Set, cast, Tuple
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
-from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from jgikbase.idmapping.core.user import User, AuthsourceID
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
@@ -132,29 +132,31 @@ class IDMapper:
         :param namespace_id: the namespace to modify.
         :param user: the user.
         :raises TypeError: if any of the arguments are None.
-        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource ID or the
-            user's authsource.
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource ID.
         :raises NoSuchNamespaceError: if the namespace does not exist.
-        :raises NoSuchUserError: if the user is invalid according to the appropriate user handler
-           or the user does not administrate the namespace.
+        :raises NoSuchUserError: if the user does not administrate the namespace.
         :raises InvalidTokenError: if the token is invalid.
         :raises UnauthorizedError: if the user is not a system administrator.
         """
         not_none(namespace_id, 'namespace_id')
         not_none(user, 'user')
         self._check_sys_admin(authsource_id, token)
-        self._check_valid_user(user)
         self._storage.remove_user_from_namespace(namespace_id, user)
 
-    def _check_authed_for_ns(self, user: User, nsid: NamespaceID) -> None:
+    def _check_authed_for_ns_get(self, user: User, namespace_id: NamespaceID) -> None:
         """
         :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
         :raises NoSuchNamespaceError: if the namespace does not exist.
         """
-        ns = self._storage.get_namespace(nsid)
+        self._check_authed_for_ns(user, self._storage.get_namespace(namespace_id))
+
+    def _check_authed_for_ns(self, user: User, ns: Namespace) -> None:
+        """
+        :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
+        """
         if user not in ns.authed_users:
             raise UnauthorizedError('User {}/{} may not administrate namespace {}'.format(
-                user.authsource_id.id, user.username.name, nsid.id))
+                user.authsource_id.id, user.username.name, ns.namespace_id.id))
 
     def set_namespace_publicly_mappable(
             self,
@@ -182,7 +184,7 @@ class IDMapper:
         not_none(token, 'token')
         not_none(namespace_id, 'namespace_id')
         user, _ = self._handlers.get_user(authsource_id, token)
-        self._check_authed_for_ns(user, namespace_id)
+        self._check_authed_for_ns_get(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
 
     def get_namespace(
@@ -234,3 +236,38 @@ class IDMapper:
             else:
                 private.add(ns.namespace_id)
         return public, private
+
+    def create_mapping(
+            self,
+            authsource_id: AuthsourceID,
+            token: Token,
+            administrative_oid: ObjectID,
+            oid: ObjectID
+            ) -> None:
+        """
+        Create a mapping. The user must be an administrator of the namespace in the
+        administrative_oid and an administrator of the namespace in the oid if it is not
+        publicly mappable.
+
+        :param authsource_id: the authsource of the provided token.
+        :param token: the user's token.
+        :param administrative_oid: the administrative object ID.
+        :param oid: the other object ID.
+
+        :raises TypeError: if any of the arguments are None,
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises NoSuchNamespaceError: if either of the namespaces do not exist.
+        :raises UnauthorizedError: if the user is not authorized to administrate either of
+            the namespaces.
+        """
+        not_none(token, 'token')
+        not_none(administrative_oid, 'administrative_oid')
+        not_none(oid, 'oid')
+        user, _ = self._handlers.get_user(authsource_id, token)
+        adminns = self._storage.get_namespace(administrative_oid.namespace_id)
+        self._check_authed_for_ns(user, adminns)
+        ns = self._storage.get_namespace(oid.namespace_id)
+        if not ns.is_publicly_mappable:
+            self._check_authed_for_ns(user, ns)
+        self._storage.add_mapping(administrative_oid, oid)
