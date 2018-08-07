@@ -1,10 +1,12 @@
-from jgikbase.idmapping.userlookup.kbase_user_lookup import KBaseUserLookup
+from jgikbase.idmapping.userlookup.kbase_user_lookup import KBaseUserLookup, build_lookup
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests_mock
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.errors import InvalidTokenError
+import copy
+from jgikbase.idmapping.core.user_lookup import LookupInitializationError
 
 
 def test_init():
@@ -14,6 +16,43 @@ def test_init():
               json={'version': '0.1.2', 'gitcommithash': 'hashyhash', 'servertime': 3})
         kbuh = KBaseUserLookup('http://whee.com', Token('foo'), 'admin')
         assert kbuh.auth_url == 'http://whee.com/'
+
+
+def test_init_with_builder():
+    with requests_mock.Mocker() as m:
+        m.get('http://whee.com/',
+              request_headers={'Accept': 'application/json'},
+              json={'version': '0.1.2', 'gitcommithash': 'hashyhash', 'servertime': 3})
+        kbuh = build_lookup({'url': 'http://whee.com', 'token': 'foo', 'admin-role': 'admin'})
+        assert kbuh.auth_url == 'http://whee.com/'
+        # reach into the implementation here to avoid running all tests twice, one for constructor,
+        # one for builder. Outweights the bad practice here
+        assert kbuh._token == Token('foo')
+        assert kbuh._kbase_system_admin == 'admin'
+
+
+def test_init_with_builder_fail_missing_input():
+    ok = {'token': 't', 'admin-role': 'foo', 'url': 'http://foobar.com'}
+    notok = copy.copy(ok)
+    del notok['url']
+    fail_init_with_builder(notok, LookupInitializationError(
+        'kbase user lookup handler requires url configuration item'))
+
+    notok = copy.copy(ok)
+    del notok['token']
+    fail_init_with_builder(notok, LookupInitializationError(
+        'kbase user lookup handler requires token configuration item'))
+
+    notok = copy.copy(ok)
+    del notok['admin-role']
+    fail_init_with_builder(notok, LookupInitializationError(
+        'kbase user lookup handler requires admin-role configuration item'))
+
+
+def fail_init_with_builder(cfg, expected):
+    with raises(Exception) as got:
+        build_lookup(cfg)
+    assert_exception_correct(got.value, expected)
 
 
 def test_init_fail_None_input():
