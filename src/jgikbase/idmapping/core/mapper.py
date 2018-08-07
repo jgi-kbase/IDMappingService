@@ -3,9 +3,9 @@ The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
-from typing import Set, cast
+from typing import Set, cast, Tuple
 from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
-from jgikbase.idmapping.core.object_id import NamespaceID
+from jgikbase.idmapping.core.object_id import NamespaceID, Namespace
 from jgikbase.idmapping.core.user import User, AuthsourceID
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
@@ -189,8 +189,9 @@ class IDMapper:
             self,
             namespace_id: NamespaceID,
             authsource_id: AuthsourceID=None,
-            token: Token=None):
-        '''
+            token: Token=None
+            ) -> Namespace:
+        """
         Get a namespace. If user credentials are provided and the user is a system admin or an
         admin of the namespace, the namespace user list will be returned. Otherwise, the user
         list will be empty.
@@ -203,7 +204,7 @@ class IDMapper:
         :raises NoSuchNamespaceError: if the namespace does not exist.
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
-        '''
+        """
         not_none(namespace_id, 'namespace_id')
         if bool(authsource_id) ^ bool(token):  # xor
             raise TypeError('If token or authsource_id is specified, both must be specified')
@@ -214,3 +215,22 @@ class IDMapper:
             if admin or user in ns.authed_users:
                 return ns
         return ns.without_users()
+
+    def get_namespaces(self) -> Tuple[Set[NamespaceID], Set[NamespaceID]]:
+        """
+        Get all the namespaces in the system.
+
+        :returns: A 2-tuple of sets of namespace IDs. The first set is publicly mappable, the
+            second set is not.
+        """
+        # could make a more efficient storage method if this proves to be slow
+        # since we're pulling back user data we don't need
+        nss = self._storage.get_namespaces()
+        public = set()
+        private = set()
+        for ns in nss:
+            if ns.is_publicly_mappable:
+                public.add(ns.namespace_id)
+            else:
+                private.add(ns.namespace_id)
+        return public, private

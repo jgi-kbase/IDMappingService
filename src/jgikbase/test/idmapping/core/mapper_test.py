@@ -402,3 +402,57 @@ def fail_get_namespace(idm, namespace_id, authsource_id, token, expected):
     with raises(Exception) as got:
         idm.get_namespace(namespace_id, authsource_id, token)
     assert_exception_correct(got.value, expected)
+
+
+def test_get_namespaces_empty():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set()
+
+    assert idm.get_namespaces() == (set(), set())
+    assert storage.get_namespaces.call_args_list == [((), {})]
+
+
+def test_get_namespaces_only_public():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set([Namespace(NamespaceID('n1'), True),
+                                               Namespace(NamespaceID('n2'), True)])
+
+    assert idm.get_namespaces() == (set([NamespaceID('n1'), NamespaceID('n2')]), set())
+    assert storage.get_namespaces.call_args_list == [((), {})]
+
+
+def test_get_namespaces_only_private():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set([Namespace(NamespaceID('n3'), False),
+                                               Namespace(NamespaceID('n4'), False)])
+
+    assert idm.get_namespaces() == (set(), set([NamespaceID('n3'), NamespaceID('n4')]))
+    assert storage.get_namespaces.call_args_list == [((), {})]
+
+
+def test_get_namespaces_both():
+    storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
+    handlers = create_autospec(UserHandlerSet, spec_set=True, instance=True)
+
+    idm = IDMapper(handlers, set(), storage)
+
+    storage.get_namespaces.return_value = set([Namespace(NamespaceID('n1'), True),
+                                               Namespace(NamespaceID('n2'), True),
+                                               Namespace(NamespaceID('n3'), False),
+                                               Namespace(NamespaceID('n4'), False)])
+
+    assert idm.get_namespaces() == (set([NamespaceID('n1'), NamespaceID('n2')]),
+                                    set([NamespaceID('n3'), NamespaceID('n4')]))
+    assert storage.get_namespaces.call_args_list == [((), {})]
