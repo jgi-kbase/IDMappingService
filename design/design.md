@@ -208,12 +208,12 @@ GET /api/v1/mapping/<namespace>/<ID>/[?namespace_filter=<namespace CSL>]
 RETURNS:
 [{"namespace": <namespace1>,
   "id: <id1>,
-  "is_primary": <boolean1>
+  "is_administrative": <boolean1>
   },
   ...
  {"namespace": <namespaceN>,
   "id: <idN>,
-  "is_primary": <booleanN>
+  "is_administrative": <booleanN>
   }
  } 
 ]

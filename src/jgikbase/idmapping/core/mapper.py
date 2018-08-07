@@ -271,3 +271,35 @@ class IDMapper:
         if not ns.is_publicly_mappable:
             self._check_authed_for_ns(user, ns)
         self._storage.add_mapping(administrative_oid, oid)
+
+    def remove_mapping(
+            self,
+            authsource_id: AuthsourceID,
+            token: Token,
+            administrative_oid: ObjectID,
+            oid: ObjectID
+            ) -> None:
+        """
+        Delete a mapping. The user must be an administrator of the namespace in the
+        administrative_oid.
+
+        :param authsource_id: the authsource of the provided token.
+        :param token: the user's token.
+        :param administrative_oid: the administrative object ID.
+        :param oid: the other object ID.
+
+        :raises TypeError: if any of the arguments are None,
+        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises InvalidTokenError: if the token is invalid.
+        :raises NoSuchNamespaceError: if either of the namespaces do not exist.
+        :raises UnauthorizedError: if the user is not authorized to administrate the
+            administrative namespace.
+        """
+        not_none(token, 'token')
+        not_none(administrative_oid, 'administrative_oid')
+        not_none(oid, 'oid')
+        user, _ = self._handlers.get_user(authsource_id, token)
+        adminns = self._storage.get_namespace(administrative_oid.namespace_id)
+        self._check_authed_for_ns(user, adminns)
+        self._storage.get_namespace(oid.namespace_id)  # check for existence
+        self._storage.remove_mapping(administrative_oid, oid)
