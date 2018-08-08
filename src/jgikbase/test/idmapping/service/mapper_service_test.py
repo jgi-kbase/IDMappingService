@@ -29,7 +29,7 @@ def test_get_namespace_no_auth():
     assert resp.get_json() == {'namespace': 'foo', 'publicly_mappable': False, 'users': []}
     assert resp.status_code == 200
 
-    assert mapper.get_namespace.call_args_list == [((NamespaceID('foo'),), {})]
+    assert mapper.get_namespace.call_args_list == [((NamespaceID('foo'), None, None), {})]
 
 
 def test_get_namespace_with_auth():
@@ -176,9 +176,17 @@ def test_create_namespace_fail_no_token():
 
 def fail_no_token_put(url):
     cli, _ = build_app()
-
     resp = cli.put(url)
+    fail_no_token_check(resp)
 
+
+def fail_no_token_delete(url):
+    cli, _ = build_app()
+    resp = cli.delete(url)
+    fail_no_token_check(resp)
+
+
+def fail_no_token_check(resp):
     assert resp.get_json() == {
         'error': {'httpcode': 401,
                   'appcode': 10010,
@@ -207,6 +215,12 @@ def fail_munged_auth_post(url):
     fail_munged_auth_check(resp)
 
 
+def fail_munged_auth_delete(url):
+    cli, _ = build_app()
+    resp = cli.delete(url, headers={'Authorization': 'astoketoketoke'})
+    fail_munged_auth_check(resp)
+
+
 def fail_munged_auth_check(resp):
     assert resp.get_json() == {
         'error': {'httpcode': 400,
@@ -226,9 +240,17 @@ def test_create_namespace_fail_illegal_ns_id():
 
 def fail_illegal_ns_id_put(url):
     cli, _ = build_app()
-
     resp = cli.put(url, headers={'Authorization': 'source tokey'})
+    fail_illegal_ns_id_check(resp)
 
+
+def fail_illegal_ns_id_delete(url):
+    cli, _ = build_app()
+    resp = cli.delete(url, headers={'Authorization': 'source tokey'})
+    fail_illegal_ns_id_check(resp)
+
+
+def fail_illegal_ns_id_check(resp):
     assert resp.get_json() == {
         'error': {'httpcode': 400,
                   'httpstatus': 'Bad Request',
@@ -286,3 +308,29 @@ def test_add_user_to_namespace_fail_munged_auth():
 
 def test_add_user_to_namespace_fail_illegal_ns_id():
     fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/user/bar/baz')
+
+
+def test_remove_user_from_namespace():
+    cli, mapper = build_app()
+
+    resp = cli.delete('/api/v1/namespace/foo/user/bar/baz',
+                      headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.remove_user_from_namespace.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo'),
+        User(AuthsourceID('bar'), Username('baz'))), {})]
+
+
+def test_remove_user_from_namespace_fail_no_token():
+    fail_no_token_delete('/api/v1/namespace/foo/user/bar/baz')
+
+
+def test_remove_user_from_namespace_fail_munged_auth():
+    fail_munged_auth_delete('/api/v1/namespace/foo/user/bar/baz')
+
+
+def test_remove_user_from_namespace_fail_illegal_ns_id():
+    fail_illegal_ns_id_delete('/api/v1/namespace/foo&bar/user/bar/baz')
