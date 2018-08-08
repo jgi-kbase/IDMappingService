@@ -71,26 +71,21 @@ class IDMappingCLI:
         if a.list_users:
             return self._list_users(luh, a.verbose)
         # ok, so user must have a value at this point
-        if not a.create and not a.admin and not a.new_token:
-            self._stderr.write('One of {}, {}, or {} must be specified.\n'.format(
+        if sum((a.create, bool(a.admin), a.new_token)) != 1:
+            self._stderr.write('Exactly one of {}, {}, or {} must be specified.\n'.format(
                 self._CREATE, self._NEW_TOKEN, self._ADMIN))
             return 1
-        if a.admin and a.admin not in [self._TRUE, self._FALSE]:
-            self._stderr.write("{} must have a value of '{}' or '{}'\n".format(
-                self._ADMIN, self._TRUE, self._FALSE))
-            return 1
-        admin = a.admin == self._TRUE if a.admin else None
         try:
             u = Username(a.user)
         except Exception as e:
             self._handle_error(e, a.verbose)
             return 1
-#         if a.create:
-#             return _create_user(luh, u, a.admin, a.verbose)
+        if a.create:
+            return self._create_user(luh, u, a.verbose)
 #         if a.new_token:
-#             return _new_token(luh, u, a.admin, a.verbose)
-        if a.admin is not None:
-            return self._admin(luh, u, admin, a.verbose)
+#             return self._new_token(luh, u, admin, a.verbose)
+        if a.admin:
+            return self._admin(luh, u, a.admin, a.verbose)
         return 0
 
     def _list_users(self, local_user_handler: LocalUserHandler, verbose):
@@ -106,11 +101,33 @@ class IDMappingCLI:
             self._stdout.write('{}{}\n'.format(u, ' *' if admin else ''))
         return 0
 
-    def _admin(self, local_user_handler: LocalUserHandler, user: Username, admin: bool, verbose):
+    def _create_user(
+            self,
+            local_user_handler: LocalUserHandler,
+            username: Username,
+            verbose):
         try:
-            local_user_handler.set_user_as_admin(user, admin)
+            t = local_user_handler.create_user(username)
+        except Exception as e:
+            self._handle_error(e, verbose)
+            return 1
+        self._stdout.write('Created user {} with token:\n{}\n'.format(username.name, t.token))
+        return 0
+
+    def _admin(
+            self,
+            local_user_handler: LocalUserHandler,
+            username: Username,
+            admin: str,
+            verbose):
+        if admin not in [self._TRUE, self._FALSE]:
+            self._stderr.write("{} must have a value of '{}' or '{}'\n".format(
+                self._ADMIN, self._TRUE, self._FALSE))
+            return 1
+        try:
+            local_user_handler.set_user_as_admin(username, admin == self._TRUE)
             self._stdout.write("Set user {}'s admin state to {}.\n".format(
-                user.name, self._TRUE if admin else self._FALSE))
+                username.name, admin))
         except Exception as e:
             self._handle_error(e, verbose)
             return 1
@@ -126,8 +143,7 @@ class IDMappingCLI:
         parser.add_argument(self._CREATE, action='store_true',
                             help='Create a user. Requires the {} option.'.format(self._USER))
         parser.add_argument(self._NEW_TOKEN, action='store_true',
-                            help='Make a new token for a user. ' +
-                            'Requires the {} option. Ignored if {} is set.'.format(
+                            help='Make a new token for a user. Requires the {} option.'.format(
                                 self._USER, self._CREATE))
         parser.add_argument(self._ADMIN, help=(
             "Set whether the user is an admin ('{}') or not ('{}'). Any other values are " +
