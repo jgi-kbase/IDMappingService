@@ -2,7 +2,6 @@
 Contains code for building the core ID mapping code given a configuration.
 """
 from jgikbase.idmapping.config import KBaseConfig
-from jgikbase.idmapping.core.util import not_none
 from jgikbase.idmapping.core.user_handler import LocalUserHandler, UserHandlerSet
 from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
@@ -40,7 +39,7 @@ class IDMappingBuilder:
         self.cfg = None
         self._storage = None
 
-    def build_local_user_handler(self, cfgpath: Path) -> LocalUserHandler:
+    def build_local_user_handler(self, cfgpath: Path=None) -> LocalUserHandler:
         """
         Build a local user handler.
 
@@ -49,14 +48,13 @@ class IDMappingBuilder:
         :raises IDMappingBuildException: if a build error occurs.
         :raises TypeError: if cfgpath is None.
         """
-        not_none(cfgpath, 'cfgpath')
         self._set_cfg(cfgpath)
         self._build_storage()
         return LocalUserHandler(cast(IDMappingStorage, self._storage))
 
-    def _set_cfg(self, cfg):
+    def _set_cfg(self, cfgpath):
         if not self.cfg:
-            self.cfg = KBaseConfig(cfg)
+            self.cfg = KBaseConfig(cfgpath)
 
     def _build_storage(self):
         if not self._storage:
@@ -74,7 +72,7 @@ class IDMappingBuilder:
             db = client[self.cfg.mongo_db]
             self._storage = IDMappingMongoStorage(db)
 
-    def build_id_mapping_system(self, cfgpath: Path) -> IDMapper:
+    def build_id_mapping_system(self, cfgpath: Path=None) -> IDMapper:
         """
         Build the ID Mapping system.
 
@@ -85,7 +83,6 @@ class IDMappingBuilder:
         """
         # TODO BUILD get allowed auth sources from config
         # TODO BUILD build other user handlers
-        not_none(cfgpath, 'cfgpath')
         self._set_cfg(cfgpath)
         luh = self.build_local_user_handler(cfgpath)
         uhs = UserHandlerSet(set([luh]))

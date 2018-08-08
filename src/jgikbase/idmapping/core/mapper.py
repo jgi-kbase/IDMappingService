@@ -4,7 +4,7 @@ The core ID mapping code.
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_handler import UserHandlerSet
 from typing import Set, cast, Tuple, Iterable
-from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
+from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from jgikbase.idmapping.core.user import User, AuthsourceID
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError

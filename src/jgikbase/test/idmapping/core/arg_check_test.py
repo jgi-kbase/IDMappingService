@@ -1,7 +1,7 @@
-from jgikbase.idmapping.core.util import not_none, check_string, no_Nones_in_iterable
+from jgikbase.idmapping.core.arg_check import not_none, check_string, no_Nones_in_iterable
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from pytest import raises
-from jgikbase.idmapping.core import util
+from jgikbase.idmapping.core import arg_check
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
 
 
@@ -38,7 +38,7 @@ def test_check_string_fail():
 
     # this is reaching into the implementation which is very naughty but I don't see a good way
     # to check the cache is actually working otherwise
-    assert util._REGEX_CACHE['a-z_'].pattern == '[^a-z_]'
+    assert arg_check._REGEX_CACHE['a-z_'].pattern == '[^a-z_]'
 
     # test with cache
     fail_check_string('b_ar&_1', 'foo', 'a-z_', None,

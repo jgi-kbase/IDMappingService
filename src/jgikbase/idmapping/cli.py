@@ -5,7 +5,7 @@ CLI tools for the ID Mapping system.
 from typing import List, IO
 import sys
 import argparse
-from jgikbase.idmapping.core.util import not_none, no_Nones_in_iterable
+from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 import traceback
 from pathlib import Path
 from jgikbase.idmapping.builder import IDMappingBuilder

@@ -4,7 +4,7 @@ namespace in which that ID resides. For instance, a namespace might be 'NCBI_Ref
 ID might be 'GCF_001598195.1'. The ID is expected to be unique and immutable within a particular
 namespace.
 """
-from jgikbase.idmapping.core.util import check_string, not_none, no_Nones_in_iterable
+from jgikbase.idmapping.core.arg_check import check_string, not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.user import User
 from typing import Set
 

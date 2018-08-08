@@ -1,7 +1,7 @@
 """
 ID Mapping system user classes.
 """
-from jgikbase.idmapping.core.util import not_none, check_string
+from jgikbase.idmapping.core.arg_check import not_none, check_string
 from jgikbase.idmapping.core.errors import IllegalUsernameError, IllegalParameterError
 
 
