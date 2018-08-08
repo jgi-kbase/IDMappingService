@@ -129,3 +129,120 @@ def test_fail_list_users_verbose():
     assert err.write.call_args_list[0] == (('Error: this is improbable\n',), {})
     assert 'Traceback' in err.write.call_args_list[1][0][0]
     assert 'OSError: this is improbable' in err.write.call_args_list[1][0][0]
+
+
+def test_fail_user_no_op():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    assert IDMappingCLI(builder, ['--user', 'foo'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [
+        (('One of --create, --new-token, or --admin must be specified.\n',), {})]
+
+
+def test_fail_user_illegal_admin_value():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'fake'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [
+        (("--admin must have a value of 'true' or 'false'\n",), {})]
+
+
+def test_fail_user_illegal_username():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    assert IDMappingCLI(builder, ['--user', 'fo&o', '--admin', 'true'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [
+        (('Error: 30010 Illegal user name: Illegal character in username fo&o: &\n',), {})]
+
+
+def test_fail_user_illegal_username_verbose():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    assert IDMappingCLI(builder, ['--user', 'fo&o', '--admin', 'true', '--verbose'], out, err
+                        ).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert len(err.write.call_args_list) == 2
+    assert err.write.call_args_list[0] == (
+        ('Error: 30010 Illegal user name: Illegal character in username fo&o: &\n',), {})
+    assert 'Traceback' in err.write.call_args_list[1][0][0]
+    assert 'IllegalUsernameError: 30010 Illegal user name' in err.write.call_args_list[1][0][0]
+
+
+def test_user_set_admin():
+    check_user_set_admin('true', True)
+    check_user_set_admin('false', False)
+
+
+def check_user_set_admin(adminstr, adminbool):
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--admin', adminstr], out, err).execute() == 0
+
+    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert luh.set_user_as_admin.call_args_list == [((Username('foo'), adminbool), {})]
+
+    assert out.write.call_args_list == [(
+        ("Set user foo's admin state to " + adminstr + '.\n',), {})]
+    assert err.write.call_args_list == []
+
+
+def test_user_fail_set_admin():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.set_user_as_admin.side_effect = OSError('this is improbable')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'true'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [(('Error: this is improbable\n',), {})]
+
+
+def test_user_fail_set_admin_verbose():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.set_user_as_admin.side_effect = OSError('this is improbable')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'true', '--verbose'], out, err
+                        ).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert len(err.write.call_args_list) == 2
+    assert err.write.call_args_list[0] == (('Error: this is improbable\n',), {})
+    assert 'Traceback' in err.write.call_args_list[1][0][0]
+    assert 'OSError: this is improbable' in err.write.call_args_list[1][0][0]
