@@ -40,7 +40,7 @@ def test_no_input():
 
     assert out.write.call_args_list == []
     assert err.write.call_args_list == [
-        (('One of --list-users or --user must be specified.\n',), {})]
+        (('Exactly one of --list-users or --user must be specified.\n',), {})]
 
 
 def test_fail_build():
@@ -173,7 +173,7 @@ def test_fail_user_illegal_admin_value():
 
     assert out.write.call_args_list == []
     assert err.write.call_args_list == [
-        (("--admin must have a value of 'true' or 'false'\n",), {})]
+        (("--admin must have a value of 'true' or 'false'.\n",), {})]
 
 
 def test_fail_user_illegal_username():
