@@ -2,7 +2,7 @@
 The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.user_handler import UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import UserHandlerSet
 from typing import Set, cast, Tuple, Iterable
 from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID

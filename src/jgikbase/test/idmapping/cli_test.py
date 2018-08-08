@@ -1,7 +1,7 @@
 from jgikbase.idmapping.builder import IDMappingBuilder, IDMappingBuildException
 from unittest.mock import create_autospec, Mock
 from jgikbase.idmapping.cli import IDMappingCLI
-from jgikbase.idmapping.core.user_handler import LocalUserHandler
+from jgikbase.idmapping.core.user_lookup import LocalUserHandler
 from jgikbase.idmapping.core.user import Username
 from pathlib import Path
 from pytest import raises

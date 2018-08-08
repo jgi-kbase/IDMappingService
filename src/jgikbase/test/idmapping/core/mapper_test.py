@@ -4,7 +4,7 @@ from jgikbase.idmapping.core.mapper import IDMapper
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
-from jgikbase.idmapping.core.user_handler import UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import UserHandlerSet
 from jgikbase.idmapping.core.user import AuthsourceID, Username, User
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError, NoSuchNamespaceError
 from jgikbase.idmapping.core.tokens import Token

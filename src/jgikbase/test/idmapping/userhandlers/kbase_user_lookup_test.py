@@ -1,4 +1,4 @@
-from jgikbase.idmapping.userhandlers.kbase_user_handler import KBaseUserHandler
+from jgikbase.idmapping.userlookup.kbase_user_lookup import KBaseUserHandler
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests_mock
