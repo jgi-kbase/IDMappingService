@@ -62,7 +62,7 @@ class IDMappingCLI:
         if not self._check_inputs(a):
             return 1
         try:
-            luh = self._builder.build_local_user_handler(Path(a.config))
+            luh = self._builder.build_local_user_lookup(Path(a.config))
         except Exception as e:
             self._handle_error(e, a.verbose)
             return 1

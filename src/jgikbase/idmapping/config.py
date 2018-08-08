@@ -11,10 +11,6 @@ from jgikbase.idmapping.core.user_lookup import LocalUserLookup
 # May want different configuration implementations based on the deployment environment.
 # YAGNI for now.
 
-# TODO CFG support user handler custom configs
-# TODO CFG support which user handlers are enabled
-# TODO CFG support which user handlers are allowed to specify admins
-
 
 class IDMappingConfigError(Exception):
     """ Thrown when there's an error in the ID Mapping system configuration. """
