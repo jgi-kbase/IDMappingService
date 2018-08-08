@@ -44,6 +44,7 @@ class IDMappingStorage:  # pragma: no cover
         :param username: the name of the user to alter.
         :param admin: True to give the user admin privileges, False to remove them. If the user
             is already in the given state, no further action is taken.
+        :raises TypeError: if the usename is None.
         '''
         raise NotImplementedError()
 

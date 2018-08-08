@@ -204,6 +204,18 @@ class LocalUserHandler(UserHandler):
         self._store.update_local_user_token(username, t.get_hashed_token())
         return t
 
+    def set_user_as_admin(self, username: Username, admin: bool) -> None:
+        """
+        Set or remove a local user's administration status.
+
+        :param username: the name of the user to alter.
+        :param admin: True to give the user admin privileges, False to remove them. If the user
+            is already in the given state, no further action is taken.
+        :raises TypeError: if the username is None.
+        """
+        not_none(username, 'username')
+        self._store.set_local_user_as_admin(username, admin)
+
     def get_users(self) -> Dict[Username, bool]:
         '''
         Get the users in the local storage system.
