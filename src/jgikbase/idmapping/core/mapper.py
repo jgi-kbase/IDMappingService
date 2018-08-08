@@ -175,7 +175,7 @@ class IDMapper:
         :param namespace_id: the ID of the namespace to modify.
         :param publicly_mappable: True to set the namespace to publicly mappable, false otherwise.
         :raises TypeError: if authsource ID, namespace ID, or token are None.
-        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises NoSuchAuthsourceError: if there's no lookup handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
         :raises NoSuchNamespaceError: if the namespace does not exist.
         :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
@@ -197,13 +197,13 @@ class IDMapper:
         admin of the namespace, the namespace user list will be returned. Otherwise, the user
         list will be empty.
 
-        :param namespace_id: the ID of the namepspace to get.
+        :param namespace_id: the ID of the namespace to get.
         :param authsource_id: the authsource of the provided token.
         :param token: the user's token.
         :raises TypeError: if the namespace ID is None or only one of the authsource ID or token
             are supplied.
         :raises NoSuchNamespaceError: if the namespace does not exist.
-        :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
+        :raises NoSuchAuthsourceError: if there's no lookup handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
         """
         not_none(namespace_id, 'namespace_id')
