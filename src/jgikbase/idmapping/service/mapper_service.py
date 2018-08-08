@@ -126,6 +126,14 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                                         ObjectID(NamespaceID(std_ns), std_id))
         return ('', 204)
 
+    @app.route('/api/v1/mapping/<admin_ns>/<admin_id>/<std_ns>/<std_id>', methods=['DELETE'])
+    def remove_mapping(admin_ns, admin_id, std_ns, std_id):
+        authsource, token = _get_auth(request)
+        app.config[_APP].remove_mapping(authsource, token,
+                                        ObjectID(NamespaceID(admin_ns), admin_id),
+                                        ObjectID(NamespaceID(std_ns), std_id))
+        return ('', 204)
+
     ##################################
     # error handlers
     ##################################
