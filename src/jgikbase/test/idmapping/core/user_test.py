@@ -50,15 +50,15 @@ def test_username_init_pass():
     u = Username(LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789')
     assert u.name == LONG_STR[0:64] + 'abcdefghijklmnopqrstuvwxyz0123456789'
 
+    u = Username('0123456789' * 10)
+    assert u.name == '0123456789' * 10
+
 
 def test_username_init_fail():
     fail_username_init(None, MissingParameterError('username'))
     fail_username_init('       \t      \n   ', MissingParameterError('username'))
     fail_username_init(LONG_STR + 'b', IllegalUsernameError(
         'username ' + LONG_STR + 'b exceeds maximum length of 100'))
-    for c in '0123456789':
-        fail_username_init(c + 'foo',
-                           IllegalUsernameError('username ' + c + 'foo must start with a letter'))
     for c in '*&@-+\n\t~_':
         fail_username_init(
             'foo1d' + c,

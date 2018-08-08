@@ -47,13 +47,12 @@ class Username:
     """
 
     # TODO NOW change to UserID
-    # TODO NOW relax regex to allow numbers
 
     def __init__(self, username: str) -> None:
         """
         Create a new user name.
 
-        :param username: The name of the user matching the regex ^[a-z][a-z0-9]+$ and no longer
+        :param username: The name of the user matching the regex ^[a-z0-9]+$ and no longer
             than 100 characters.
         :raises MissingParameterError: if the user name is None or whitespace only.
         :raises IllegalUsernameError: if the user name does not meet the requirements.
@@ -62,8 +61,6 @@ class Username:
             check_string(username, 'username', 'a-z0-9', 100)
         except IllegalParameterError as e:
             raise IllegalUsernameError(e.message) from e
-        if not username[0].isalpha():
-            raise IllegalUsernameError('username {} must start with a letter'.format(username))
         self.name = username
 
     def __eq__(self, other):
