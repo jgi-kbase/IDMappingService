@@ -1,4 +1,4 @@
-from jgikbase.idmapping.userlookup.kbase_user_lookup import KBaseUserHandler
+from jgikbase.idmapping.userlookup.kbase_user_lookup import KBaseUserLookup
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests_mock
@@ -12,7 +12,7 @@ def test_init():
         m.get('http://whee.com/',
               request_headers={'Accept': 'application/json'},
               json={'version': '0.1.2', 'gitcommithash': 'hashyhash', 'servertime': 3})
-        kbuh = KBaseUserHandler('http://whee.com', Token('foo'), 'admin')
+        kbuh = KBaseUserLookup('http://whee.com', Token('foo'), 'admin')
         assert kbuh.auth_url == 'http://whee.com/'
 
 
@@ -66,7 +66,7 @@ def check_missing_keys(json, missing_keys):
 
 def fail_init(url, token, kbase_admin_str, expected):
     with raises(Exception) as got:
-        KBaseUserHandler(url, token, kbase_admin_str)
+        KBaseUserLookup(url, token, kbase_admin_str)
     assert_exception_correct(got.value, expected)
 
 
@@ -79,7 +79,7 @@ def get_user_handler(url, token, kbase_admin_role):
         m.get(newurl,
               request_headers={'Accept': 'application/json'},
               json={'version': '0.1.2', 'gitcommithash': 'hashyhash', 'servertime': 3})
-        return KBaseUserHandler(url, token, kbase_admin_role)
+        return KBaseUserLookup(url, token, kbase_admin_role)
 
 
 def test_get_authsource_id():

@@ -1,6 +1,6 @@
 from unittest.mock import create_autospec
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.user_lookup import LocalUserHandler, UserHandlerSet, UserHandler
+from jgikbase.idmapping.core.user_lookup import LocalUserLookup, UserLookupSet, UserLookup
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token, HashedToken
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
@@ -11,24 +11,24 @@ from jgikbase.idmapping.core.errors import NoSuchAuthsourceError
 
 
 def test_set_init_fail():
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
 
-    fail_set_init(None, TypeError('user_handlers cannot be None'))
-    fail_set_init(set([handler, None]), TypeError('None item in user_handlers'))
+    fail_set_init(None, TypeError('user_lookup cannot be None'))
+    fail_set_init(set([handler, None]), TypeError('None item in user_lookup'))
 
 
 def fail_set_init(handlers, expected):
     with raises(Exception) as got:
-        UserHandlerSet(handlers)
+        UserLookupSet(handlers)
     assert_exception_correct(got.value, expected)
 
 
 def test_set_get_user_default_cache_ttl():
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer)
+    hset = UserLookupSet(set([handler]), timer)
 
     check_set_get_user_default_cache_ttl(hset, handler, timer, [0, 299, 300, 301])
 
@@ -39,11 +39,11 @@ def test_set_get_user_default_cache_ttl_set_ttl():
 
 
 def check_set_get_user_default_cache_ttl_set_ttl(ttl, timervals):
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer, cache_user_expiration=ttl)
+    hset = UserLookupSet(set([handler]), timer, cache_user_expiration=ttl)
 
     check_set_get_user_default_cache_ttl(hset, handler, timer, timervals)
 
@@ -83,11 +83,11 @@ def check_set_get_user_default_cache_ttl(hset, handler, timer, timervals):
 
 def test_set_get_user_cache_max_count():
     # testing the default of 10k is just silly, not going to bother.
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer, cache_max_size=2)
+    hset = UserLookupSet(set([handler]), timer, cache_max_size=2)
 
     # add user 1
     handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), False, None, None)
@@ -152,11 +152,11 @@ def test_set_get_user_rel_lt_epoch_ttl():
 
 
 def check_set_get_user_handler_ttl(epoch, rel, timervals):
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer)
+    hset = UserLookupSet(set([handler]), timer)
 
     handler.get_user.return_value = (User(AuthsourceID('as'), Username('u1')), False, epoch, rel)
     timer.return_value = timervals[0]
@@ -184,16 +184,16 @@ def check_set_get_user_handler_ttl(epoch, rel, timervals):
 
 
 def test_set_get_user_fail_None_input():
-    hset = UserHandlerSet(set())
+    hset = UserLookupSet(set())
     fail_set_get_user(hset, None, Token('t'), TypeError('authsource_id cannot be None'))
     fail_set_get_user(hset, AuthsourceID('a'), None, TypeError('token cannot be None'))
 
 
 def test_set_get_user_no_authsource():
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    fail_set_get_user(UserHandlerSet(set([handler])),
+    fail_set_get_user(UserLookupSet(set([handler])),
                       AuthsourceID('bs'),
                       Token('t'),
                       NoSuchAuthsourceError('bs'))
@@ -206,11 +206,11 @@ def fail_set_get_user(hset, authsource_id, token, expected):
 
 
 def test_set_is_valid_user_default_cache_ttl():
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer)
+    hset = UserLookupSet(set([handler]), timer)
 
     check_set_is_valid_user_default_cache_ttl(hset, handler, timer, [0, 3599, 3600, 3601])
 
@@ -221,11 +221,11 @@ def test_set_is_valid_user_default_cache_ttl_set_ttl():
 
 
 def check_set_is_valid_user_default_cache_ttl_set_ttl(ttl, timervals):
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer, cache_is_valid_expiration=ttl)
+    hset = UserLookupSet(set([handler]), timer, cache_is_valid_expiration=ttl)
 
     check_set_is_valid_user_default_cache_ttl(hset, handler, timer, timervals)
 
@@ -261,11 +261,11 @@ def check_set_is_valid_user_default_cache_ttl(hset, handler, timer, timervals):
 
 def test_set_is_valid_user_invalid_user():
     # invalid users shouldn't get cached.
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer)
+    hset = UserLookupSet(set([handler]), timer)
 
     handler.is_valid_user.return_value = (False, None, None)
     timer.return_value = 0
@@ -284,11 +284,11 @@ def test_set_is_valid_user_invalid_user():
 
 def test_set_is_valid_user_cache_max_count():
     # testing the default of 10k is just silly, not going to bother.
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer, cache_max_size=2)
+    hset = UserLookupSet(set([handler]), timer, cache_max_size=2)
 
     # add user 1
     handler.is_valid_user.return_value = (True, None, None)
@@ -347,11 +347,11 @@ def test_set_is_valid_user_rel_lt_epoch_ttl():
 
 
 def check_set_is_valid_user_handler_ttl(epoch, rel, timervals):
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     timer = create_autospec(time.time, spec_set=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    hset = UserHandlerSet(set([handler]), timer)
+    hset = UserLookupSet(set([handler]), timer)
 
     handler.is_valid_user.return_value = (True, epoch, rel)
     timer.return_value = timervals[0]
@@ -377,15 +377,15 @@ def check_set_is_valid_user_handler_ttl(epoch, rel, timervals):
 
 
 def test_set_is_valid_user_None_inputs():
-    hset = UserHandlerSet(set())
+    hset = UserLookupSet(set())
     fail_set_is_valid_user(hset, None, TypeError('user cannot be None'))
 
 
 def test_set_is_valid_user_no_authsource():
-    handler = create_autospec(UserHandler, spec_set=True, instance=True)
+    handler = create_autospec(UserLookup, spec_set=True, instance=True)
     handler.get_authsource_id.return_value = AuthsourceID('as')
 
-    fail_set_is_valid_user(UserHandlerSet(set([handler])),
+    fail_set_is_valid_user(UserLookupSet(set([handler])),
                            User(AuthsourceID('bs'), Username('n')),
                            NoSuchAuthsourceError('bs'))
 
@@ -398,13 +398,13 @@ def fail_set_is_valid_user(hset, user, expected):
 
 def test_local_init_fail():
     with raises(Exception) as got:
-        LocalUserHandler(None)
+        LocalUserLookup(None)
     assert_exception_correct(got.value, TypeError('storage cannot be None'))
 
 
 def test_local_get_authsource():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
-    assert LocalUserHandler(storage).get_authsource_id() == AuthsourceID('local')
+    assert LocalUserLookup(storage).get_authsource_id() == AuthsourceID('local')
 
 
 def test_local_get_user_admin():
@@ -416,7 +416,7 @@ def check_local_get_user_admin(isadmin):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     storage.get_user.return_value = (Username('bar'), isadmin)
 
-    assert LocalUserHandler(storage).get_user(Token('foo')) == \
+    assert LocalUserLookup(storage).get_user(Token('foo')) == \
         (User(AuthsourceID('local'), Username('bar')), isadmin, None, 300)
 
     thash = '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae'
@@ -426,7 +426,7 @@ def check_local_get_user_admin(isadmin):
 def test_local_get_user_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     with raises(Exception) as got:
-        LocalUserHandler(storage).get_user(None)
+        LocalUserLookup(storage).get_user(None)
     assert_exception_correct(got.value, TypeError('token cannot be None'))
 
 
@@ -434,7 +434,7 @@ def test_local_is_valid_user():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     storage.user_exists.return_value = True
 
-    luh = LocalUserHandler(storage)
+    luh = LocalUserLookup(storage)
 
     assert luh.is_valid_user(Username('foo')) == (True, None, 3600)
 
@@ -450,14 +450,14 @@ def test_local_is_valid_user():
 def test_local_is_valid_user_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     with raises(Exception) as got:
-        LocalUserHandler(storage).is_valid_user(None)
+        LocalUserLookup(storage).is_valid_user(None)
     assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
 def test_local_create_user():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
 
-    t = LocalUserHandler(storage).create_user(Username('foo'))
+    t = LocalUserLookup(storage).create_user(Username('foo'))
 
     assert is_base64(t.token) is True
     assert len(t.token) is 28
@@ -469,14 +469,14 @@ def test_local_create_user():
 def test_local_create_user_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     with raises(Exception) as got:
-        LocalUserHandler(storage).create_user(None)
+        LocalUserLookup(storage).create_user(None)
     assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
 def test_local_new_token():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
 
-    t = LocalUserHandler(storage).new_token(Username('bar'))
+    t = LocalUserLookup(storage).new_token(Username('bar'))
 
     assert is_base64(t.token) is True
     assert len(t.token) is 28
@@ -488,15 +488,15 @@ def test_local_new_token():
 def test_local_new_token_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     with raises(Exception) as got:
-        LocalUserHandler(storage).new_token(None)
+        LocalUserLookup(storage).new_token(None)
     assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
 def test_local_set_user_as_admin():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
 
-    LocalUserHandler(storage).set_user_as_admin(Username('n'), True)
-    LocalUserHandler(storage).set_user_as_admin(Username('r'), False)
+    LocalUserLookup(storage).set_user_as_admin(Username('n'), True)
+    LocalUserLookup(storage).set_user_as_admin(Username('r'), False)
 
     assert storage.set_local_user_as_admin.call_args_list == [((Username('n'), True), {}),
                                                               ((Username('r'), False), {})]
@@ -505,7 +505,7 @@ def test_local_set_user_as_admin():
 def test_local_set_user_as_admin_fail():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     with raises(Exception) as got:
-        LocalUserHandler(storage).set_user_as_admin(None, True)
+        LocalUserLookup(storage).set_user_as_admin(None, True)
     assert_exception_correct(got.value, TypeError('username cannot be None'))
 
 
@@ -513,7 +513,7 @@ def test_local_get_users():
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     storage.get_users.return_value = {Username('foo'): False, Username('bar'): True}
 
-    assert LocalUserHandler(storage).get_users() == {Username('foo'): False,
-                                                     Username('bar'): True}
+    assert LocalUserLookup(storage).get_users() == {Username('foo'): False,
+                                                    Username('bar'): True}
 
     assert storage.get_users.call_args_list == [((), {})]

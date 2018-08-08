@@ -2,7 +2,7 @@
 Contains code for building the core ID mapping code given a configuration.
 """
 from jgikbase.idmapping.config import KBaseConfig
-from jgikbase.idmapping.core.user_lookup import LocalUserHandler, UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import LocalUserLookup, UserLookupSet
 from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
 from pymongo.errors import ConnectionFailure
@@ -39,7 +39,7 @@ class IDMappingBuilder:
         self.cfg = None
         self._storage = None
 
-    def build_local_user_handler(self, cfgpath: Path=None) -> LocalUserHandler:
+    def build_local_user_handler(self, cfgpath: Path=None) -> LocalUserLookup:
         """
         Build a local user handler.
 
@@ -50,7 +50,7 @@ class IDMappingBuilder:
         """
         self._set_cfg(cfgpath)
         self._build_storage()
-        return LocalUserHandler(cast(IDMappingStorage, self._storage))
+        return LocalUserLookup(cast(IDMappingStorage, self._storage))
 
     def _set_cfg(self, cfgpath):
         if not self.cfg:
@@ -85,6 +85,6 @@ class IDMappingBuilder:
         # TODO BUILD build other user handlers
         self._set_cfg(cfgpath)
         luh = self.build_local_user_handler(cfgpath)
-        uhs = UserHandlerSet(set([luh]))
+        uhs = UserLookupSet(set([luh]))
         self._build_storage()
         return IDMapper(uhs, set(), cast(IDMappingStorage, self._storage))

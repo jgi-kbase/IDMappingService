@@ -2,7 +2,7 @@
 The core ID mapping code.
 """
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from jgikbase.idmapping.core.user_lookup import UserHandlerSet
+from jgikbase.idmapping.core.user_lookup import UserLookupSet
 from typing import Set, cast, Tuple, Iterable
 from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
@@ -21,24 +21,24 @@ class IDMapper:
 
     def __init__(
             self,
-            user_handlers: UserHandlerSet,
+            user_lookup: UserLookupSet,
             admin_authsources: Set[AuthsourceID],
             storage: IDMappingStorage
             ) -> None:
         """
         Create the mapper.
 
-        :param user_handlers: the set of user handlers to query when looking up user names from
-            tokens or checking that a provided user name is valid.
+        :param user_lookup: the set of user lookup handlers to query when looking up user names
+            from tokens or checking that a provided user name is valid.
         :param admin_authsources: the set of auth sources that are valid system admin sources.
             The admin state returned by other auth sources will be ignored.
         :param storage: the mapping storage system.
         """
-        not_none(user_handlers, 'user_handlers')
+        not_none(user_lookup, 'user_lookup')
         no_Nones_in_iterable(admin_authsources, 'admin_authsources')
         not_none(storage, 'storage')
         self._storage = storage
-        self._handlers = user_handlers
+        self._lookup = user_lookup
         self._admin_authsources = admin_authsources
 
     def _check_sys_admin(self, authsource_id: AuthsourceID, token: Token) -> None:
@@ -51,7 +51,7 @@ class IDMapper:
         if authsource_id not in self._admin_authsources:
             raise UnauthorizedError(('Auth source {} is not configured as a provider of ' +
                                     'system administration status').format(authsource_id.id))
-        user, admin = self._handlers.get_user(authsource_id, token)
+        user, admin = self._lookup.get_user(authsource_id, token)
         if not admin:
             raise UnauthorizedError('User {}/{} is not a system administrator'.format(
                 user.authsource_id.id, user.username.name))
@@ -84,7 +84,7 @@ class IDMapper:
         :raises NoSuchUserError: if the user is invalid according to the appropriate user handler.
         """
         not_none(user, 'user')
-        if not self._handlers.is_valid_user(user):
+        if not self._lookup.is_valid_user(user):
             raise NoSuchUserError('{}/{}'.format(user.authsource_id.id, user.username.name))
 
     def add_user_to_namespace(
@@ -182,7 +182,7 @@ class IDMapper:
         """
         not_none(token, 'token')
         not_none(namespace_id, 'namespace_id')
-        user, _ = self._handlers.get_user(authsource_id, token)
+        user, _ = self._lookup.get_user(authsource_id, token)
         self._check_authed_for_ns_get(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
 
@@ -212,7 +212,7 @@ class IDMapper:
         ns = self._storage.get_namespace(namespace_id)
         if token:
             authsource_id = cast(AuthsourceID, authsource_id)  # mypy doesn't understand the xor
-            user, admin = self._handlers.get_user(authsource_id, token)
+            user, admin = self._lookup.get_user(authsource_id, token)
             if admin or user in ns.authed_users:
                 return ns
         return ns.without_users()
@@ -263,7 +263,7 @@ class IDMapper:
         not_none(token, 'token')
         not_none(administrative_oid, 'administrative_oid')
         not_none(oid, 'oid')
-        user, _ = self._handlers.get_user(authsource_id, token)
+        user, _ = self._lookup.get_user(authsource_id, token)
         adminns = self._storage.get_namespace(administrative_oid.namespace_id)
         self._check_authed_for_ns(user, adminns)
         ns = self._storage.get_namespace(oid.namespace_id)
@@ -297,7 +297,7 @@ class IDMapper:
         not_none(token, 'token')
         not_none(administrative_oid, 'administrative_oid')
         not_none(oid, 'oid')
-        user, _ = self._handlers.get_user(authsource_id, token)
+        user, _ = self._lookup.get_user(authsource_id, token)
         adminns = self._storage.get_namespace(administrative_oid.namespace_id)
         self._check_authed_for_ns(user, adminns)
         self._storage.get_namespace(oid.namespace_id)  # check for existence

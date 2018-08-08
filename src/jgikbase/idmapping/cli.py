@@ -9,7 +9,7 @@ from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 import traceback
 from pathlib import Path
 from jgikbase.idmapping.builder import IDMappingBuilder
-from jgikbase.idmapping.core.user_lookup import LocalUserHandler
+from jgikbase.idmapping.core.user_lookup import LocalUserLookup
 from jgikbase.idmapping.core.user import Username
 
 
@@ -97,7 +97,7 @@ class IDMappingCLI:
                 return False
         return True
 
-    def _list_users(self, local_user_handler: LocalUserHandler, verbose):
+    def _list_users(self, local_user_handler: LocalUserLookup, verbose):
         try:
             users = local_user_handler.get_users()
         except Exception as e:
@@ -112,7 +112,7 @@ class IDMappingCLI:
 
     def _create_user(
             self,
-            local_user_handler: LocalUserHandler,
+            local_user_handler: LocalUserLookup,
             username: Username,
             verbose):
         try:
@@ -125,7 +125,7 @@ class IDMappingCLI:
 
     def _new_token(
             self,
-            local_user_handler: LocalUserHandler,
+            local_user_handler: LocalUserLookup,
             username: Username,
             verbose):
         try:
@@ -139,7 +139,7 @@ class IDMappingCLI:
 
     def _admin(
             self,
-            local_user_handler: LocalUserHandler,
+            local_user_handler: LocalUserLookup,
             username: Username,
             admin: str,
             verbose):

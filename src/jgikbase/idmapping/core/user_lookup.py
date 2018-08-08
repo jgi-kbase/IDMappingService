@@ -10,7 +10,7 @@ import time
 from cacheout.lru import LRUCache
 
 
-class UserHandler:  # pragma: no cover
+class UserLookup:  # pragma: no cover
     """
     An interface for a handler for user information, including authentication.
     """
@@ -56,14 +56,14 @@ class UserHandler:  # pragma: no cover
         raise NotImplementedError()
 
 
-class UserHandlerSet:
+class UserLookupSet:
     """
     A container for a number of user handlers that provides caching for said handlers.
     """
 
     def __init__(
             self,
-            user_handlers: Set[UserHandler],
+            user_lookup: Set[UserLookup],
             cache_timer: Callable[[], int]=None,
             cache_max_size: int=10000,
             cache_user_expiration: int=300,
@@ -74,8 +74,8 @@ class UserHandlerSet:
 
         The cache_* parameters are mainly provided for testing purposes.
 
-        :param user_handlers: the set of user handlers to query when looking up user names from
-            tokens or checking that a provided user name is valid.
+        :param user_lookup: the set of user lookup instances to query when looking up user names
+            from tokens or checking that a provided user name is valid.
         :param cache_timer: the timer used for cache expiration. Defaults to time.time.
         :param cache_max_size: the maximum size of the token -> user and username -> validity
             caches.
@@ -84,8 +84,8 @@ class UserHandlerSet:
         :param cache_is_valid_expiration: the default expiration time for the  username ->
             validity cache. This time can be overridden by a user handler on a per user basis.
         """
-        no_Nones_in_iterable(user_handlers, 'user_handlers')
-        self._handlers = {handler.get_authsource_id(): handler for handler in user_handlers}
+        no_Nones_in_iterable(user_lookup, 'user_lookup')
+        self._lookup = {l.get_authsource_id(): l for l in user_lookup}
         self._cache_timer = time.time if not cache_timer else cache_timer
         self._user_cache = LRUCache(timer=self._cache_timer, maxsize=cache_max_size,
                                     ttl=cache_user_expiration)
@@ -97,7 +97,7 @@ class UserHandlerSet:
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         """
         not_none(authsource_id, 'authsource_id')
-        if authsource_id not in self._handlers:
+        if authsource_id not in self._lookup:
             raise NoSuchAuthsourceError(authsource_id.id)
 
     def _calc_ttl(self, epoch, rel):
@@ -127,7 +127,7 @@ class UserHandlerSet:
         cacheres = self._user_cache.get((authsource_id, token), default=False)
         if cacheres:
             return cacheres
-        user, admin, epoch, rel = self._handlers[authsource_id].get_user(token)
+        user, admin, epoch, rel = self._lookup[authsource_id].get_user(token)
         self._user_cache.set((authsource_id, token), (user, admin), ttl=self._calc_ttl(epoch, rel))
         return (user, admin)
 
@@ -143,15 +143,15 @@ class UserHandlerSet:
         # None default causes a key error
         exists = self._valid_cache.get(user, default=False)
         if not exists:
-            exists, epoch, rel = self._handlers[user.authsource_id].is_valid_user(user.username)
+            exists, epoch, rel = self._lookup[user.authsource_id].is_valid_user(user.username)
             if exists:
                 self._valid_cache.set(user, True, ttl=self._calc_ttl(epoch, rel))
         return exists
 
 
-class LocalUserHandler(UserHandler):
+class LocalUserLookup(UserLookup):
     """
-    An implementation of :class:`jgikbase.idmapping.core.user_handler.UserHandler` for users
+    An implementation of :class:`jgikbase.idmapping.core.user_handler.UserLookup` for users
     stored in the local database.
     """
 
