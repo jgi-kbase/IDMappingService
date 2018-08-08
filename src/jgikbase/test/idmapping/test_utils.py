@@ -41,8 +41,8 @@ def _get_test_config_file_path() -> Path:
 
 def _get_test_property(prop: str) -> str:
     global _CONFIG
-    test_cfg = _get_test_config_file_path()
     if not _CONFIG:
+        test_cfg = _get_test_config_file_path()
         config = configparser.ConfigParser()
         config.read(test_cfg)
         if TEST_CONFIG_FILE_SECTION not in config:
