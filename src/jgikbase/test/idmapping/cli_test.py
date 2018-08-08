@@ -7,7 +7,7 @@ from pathlib import Path
 from pytest import raises
 from jgikbase.test.idmapping.test_utils import assert_exception_correct
 from jgikbase.idmapping.core.tokens import Token
-from jgikbase.idmapping.core.errors import UserExistsError
+from jgikbase.idmapping.core.errors import UserExistsError, NoSuchUserError
 
 # TODO CLI at some point, test usage and invalid args. Since argparse calls exit() when this
 # happens, it'll need exec() tests, or futzing with argparse.
@@ -37,6 +37,18 @@ def test_no_input():
     err = Mock()
 
     assert IDMappingCLI(builder, [], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [
+        (('Exactly one of --list-users or --user must be specified.\n',), {})]
+
+
+def test_too_much_input():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--list-users'], out, err).execute() == 1
 
     assert out.write.call_args_list == []
     assert err.write.call_args_list == [
@@ -131,6 +143,28 @@ def test_fail_list_users_verbose():
     assert err.write.call_args_list[0] == (('Error: this is improbable\n',), {})
     assert 'Traceback' in err.write.call_args_list[1][0][0]
     assert 'OSError: this is improbable' in err.write.call_args_list[1][0][0]
+
+
+def test_alternate_config_location():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.get_users.return_value = {Username('c'): False, Username('b'): True, Username('a'): False}
+
+    assert IDMappingCLI(builder, ['--list-users', '--config', 'someother.cfg'], out, err
+                        ).execute() == 0
+
+    assert builder.build_local_user_handler.call_args_list == [((Path('someother.cfg'),), {})]
+    assert luh.get_users.call_args_list == [((), {})]
+
+    assert out.write.call_args_list == [(('* indicates an administrator:\n',), {}),
+                                        (('a\n',), {}),
+                                        (('b *\n',), {}),
+                                        (('c\n',), {})]
+    assert err.write.call_args_list == []
 
 
 def test_fail_user_no_op():
@@ -316,3 +350,56 @@ def test_user_fail_create_verbose():
     assert err.write.call_args_list[0] == (('Error: 40000 User already exists: foo\n',), {})
     assert 'Traceback' in err.write.call_args_list[1][0][0]
     assert 'UserExistsError: 40000 User already exists: foo' in err.write.call_args_list[1][0][0]
+
+
+def test_user_new_token():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.new_token.return_value = Token('tokenwhee')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--new-token'], out, err).execute() == 0
+
+    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert luh.new_token.call_args_list == [((Username('foo'),), {})]
+
+    assert out.write.call_args_list == [(
+        ("Replaced user foo's token with token:\ntokenwhee\n",), {})]
+    assert err.write.call_args_list == []
+
+
+def test_user_fail_new_token():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.new_token.side_effect = NoSuchUserError('foo')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--new-token'], out, err).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert err.write.call_args_list == [(('Error: 50000 No such user: foo\n',), {})]
+
+
+def test_user_fail_new_token_verbose():
+    builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
+    luh = create_autospec(LocalUserHandler, spec_set=True, instance=True)
+    out = Mock()
+    err = Mock()
+
+    builder.build_local_user_handler.return_value = luh
+    luh.new_token.side_effect = NoSuchUserError('foo')
+
+    assert IDMappingCLI(builder, ['--user', 'foo', '--new-token', '--verbose'], out, err
+                        ).execute() == 1
+
+    assert out.write.call_args_list == []
+    assert len(err.write.call_args_list) == 2
+    assert err.write.call_args_list[0] == (('Error: 50000 No such user: foo\n',), {})
+    assert 'Traceback' in err.write.call_args_list[1][0][0]
+    assert 'NoSuchUserError: 50000 No such user: foo' in err.write.call_args_list[1][0][0]
