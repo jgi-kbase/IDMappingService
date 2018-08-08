@@ -37,7 +37,7 @@ def test_get_namespace_with_auth():
     mapper.get_namespace.return_value = Namespace(NamespaceID('foo'), True, set([
         User(AuthsourceID('bar'), Username('baz')), User(AuthsourceID('bag'), Username('bat'))]))
 
-    resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'as toketoketoke'})
+    resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': '  \tas toketoketoke  \t'})
 
     assert resp.get_json() == {'namespace': 'foo', 'publicly_mappable': True,
                                'users': ['bag/bat', 'bar/baz']}
@@ -171,9 +171,13 @@ def test_create_namespace_post():
 
 
 def test_create_namespace_fail_no_token():
+    fail_no_token_put('/api/v1/namespace/foo')
+
+
+def fail_no_token_put(url):
     cli, _ = build_app()
 
-    resp = cli.put('/api/v1/namespace/foo')
+    resp = cli.put(url)
 
     assert resp.get_json() == {
         'error': {'httpcode': 401,
@@ -187,9 +191,23 @@ def test_create_namespace_fail_no_token():
 
 
 def test_create_namespace_fail_munged_auth():
-    cli, _ = build_app()
-    resp = cli.post('/api/v1/namespace/foo', headers={'Authorization': 'astoketoketoke'})
+    fail_munged_auth_post('/api/v1/namespace/foo')
+    fail_munged_auth_put('/api/v1/namespace/foo')
 
+
+def fail_munged_auth_put(url):
+    cli, _ = build_app()
+    resp = cli.put(url, headers={'Authorization': 'astoketoketoke'})
+    fail_munged_auth_check(resp)
+
+
+def fail_munged_auth_post(url):
+    cli, _ = build_app()
+    resp = cli.post(url, headers={'Authorization': 'astoketoketoke'})
+    fail_munged_auth_check(resp)
+
+
+def fail_munged_auth_check(resp):
     assert resp.get_json() == {
         'error': {'httpcode': 400,
                   'httpstatus': 'Bad Request',
@@ -203,9 +221,13 @@ def test_create_namespace_fail_munged_auth():
 
 
 def test_create_namespace_fail_illegal_ns_id():
+    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar')
+
+
+def fail_illegal_ns_id_put(url):
     cli, _ = build_app()
 
-    resp = cli.put('/api/v1/namespace/foo&bar', headers={'Authorization': 'source tokey'})
+    resp = cli.put(url, headers={'Authorization': 'source tokey'})
 
     assert resp.get_json() == {
         'error': {'httpcode': 400,
@@ -220,6 +242,7 @@ def test_create_namespace_fail_illegal_ns_id():
 
 
 def test_create_namespace_fail_unauthorized():
+    # general test of the unauthorized error handler
     cli, mapper = build_app()
 
     mapper.create_namespace.side_effect = UnauthorizedError('YOU SHALL NOT PASS')
@@ -238,3 +261,28 @@ def test_create_namespace_fail_unauthorized():
 
     assert mapper.create_namespace.call_args_list == [((
         AuthsourceID('source'), Token('tokey'), NamespaceID('foo')), {})]
+
+
+def test_add_user_to_namespace():
+    cli, mapper = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo/user/bar/baz', headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.add_user_to_namespace.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo'),
+        User(AuthsourceID('bar'), Username('baz'))), {})]
+
+
+def test_add_user_to_namespace_fail_no_token():
+    fail_no_token_put('/api/v1/namespace/foo/user/bar/baz')
+
+
+def test_add_user_to_namespace_fail_munged_auth():
+    fail_munged_auth_put('/api/v1/namespace/foo/user/bar/baz')
+
+
+def test_add_user_to_namespace_fail_illegal_ns_id():
+    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/user/bar/baz')
