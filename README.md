@@ -14,3 +14,6 @@ Build status (master):
 * documentation
 * integration tests
 * gunicorn app
+* bulk endpoints
+* combined list format
+* Release notes (dev) and tag
