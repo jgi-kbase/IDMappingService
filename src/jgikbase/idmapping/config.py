@@ -42,10 +42,11 @@ class KBaseConfig:
         system administrators.
     :ivar ignore_ip_headers: True if the X-Real-IP and X-Forwarded-For headers should be ignored.
     :ivar lookup_configs: the configurations for the user lookup instances. This is a dict
-        of :class:`idmapping.core.user.AuthsourceID` to the configuration for the lookup instance
-        for that authsource. The configuration is a tuple where the first entry is a string
-        denoting the module containing the factory method used to create the lookup instance.
-        The second entry is a str -> str dict containing the configuration for the lookup instance.
+        of :class:`jgikbase.idmapping.core.user.AuthsourceID` to the configuration for the lookup
+        instance for that authsource. The configuration is a tuple where the first entry is a
+        string denoting the module containing the factory method used to create the lookup
+        instance. The second entry is a str -> str dict containing the configuration for the
+        lookup instance.
     """
 
     ENV_VAR_IDMAPPING = 'ID_MAPPING_CONFIG'
