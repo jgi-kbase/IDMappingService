@@ -57,12 +57,10 @@ def test_too_much_input():
 
 def test_fail_build():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_lookup.return_value = luh
-    luh.get_users.side_effect = IDMappingBuildException(
+    builder.build_local_user_lookup.side_effect = IDMappingBuildException(
         "I'm sorry, something just fell out of my ear")
 
     assert IDMappingCLI(builder, ['--list-users'], out, err).execute() == 1
@@ -74,12 +72,10 @@ def test_fail_build():
 
 def test_fail_build_verbose():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
-    luh = create_autospec(LocalUserLookup, spec_set=True, instance=True)
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_lookup.return_value = luh
-    luh.get_users.side_effect = IDMappingBuildException(
+    builder.build_local_user_lookup.side_effect = IDMappingBuildException(
         "I'm sorry, something just fell out of my ear")
 
     assert IDMappingCLI(builder, ['--list-users', '--verbose'], out, err).execute() == 1
