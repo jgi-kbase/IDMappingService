@@ -5,7 +5,7 @@ from jgikbase.idmapping.core.errors import NoTokenError, AuthenticationError,\
     ErrorType, IllegalParameterError, IDMappingError, NoDataException, UnauthorizedError
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
-from jgikbase.idmapping.core.object_id import NamespaceID
+from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
 import flask
 from typing import List, Tuple, Optional
@@ -106,8 +106,8 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.route('/api/v1/namespace/<namespace>', methods=['GET'])
     def get_namespace(namespace):
         """ Get a namespace. """
-        auth = _get_auth(request, False)
-        ns = app.config[_APP].get_namespace(NamespaceID(namespace), auth[0], auth[1])
+        authsource, token = _get_auth(request, False)
+        ns = app.config[_APP].get_namespace(NamespaceID(namespace), authsource, token)
         return flask.jsonify({'namespace': ns.namespace_id.id,
                               'publicly_mappable': ns.is_publicly_mappable,
                               'users': _users_to_jsonable(ns.authed_users)})
@@ -117,6 +117,14 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         public, private = app.config[_APP].get_namespaces()
         return flask.jsonify({'publicly_mappable': sorted([ns.id for ns in public]),
                               'privately_mappable': sorted([ns.id for ns in private])})
+
+    @app.route('/api/v1/mapping/<admin_ns>/<admin_id>/<std_ns>/<std_id>', methods=['PUT', 'POST'])
+    def create_mapping(admin_ns, admin_id, std_ns, std_id):
+        authsource, token = _get_auth(request)
+        app.config[_APP].create_mapping(authsource, token,
+                                        ObjectID(NamespaceID(admin_ns), admin_id),
+                                        ObjectID(NamespaceID(std_ns), std_id))
+        return ('', 204)
 
     ##################################
     # error handlers
