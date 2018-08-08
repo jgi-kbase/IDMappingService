@@ -206,18 +206,20 @@ POST is also accepted, although not strictly correct.
 GET /api/v1/mapping/<namespace>/<ID>/[?namespace_filter=<namespace CSL>]
 
 RETURNS:
-[{"namespace": <namespace1>,
-  "id: <id1>,
-  "is_administrative": <boolean1>
-  },
-  ...
- {"namespace": <namespaceN>,
-  "id: <idN>,
-  "is_administrative": <booleanN>
-  }
- } 
-]
+{"admin": [{"namespace": <namespace1>, "id": <id1>},
+            ...
+           {"namespace": <namespaceN>, "id": <idN>}
+           ],
+ "other": [{"namespace": <namespaceN+1>, "id": <idN+1>},
+            ...
+           {"namespace": <namespaceN+M>, "id": <idN+M>}
+           ]
+ }
 ```
+
+The namespaces in the `admin` key are administrative namespaces; those in the `other` key are
+not. Note that a mapping may occur twice in the output - once in the `admin` section and once in
+the `other` section.
 
 Any unusual characters, but especially slashes, in the ID must be url-escaped.
 
