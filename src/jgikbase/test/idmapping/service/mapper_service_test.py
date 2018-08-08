@@ -334,3 +334,62 @@ def test_remove_user_from_namespace_fail_munged_auth():
 
 def test_remove_user_from_namespace_fail_illegal_ns_id():
     fail_illegal_ns_id_delete('/api/v1/namespace/foo&bar/user/bar/baz')
+
+
+def test_set_namespace_publicly_mappable():
+    check_set_namespace_publicly_mappable('true', True)
+    check_set_namespace_publicly_mappable('false', False)
+
+
+def check_set_namespace_publicly_mappable(arg, expected):
+    cli, mapper = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo/set?publicly_mappable=' + arg,
+                   headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.set_namespace_publicly_mappable.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'), NamespaceID('foo'), expected), {})]
+
+
+def test_set_namespace_no_op():
+    cli, mapper = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo/set', headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.set_namespace_publicly_mappable.call_args_list == []
+
+
+def test_set_namespace_publicly_mappable_illegal_input():
+    cli, _ = build_app()
+
+    resp = cli.put('/api/v1/namespace/foo/set?publicly_mappable=foobar',
+                   headers={'Authorization': 'source tokey'})
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ("30001 Illegal input parameter: Expected value of 'true' or " +
+                              "'false' for publicly_mappable")
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_set_namespace_publicly_mappable_fail_no_token():
+    fail_no_token_put('/api/v1/namespace/foo/set')
+
+
+def test_set_namespace_publicly_mappable_fail_munged_auth():
+    fail_munged_auth_put('/api/v1/namespace/foo/set')
+
+
+def test_set_namespace_publicly_mappable_fail_illegal_ns_id():
+    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/set?publicly_mappable=true')
