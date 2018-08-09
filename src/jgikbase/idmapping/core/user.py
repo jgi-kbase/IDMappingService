@@ -47,6 +47,8 @@ class Username:
     """
 
     # TODO CFG specify handler classes in config & load dynamically
+    # TODO NOW change to UserID
+    # TODO NOW relax regex to allow numbers
 
     def __init__(self, username: str) -> None:
         """

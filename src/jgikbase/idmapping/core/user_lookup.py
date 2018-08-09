@@ -155,7 +155,7 @@ class LocalUserLookup(UserLookup):
     stored in the local database.
     """
 
-    _LOCAL = AuthsourceID('local')
+    LOCAL = AuthsourceID('local')
 
     def __init__(self, storage: IDMappingStorage) -> None:
         '''
@@ -167,12 +167,12 @@ class LocalUserLookup(UserLookup):
         self._store = storage
 
     def get_authsource_id(self) -> AuthsourceID:
-        return self._LOCAL
+        return self.LOCAL
 
     def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
         not_none(token, 'token')
         username, admin = self._store.get_user(token.get_hashed_token())
-        return (User(self._LOCAL, username), admin, None, 300)
+        return (User(self.LOCAL, username), admin, None, 300)
 
     def is_valid_user(self, username: Username) -> Tuple[bool, Optional[int], Optional[int]]:
         not_none(username, 'username')
