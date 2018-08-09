@@ -2,7 +2,8 @@ from jgikbase.idmapping.builder import IDMappingBuilder
 from flask.app import Flask
 from flask import request
 from jgikbase.idmapping.core.errors import NoTokenError, AuthenticationError,\
-    ErrorType, IllegalParameterError, IDMappingError, NoDataException, UnauthorizedError
+    ErrorType, IllegalParameterError, IDMappingError, NoDataException, UnauthorizedError,\
+    MissingParameterError
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
@@ -12,6 +13,8 @@ from typing import List, Tuple, Optional, Set
 import traceback
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from operator import itemgetter
+import json
+from json.decoder import JSONDecodeError
 
 # TODO LOG all calls & errors
 # TODO ROOT with gitcommit, version, servertime
@@ -26,11 +29,11 @@ _TRUE = 'true'
 _FALSE = 'false'
 
 
-def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None):
+def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None, errprefix: str=''):
     traceback.print_exc()  # TODO LOG remove when logging works
     errjson = {'httpcode': httpcode,
                'httpstatus': responses[httpcode],
-               'message': str(err)}
+               'message': errprefix + str(err)}
     if errtype:
         errjson['appcode'] = errtype.error_code
         errjson['apperror'] = errtype.error_type
@@ -64,6 +67,25 @@ def _users_to_jsonable(users: List[User]) -> List[str]:
 def _objids_to_jsonable(oids: Set[ObjectID]):
     return sorted([{'namespace': o.namespace_id.id, 'id': o.id} for o in oids],
                   key=itemgetter('namespace', 'id'))
+
+
+def _check_id(id_, name: str) -> str:
+    if not isinstance(id_, str):
+        raise IllegalParameterError('Expected string for parameter ' + name)
+    id_ = id_.strip()
+    if not id_:
+        raise MissingParameterError(name)
+    return id_
+
+
+def _get_object_ids_from_json(request) -> Tuple[str, str]:
+    # flask has a built in get_json() method but the errors it throws suck.
+    ids = json.loads(request.data)
+    if not isinstance(ids, dict):
+        raise IllegalParameterError('Expected JSON mapping in request body')
+    admin_id = _check_id(ids.get('admin_id'), 'admin_id')
+    other_id = _check_id(ids.get('other_id'), 'other_id ')
+    return admin_id, other_id
 
 
 def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
@@ -128,20 +150,22 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         return flask.jsonify({'publicly_mappable': sorted([ns.id for ns in public]),
                               'privately_mappable': sorted([ns.id for ns in private])})
 
-    @app.route('/api/v1/mapping/<admin_ns>/<admin_id>/<std_ns>/<std_id>', methods=['PUT', 'POST'])
-    def create_mapping(admin_ns, admin_id, std_ns, std_id):
+    @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['PUT', 'POST'])
+    def create_mapping(admin_ns, other_ns):
         authsource, token = _get_auth(request)
+        admin_id, other_id = _get_object_ids_from_json(request)
         app.config[_APP].create_mapping(authsource, token,
                                         ObjectID(NamespaceID(admin_ns), admin_id),
-                                        ObjectID(NamespaceID(std_ns), std_id))
+                                        ObjectID(NamespaceID(other_ns), other_id))
         return ('', 204)
 
-    @app.route('/api/v1/mapping/<admin_ns>/<admin_id>/<std_ns>/<std_id>', methods=['DELETE'])
-    def remove_mapping(admin_ns, admin_id, std_ns, std_id):
+    @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['DELETE'])
+    def remove_mapping(admin_ns, other_ns):
         authsource, token = _get_auth(request)
+        admin_id, other_id = _get_object_ids_from_json(request)
         app.config[_APP].remove_mapping(authsource, token,
                                         ObjectID(NamespaceID(admin_ns), admin_id),
-                                        ObjectID(NamespaceID(std_ns), std_id))
+                                        ObjectID(NamespaceID(other_ns), other_id))
         return ('', 204)
 
     @app.route('/api/v1/mapping/<ns>/<eyedee>', methods=['GET'])
@@ -163,6 +187,11 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     def general_app_errors(err):
         """ Handle general application errors. These are user-caused and always map to 400. """
         return _format_error(err, 400, err.error_type)
+
+    @app.errorhandler(JSONDecodeError)
+    def json_errors(err):
+        """ Handle invalid input JSON. """
+        return _format_error(err, 400, errprefix='Input JSON decode error: ')
 
     @app.errorhandler(AuthenticationError)
     def authentication_errors(err):

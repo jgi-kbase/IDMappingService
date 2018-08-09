@@ -238,21 +238,21 @@ def test_create_namespace_fail_illegal_ns_id():
     fail_illegal_ns_id_put('/api/v1/namespace/foo*bar')
 
 
-def fail_illegal_ns_id_get(url):
+def fail_illegal_ns_id_get(url, json=None):
     cli, _ = build_app()
-    resp = cli.get(url, headers={'Authorization': 'source tokey'})
+    resp = cli.get(url, headers={'Authorization': 'source tokey'}, json=json)
     fail_illegal_ns_id_check(resp)
 
 
-def fail_illegal_ns_id_put(url):
+def fail_illegal_ns_id_put(url, json=None):
     cli, _ = build_app()
-    resp = cli.put(url, headers={'Authorization': 'source tokey'})
+    resp = cli.put(url, headers={'Authorization': 'source tokey'}, json=json)
     fail_illegal_ns_id_check(resp)
 
 
-def fail_illegal_ns_id_delete(url):
+def fail_illegal_ns_id_delete(url, json=None):
     cli, _ = build_app()
-    resp = cli.delete(url, headers={'Authorization': 'source tokey'})
+    resp = cli.delete(url, headers={'Authorization': 'source tokey'}, json=json)
     fail_illegal_ns_id_check(resp)
 
 
@@ -440,13 +440,15 @@ def check_get_namespaces(returned, expected):
 
 def test_create_mapping_put():
     cli, mapper = build_app()
-    resp = cli.put('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json={'admin_id': 'aid', 'other_id': 'id'})
     check_create_mapping(resp, mapper)
 
 
 def test_create_mapping_post():
     cli, mapper = build_app()
-    resp = cli.post('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+    resp = cli.post('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                    json={'admin_id': 'aid', 'other_id': 'id'})
     check_create_mapping(resp, mapper)
 
 
@@ -461,22 +463,130 @@ def check_create_mapping(resp, mapper):
 
 
 def test_create_mapping_fail_no_token():
-    fail_no_token_put('/api/v1/mapping/ans/aid/ns/id')
+    fail_no_token_put('/api/v1/mapping/ans/ns')
 
 
 def test_create_mapping_fail_munged_auth():
-    fail_munged_auth_put('/api/v1/mapping/ans/aid/ns/id')
-    fail_munged_auth_post('/api/v1/mapping/ans/aid/ns/id')
+    fail_munged_auth_put('/api/v1/mapping/ans/ns')
+    fail_munged_auth_post('/api/v1/mapping/ans/ns')
+
+
+def test_create_mapping_fail_no_body():
+    cli, _ = build_app()
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'})
+    check_mapping_fail_no_body(resp)
+
+
+def check_mapping_fail_no_body(resp):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'message': 'Input JSON decode error: Expecting value: line 1 column 1 (char 0)'
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_mapping_fail_bad_json():
+    cli, _ = build_app()
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   data='{"foo": ["bar", "baz"}]')
+    check_mapping_fail_bad_json(resp)
+
+
+def check_mapping_fail_bad_json(resp):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'message': ("Input JSON decode error: Expecting ',' delimiter: " +
+                              "line 1 column 22 (char 21)")
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_mapping_fail_not_dict():
+    cli, _ = build_app()
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json=['foo', 'bar'])
+    check_mapping_fail_not_dict(resp)
+
+
+def check_mapping_fail_not_dict(resp):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'Expected JSON mapping in request body')
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_mapping_fail_missing_id():
+    check_create_mapping_fail_missing_id(None)
+    check_create_mapping_fail_missing_id([])
+
+
+def check_create_mapping_fail_missing_id(id_):
+    cli, _ = build_app()
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json={'admin_id': id_})
+    check_mapping_fail_missing_id(resp, 'admin_id')
+
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json={'other_id': id_, 'admin_id': 'id'})
+    check_mapping_fail_missing_id(resp, 'other_id')
+
+
+def check_mapping_fail_missing_id(resp, idname):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'Expected string for parameter ' + idname)
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_create_mapping_fail_whitespace_id():
+    cli, _ = build_app()
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json={'admin_id': '    \t    '})
+    check_mapping_fail_whitespace_id(resp, 'admin_id')
+
+    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                   json={'other_id': '    \t    ', 'admin_id': 'id'})
+    check_mapping_fail_whitespace_id(resp, 'other_id')
+
+
+def check_mapping_fail_whitespace_id(resp, idname):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30000,
+                  'apperror': 'Missing input parameter',
+                  'message': '30000 Missing input parameter: ' + idname
+                  }
+        }
+    assert resp.status_code == 400
 
 
 def test_create_mapping_fail_illegal_ns_id():
-    fail_illegal_ns_id_put('/api/v1/mapping/foo*bar/aid/ns/id')
+    fail_illegal_ns_id_put('/api/v1/mapping/foo*bar/ns',
+                           json={'admin_id': 'aid', 'other_id': 'id'})
 
 
 def test_remove_mapping():
     cli, mapper = build_app()
 
-    resp = cli.delete('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json={'admin_id': 'aid', 'other_id': 'id'})
 
     assert resp.data == b''
     assert resp.status_code == 204
@@ -488,15 +598,63 @@ def test_remove_mapping():
 
 
 def test_remove_mapping_fail_no_token():
-    fail_no_token_delete('/api/v1/mapping/ans/aid/ns/id')
+    fail_no_token_delete('/api/v1/mapping/ans/ns')
 
 
 def test_remove_mapping_fail_munged_auth():
-    fail_munged_auth_delete('/api/v1/mapping/ans/aid/ns/id')
+    fail_munged_auth_delete('/api/v1/mapping/ans/ns')
+
+
+def test_remove_mapping_fail_no_body():
+    cli, _ = build_app()
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'})
+    check_mapping_fail_no_body(resp)
+
+
+def test_remove_mapping_fail_bad_json():
+    cli, _ = build_app()
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      data='{"foo": ["bar", "baz"}]')
+    check_mapping_fail_bad_json(resp)
+
+
+def test_remove_mapping_fail_not_dict():
+    cli, _ = build_app()
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json=['foo', 'bar'])
+    check_mapping_fail_not_dict(resp)
+
+
+def test_remove_mapping_fail_missing_id():
+    check_remove_mapping_fail_missing_id(None)
+    check_remove_mapping_fail_missing_id([])
+
+
+def check_remove_mapping_fail_missing_id(id_):
+    cli, _ = build_app()
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json={'admin_id': id_})
+    check_mapping_fail_missing_id(resp, 'admin_id')
+
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json={'other_id': id_, 'admin_id': 'id'})
+    check_mapping_fail_missing_id(resp, 'other_id')
+
+
+def test_remove_mapping_fail_whitespace_id():
+    cli, _ = build_app()
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json={'admin_id': '    \t    '})
+    check_mapping_fail_whitespace_id(resp, 'admin_id')
+
+    resp = cli.delete('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
+                      json={'other_id': '    \t    ', 'admin_id': 'id'})
+    check_mapping_fail_whitespace_id(resp, 'other_id')
 
 
 def test_remove_mapping_fail_illegal_ns_id():
-    fail_illegal_ns_id_delete('/api/v1/mapping/foo*bar/aid/ns/id')
+    fail_illegal_ns_id_delete('/api/v1/mapping/foo*bar/ns',
+                              json={'admin_id': 'aid', 'other_id': 'id'})
 
 
 def test_get_mappings_empty():
