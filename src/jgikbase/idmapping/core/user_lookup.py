@@ -223,3 +223,7 @@ class LocalUserLookup(UserLookup):
         :returns: a mapping of username to a boolean denoting whether the user is an admin or not.
         '''
         return self._store.get_users()
+
+
+class LookupInitializationError(Exception):
+    """ Thrown when a user lookup handler could not be initialized. """

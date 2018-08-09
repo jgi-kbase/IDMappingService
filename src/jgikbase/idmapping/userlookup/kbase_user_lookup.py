@@ -1,13 +1,13 @@
 """
 A ID mapper service user lookup handler for KBase (https://kbase.us) user accounts.
 """
-from jgikbase.idmapping.core.user_lookup import UserLookup
+from jgikbase.idmapping.core.user_lookup import UserLookup, LookupInitializationError
 from jgikbase.idmapping.core.arg_check import not_none
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests
 from jgikbase.idmapping.core.errors import InvalidTokenError
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 
 
 # WARNING - this is tested by mocking the requests library. The test suite never tests it against
@@ -50,6 +50,7 @@ class KBaseUserLookup(UserLookup):
                           'The root JSON response does not contain the expected keys {}'.format(
                               sorted(missing_keys)))
         # could use the server time to adjust for clock skew
+        # also could check token is valid and the system admin role exists
         # probably not worth the trouble
 
     def get_authsource_id(self) -> AuthsourceID:
@@ -91,3 +92,21 @@ class KBaseUserLookup(UserLookup):
         self._check_error(r)
         j = r.json()
         return (len(j) == 1, None, 3600)
+
+
+def build_lookup(config: Dict[str, str]) -> UserLookup:
+    """
+    Build a KBase user lookup instance.
+
+    :params config: A dictionary containing the keys 'url' for the KBase auth server url,
+        'token' for a valid KBase token, and 'admin-role' for the KBase auth server custom
+        role the user must possess in order to be an admin of the ID Mapping system.
+    """
+    err = 'kbase user lookup handler requires {} configuration item'
+    if 'url' not in config:
+        raise LookupInitializationError(err.format('url'))
+    if 'token' not in config:
+        raise LookupInitializationError(err.format('token'))
+    if 'admin-role' not in config:
+        raise LookupInitializationError(err.format('admin-role'))
+    return KBaseUserLookup(config['url'], Token(config['token']), config['admin-role'])
