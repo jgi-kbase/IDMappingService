@@ -2,18 +2,29 @@
 Contains code for building the core ID mapping code given a configuration.
 """
 from jgikbase.idmapping.config import KBaseConfig
-from jgikbase.idmapping.core.user_lookup import LocalUserLookup, UserLookupSet
+from jgikbase.idmapping.core.user_lookup import LocalUserLookup, UserLookupSet, UserLookup,\
+    LookupInitializationError
 from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
 from pymongo.errors import ConnectionFailure
 from jgikbase.idmapping.core.mapper import IDMapper
 from pathlib import Path
+from jgikbase.idmapping.core.user import AuthsourceID
+import importlib
+from jgikbase.idmapping.core.arg_check import not_none
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
+from typing import Dict, Set  # @UnusedImport pydev
 from typing import cast
 
 
 class IDMappingBuildException(Exception):
     """ Thrown when the build fails. """
+
+
+class _SometimesMyPyIsReallyStupid:
+    @staticmethod
+    def build_lookup(config: Dict[str, str]) -> UserLookup:
+        pass
 
 
 class IDMappingBuilder:
@@ -36,12 +47,10 @@ class IDMappingBuilder:
         """
         Create a builder.
         """
-        self.cfg = None
-        self._storage = None
 
-    def build_local_user_handler(self, cfgpath: Path=None) -> LocalUserLookup:
+    def build_local_user_lookup(self, cfgpath: Path=None) -> LocalUserLookup:
         """
-        Build a local user handler.
+        Build a local user lookup handler.
 
         :param cfgpath: the the path to the build configuration file. The configuration is memoized
             and used in any future builds, and any other configurations are ignored.
@@ -49,15 +58,15 @@ class IDMappingBuilder:
         :raises TypeError: if cfgpath is None.
         """
         self._set_cfg(cfgpath)
-        self._build_storage()
-        return LocalUserLookup(cast(IDMappingStorage, self._storage))
+        return LocalUserLookup(self._build_storage())
 
-    def _set_cfg(self, cfgpath):
-        if not self.cfg:
+    def _set_cfg(self, cfgpath) -> KBaseConfig:
+        if not hasattr(self, 'cfg'):
             self.cfg = KBaseConfig(cfgpath)
+        return self.cfg
 
-    def _build_storage(self):
-        if not self._storage:
+    def _build_storage(self) -> IDMappingStorage:
+        if not hasattr(self, '_storage'):
             if self.cfg.mongo_user:
                 # NOTE this is currently only tested manually.
                 client = MongoClient(self.cfg.mongo_host, authSource=self.cfg.mongo_db,
@@ -70,7 +79,8 @@ class IDMappingBuilder:
             except ConnectionFailure as e:
                 raise IDMappingBuildException('Connection to database failed') from e
             db = client[self.cfg.mongo_db]
-            self._storage = IDMappingMongoStorage(db)
+            self._storage: IDMappingStorage = IDMappingMongoStorage(db)
+        return self._storage
 
     def build_id_mapping_system(self, cfgpath: Path=None) -> IDMapper:
         """
@@ -81,10 +91,38 @@ class IDMappingBuilder:
         :raises IDMappingBuildException: if a build error occurs.
         :raises TypeError: if cfgpath is None.
         """
-        # TODO BUILD get allowed auth sources from config
-        # TODO BUILD build other user handlers
-        self._set_cfg(cfgpath)
-        luh = self.build_local_user_handler(cfgpath)
-        uhs = UserLookupSet(set([luh]))
-        self._build_storage()
-        return IDMapper(uhs, set(), cast(IDMappingStorage, self._storage))
+        cfg = self._set_cfg(cfgpath)
+        lookups: Set[UserLookup] = set()
+        for asID in cfg.auth_enabled:
+            if asID == LocalUserLookup.LOCAL:
+                lookups.add(self.build_local_user_lookup(cfgpath))
+            else:
+                lookups.add(self.build_user_lookup(asID, *cfg.lookup_configs[asID]))
+        return IDMapper(UserLookupSet(lookups), cfg.auth_admin_enabled, self._build_storage())
+
+    def build_user_lookup(
+            self,
+            config_authsource_id: AuthsourceID,
+            factory_module: str,
+            config: Dict[str, str]
+            ) -> UserLookup:
+        not_none(config_authsource_id, 'config_authsource_id')
+        not_none(factory_module, 'factory_module')
+        not_none(config, 'config')
+        try:
+            mod = cast(_SometimesMyPyIsReallyStupid, importlib.import_module(factory_module))
+        except Exception as e:
+            raise IDMappingBuildException('Could not import module {}: {}'.format(
+                factory_module, str(e))) from e
+        try:
+            lookup = mod.build_lookup(config)
+        except LookupInitializationError as e:
+            raise e
+        except Exception as e:
+            raise IDMappingBuildException('Could not build module {}: {}'.format(
+                factory_module, str(e))) from e
+        if config_authsource_id != lookup.get_authsource_id():
+            raise IDMappingBuildException(
+                'User lookup authsource ID mismatch: configuration ID is {}, module reports ID {}'
+                .format(config_authsource_id.id, lookup.get_authsource_id().id))
+        return lookup

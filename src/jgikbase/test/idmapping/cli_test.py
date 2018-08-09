@@ -61,7 +61,7 @@ def test_fail_build():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.side_effect = IDMappingBuildException(
         "I'm sorry, something just fell out of my ear")
 
@@ -78,7 +78,7 @@ def test_fail_build_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.side_effect = IDMappingBuildException(
         "I'm sorry, something just fell out of my ear")
 
@@ -97,12 +97,12 @@ def test_list_users():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.return_value = {Username('c'): False, Username('b'): True, Username('a'): False}
 
     assert IDMappingCLI(builder, ['--list-users'], out, err).execute() == 0
 
-    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert builder.build_local_user_lookup.call_args_list == [((Path('./deploy.cfg'),), {})]
     assert luh.get_users.call_args_list == [((), {})]
 
     assert out.write.call_args_list == [(('* indicates an administrator:\n',), {}),
@@ -118,7 +118,7 @@ def test_fail_list_users():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.side_effect = OSError('this is improbable')
 
     assert IDMappingCLI(builder, ['--list-users'], out, err).execute() == 1
@@ -133,7 +133,7 @@ def test_fail_list_users_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.side_effect = OSError('this is improbable')
 
     assert IDMappingCLI(builder, ['--list-users', '--verbose'], out, err).execute() == 1
@@ -151,13 +151,13 @@ def test_alternate_config_location():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.get_users.return_value = {Username('c'): False, Username('b'): True, Username('a'): False}
 
     assert IDMappingCLI(builder, ['--list-users', '--config', 'someother.cfg'], out, err
                         ).execute() == 0
 
-    assert builder.build_local_user_handler.call_args_list == [((Path('someother.cfg'),), {})]
+    assert builder.build_local_user_lookup.call_args_list == [((Path('someother.cfg'),), {})]
     assert luh.get_users.call_args_list == [((), {})]
 
     assert out.write.call_args_list == [(('* indicates an administrator:\n',), {}),
@@ -173,7 +173,7 @@ def test_fail_user_no_op():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     assert IDMappingCLI(builder, ['--user', 'foo'], out, err).execute() == 1
 
     assert out.write.call_args_list == []
@@ -187,7 +187,7 @@ def test_fail_user_multi_op():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     assert IDMappingCLI(builder, ['--user', 'foo', '--create', '--new-token'], out, err
                         ).execute() == 1
 
@@ -202,7 +202,7 @@ def test_fail_user_illegal_admin_value():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'fake'], out, err).execute() == 1
 
     assert out.write.call_args_list == []
@@ -216,7 +216,7 @@ def test_fail_user_illegal_username():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     assert IDMappingCLI(builder, ['--user', 'fo&o', '--admin', 'true'], out, err).execute() == 1
 
     assert out.write.call_args_list == []
@@ -230,7 +230,7 @@ def test_fail_user_illegal_username_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     assert IDMappingCLI(builder, ['--user', 'fo&o', '--admin', 'true', '--verbose'], out, err
                         ).execute() == 1
 
@@ -253,11 +253,11 @@ def check_user_set_admin(adminstr, adminbool):
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--admin', adminstr], out, err).execute() == 0
 
-    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert builder.build_local_user_lookup.call_args_list == [((Path('./deploy.cfg'),), {})]
     assert luh.set_user_as_admin.call_args_list == [((Username('foo'), adminbool), {})]
 
     assert out.write.call_args_list == [(
@@ -271,7 +271,7 @@ def test_user_fail_set_admin():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.set_user_as_admin.side_effect = OSError('this is improbable')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'true'], out, err).execute() == 1
@@ -286,7 +286,7 @@ def test_user_fail_set_admin_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.set_user_as_admin.side_effect = OSError('this is improbable')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--admin', 'true', '--verbose'], out, err
@@ -305,12 +305,12 @@ def test_user_create():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.create_user.return_value = Token('tokenwhee')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--create'], out, err).execute() == 0
 
-    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert builder.build_local_user_lookup.call_args_list == [((Path('./deploy.cfg'),), {})]
     assert luh.create_user.call_args_list == [((Username('foo'),), {})]
 
     assert out.write.call_args_list == [(
@@ -324,7 +324,7 @@ def test_user_fail_create():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.create_user.side_effect = UserExistsError('foo')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--create'], out, err).execute() == 1
@@ -339,7 +339,7 @@ def test_user_fail_create_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.create_user.side_effect = UserExistsError('foo')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--create', '--verbose'], out, err
@@ -358,12 +358,12 @@ def test_user_new_token():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.new_token.return_value = Token('tokenwhee')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--new-token'], out, err).execute() == 0
 
-    assert builder.build_local_user_handler.call_args_list == [((Path('./deploy.cfg'),), {})]
+    assert builder.build_local_user_lookup.call_args_list == [((Path('./deploy.cfg'),), {})]
     assert luh.new_token.call_args_list == [((Username('foo'),), {})]
 
     assert out.write.call_args_list == [(
@@ -377,7 +377,7 @@ def test_user_fail_new_token():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.new_token.side_effect = NoSuchUserError('foo')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--new-token'], out, err).execute() == 1
@@ -392,7 +392,7 @@ def test_user_fail_new_token_verbose():
     out = Mock()
     err = Mock()
 
-    builder.build_local_user_handler.return_value = luh
+    builder.build_local_user_lookup.return_value = luh
     luh.new_token.side_effect = NoSuchUserError('foo')
 
     assert IDMappingCLI(builder, ['--user', 'foo', '--new-token', '--verbose'], out, err
