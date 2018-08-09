@@ -23,6 +23,10 @@ from json.decoder import JSONDecodeError
 # Set up a blueprint later if necessary
 # Not sure what's worth doing here for documentation. Swagger at some point ideally.
 
+# The bulk methods are currently implemented soley in the API layer. This keeps things simple
+# and required less work. Push the bulk implementation further down in the stack as necessitated
+# by peformance needs.
+
 _APP = 'ID_MAPPER'
 
 _TRUE = 'true'
@@ -65,8 +69,8 @@ def _users_to_jsonable(users: List[User]) -> List[str]:
 
 
 def _objids_to_jsonable(oids: Set[ObjectID]):
-    return sorted([{'namespace': o.namespace_id.id, 'id': o.id} for o in oids],
-                  key=itemgetter('namespace', 'id'))
+    return sorted([{'ns': o.namespace_id.id, 'id': o.id} for o in oids],
+                  key=itemgetter('ns', 'id'))
 
 
 def _check_id(id_, name: str) -> str:
@@ -86,6 +90,22 @@ def _get_object_ids_from_json(request) -> Tuple[str, str]:
     admin_id = _check_id(ids.get('admin_id'), 'admin_id')
     other_id = _check_id(ids.get('other_id'), 'other_id ')
     return admin_id, other_id
+
+
+def _get_object_ids_from_json_list(request) -> List[str]:
+    # flask has a built in get_json() method but the errors it throws suck.
+    body = json.loads(request.data)
+    if not isinstance(body, dict):
+        raise IllegalParameterError('Expected JSON mapping in request body')
+    ids = body.get('ids')
+    if not isinstance(ids, list):
+        raise IllegalParameterError('Expected list at /ids in request body')
+    if not ids:
+        raise MissingParameterError('No ids supplied')
+    for id_ in ids:
+        if not id_ or not id_.strip():
+            raise MissingParameterError('null or whitespace-only id in list')
+    return ids
 
 
 def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
@@ -168,16 +188,27 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                                         ObjectID(NamespaceID(other_ns), other_id))
         return ('', 204)
 
-    @app.route('/api/v1/mapping/<ns>/<eyedee>', methods=['GET'])
-    def get_mappings(ns, eyedee):
+    @app.route('/api/v1/mapping/<ns>/', methods=['GET'])
+    def get_mappings(ns):
         ns_filter = request.args.get('namespace_filter')
+        separate = request.args.get('separate')
         if ns_filter and ns_filter.strip():
             ns_filter = [NamespaceID(n.strip()) for n in ns_filter.split(',')]
         else:
             ns_filter = []
-        admin, other = app.config[_APP].get_mappings(ObjectID(NamespaceID(ns), eyedee), ns_filter)
-        return flask.jsonify({'admin': _objids_to_jsonable(admin),
-                              'other': _objids_to_jsonable(other)})
+        ids = _get_object_ids_from_json_list(request)
+        if len(ids) > 1000:
+            raise IllegalParameterError('A maximum of 1000 ids are allowed')
+        ret = {}
+        for id_ in ids:
+            id_ = id_.strip()
+            a, o = app.config[_APP].get_mappings(ObjectID(NamespaceID(ns), id_), ns_filter)
+            if separate is not None:  # empty string if in query with no value
+                ret[id_] = {'admin': _objids_to_jsonable(a), 'other': _objids_to_jsonable(o)}
+            else:
+                a.update(o)
+                ret[id_] = {'mappings': _objids_to_jsonable(a)}
+        return flask.jsonify(ret)
 
     ##################################
     # error handlers

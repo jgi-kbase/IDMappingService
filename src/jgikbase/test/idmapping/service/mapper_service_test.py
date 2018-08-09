@@ -658,7 +658,11 @@ def test_remove_mapping_fail_illegal_ns_id():
 
 
 def test_get_mappings_empty():
-    check_get_mappings((set(), set()), {'admin': [], 'other': []})
+    check_get_mappings([(set(), set()), (set(), set())],
+                       {'id1': {'mappings': []}, 'id2': {'mappings': []}})
+    check_get_mappings([(set(), set()), (set(), set())],
+                       {'id1': {'admin': [], 'other': []}, 'id2': {'admin': [], 'other': []}},
+                       query='?separate')
 
 
 def to_oid(namespace, id_):
@@ -667,77 +671,246 @@ def to_oid(namespace, id_):
 
 def test_get_mappings_admin():
     check_get_mappings(
-        (set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
-              to_oid('ns3', 'jd1')]),
-         set()),
-        {'admin': [{'namespace': 'ns1', 'id': 'id1'},
-                   {'namespace': 'ns1', 'id': 'id3'},
-                   {'namespace': 'ns3', 'id': 'id1'},
-                   {'namespace': 'ns3', 'id': 'jd1'}],
-         'other': []})
+        [(set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+               to_oid('ns3', 'jd1')]),
+          set()),
+         (set([to_oid('ns', 'id')]),
+          set())],
+        {'id1': {'mappings': [{'ns': 'ns1', 'id': 'id1'},
+                              {'ns': 'ns1', 'id': 'id3'},
+                              {'ns': 'ns3', 'id': 'id1'},
+                              {'ns': 'ns3', 'id': 'jd1'}]
+                 },
+         'id2': {'mappings': [{'ns': 'ns', 'id': 'id'}]}
+         })
+
+    check_get_mappings(
+        [(set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+               to_oid('ns3', 'jd1')]),
+          set()),
+         (set([to_oid('ns', 'id')]),
+          set())],
+        {'id1': {'admin': [{'ns': 'ns1', 'id': 'id1'},
+                           {'ns': 'ns1', 'id': 'id3'},
+                           {'ns': 'ns3', 'id': 'id1'},
+                           {'ns': 'ns3', 'id': 'jd1'}],
+                 'other': []
+                 },
+         'id2': {'admin': [{'ns': 'ns', 'id': 'id'}],
+                 'other': []
+                 }
+         },
+        query='?separate')
 
 
 def test_get_mappings_other():
     check_get_mappings(
-        (set(),
-         set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
-              to_oid('ns3', 'jd1')])),
-        {'admin': [],
-         'other': [{'namespace': 'ns1', 'id': 'id1'},
-                   {'namespace': 'ns1', 'id': 'id3'},
-                   {'namespace': 'ns3', 'id': 'id1'},
-                   {'namespace': 'ns3', 'id': 'jd1'}]})
+        [(set(),
+          set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+               to_oid('ns3', 'jd1')])),
+         (set(),
+          set([to_oid('ns', 'id')]))],
+        {'id1': {'mappings': [{'ns': 'ns1', 'id': 'id1'},
+                              {'ns': 'ns1', 'id': 'id3'},
+                              {'ns': 'ns3', 'id': 'id1'},
+                              {'ns': 'ns3', 'id': 'jd1'}]
+                 },
+         'id2': {'mappings': [{'ns': 'ns', 'id': 'id'}]}
+         })
+
+    check_get_mappings(
+        [(set(),
+          set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+               to_oid('ns3', 'jd1')])),
+         (set(),
+          set([to_oid('ns', 'id')]))],
+        {'id1': {'admin': [],
+                 'other': [{'ns': 'ns1', 'id': 'id1'},
+                           {'ns': 'ns1', 'id': 'id3'},
+                           {'ns': 'ns3', 'id': 'id1'},
+                           {'ns': 'ns3', 'id': 'jd1'}]
+                 },
+         'id2': {'admin': [],
+                 'other': [{'ns': 'ns', 'id': 'id'}]
+                 }
+         },
+        query='?separate')
 
 
 def test_get_mappings_both():
     check_get_mappings(
-        (set([to_oid('whee', 'myadiders'), to_oid('whoo', 'someid'), to_oid('baz', 'someid'),
+        [(set([to_oid('whee', 'myadiders'), to_oid('whoo', 'someid'), to_oid('baz', 'someid'),
               to_oid('whee', 'myadidas')]),
          set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
               to_oid('ns3', 'jd1')])),
-        {'admin': [{'namespace': 'baz', 'id': 'someid'},
-                   {'namespace': 'whee', 'id': 'myadidas'},
-                   {'namespace': 'whee', 'id': 'myadiders'},
-                   {'namespace': 'whoo', 'id': 'someid'}],
-         'other': [{'namespace': 'ns1', 'id': 'id1'},
-                   {'namespace': 'ns1', 'id': 'id3'},
-                   {'namespace': 'ns3', 'id': 'id1'},
-                   {'namespace': 'ns3', 'id': 'jd1'}]})
+         (set([to_oid('ns', 'id')]),
+          set())],
+        {'id1': {'mappings': [{'ns': 'baz', 'id': 'someid'},
+                              {'ns': 'ns1', 'id': 'id1'},
+                              {'ns': 'ns1', 'id': 'id3'},
+                              {'ns': 'ns3', 'id': 'id1'},
+                              {'ns': 'ns3', 'id': 'jd1'},
+                              {'ns': 'whee', 'id': 'myadidas'},
+                              {'ns': 'whee', 'id': 'myadiders'},
+                              {'ns': 'whoo', 'id': 'someid'}]
+                 },
+         'id2': {'mappings': [{'ns': 'ns', 'id': 'id'}]}
+         })
+
+    check_get_mappings(
+        [(set([to_oid('whee', 'myadiders'), to_oid('whoo', 'someid'), to_oid('baz', 'someid'),
+              to_oid('whee', 'myadidas')]),
+         set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+              to_oid('ns3', 'jd1')])),
+         (set([to_oid('ns', 'id')]),
+          set())],
+        {'id1': {'admin': [{'ns': 'baz', 'id': 'someid'},
+                           {'ns': 'whee', 'id': 'myadidas'},
+                           {'ns': 'whee', 'id': 'myadiders'},
+                           {'ns': 'whoo', 'id': 'someid'}],
+                 'other': [{'ns': 'ns1', 'id': 'id1'},
+                           {'ns': 'ns1', 'id': 'id3'},
+                           {'ns': 'ns3', 'id': 'id1'},
+                           {'ns': 'ns3', 'id': 'jd1'}]
+                 },
+         'id2': {'admin': [{'ns': 'ns', 'id': 'id'}],
+                 'other': []
+                 }
+         },
+        query='?separate')
 
 
 def test_get_mappings_with_empty_filter():
     check_get_mappings(
-        (set([to_oid('ns3', 'id1')]), set()),
-        {'admin': [{'namespace': 'ns3', 'id': 'id1'}], 'other': []},
-        ns_filter='?namespace_filter=   \t    ')
+        [(set([to_oid('ns3', 'id1')]), set()), (set(), set())],
+        {'id1': {'mappings': [{'ns': 'ns3', 'id': 'id1'}]}, 'id2': {'mappings': []}},
+        query='?namespace_filter=   \t    ')
+
+    check_get_mappings(
+        [(set([to_oid('ns3', 'id1')]), set()), (set(), set())],
+        {'id1': {'admin': [{'ns': 'ns3', 'id': 'id1'}], 'other': []},
+         'id2': {'admin': [], 'other': []}},
+        query='?separate&namespace_filter=   \t    ')
 
 
 def test_get_mappings_with_filter():
     check_get_mappings(
-        (set([to_oid('ns3', 'id1')]), set()),
-        {'admin': [{'namespace': 'ns3', 'id': 'id1'}], 'other': []},
-        ns_filter='?namespace_filter=   \t  ns3, ns1,  \t ns2   ',
+        [(set([to_oid('ns3', 'id1')]), set()), (set(), set())],
+        {'id1': {'mappings': [{'ns': 'ns3', 'id': 'id1'}]}, 'id2': {'mappings': []}},
+        query='?namespace_filter=   \t  ns3, ns1,  \t ns2   ',
+        ns_filter_expected=[NamespaceID('ns3'), NamespaceID('ns1'), NamespaceID('ns2')])
+
+    check_get_mappings(
+        [(set([to_oid('ns3', 'id1')]), set()), (set(), set())],
+        {'id1': {'admin': [{'ns': 'ns3', 'id': 'id1'}], 'other': []},
+         'id2': {'admin': [], 'other': []}},
+        query='?separate&namespace_filter=   \t  ns3, ns1,  \t ns2   ',
         ns_filter_expected=[NamespaceID('ns3'), NamespaceID('ns1'), NamespaceID('ns2')])
 
 
-def check_get_mappings(returned, expected, ns_filter='', ns_filter_expected=[]):
+def check_get_mappings(returned, expected, query='', ns_filter_expected=[]):
     cli, mapper = build_app()
-    mapper.get_mappings.return_value = returned
+    mapper.get_mappings.side_effect = returned
 
-    resp = cli.get('/api/v1/mapping/ns/id' + ns_filter)
+    resp = cli.get('/api/v1/mapping/ns' + query, json={'ids': ['   id1   \t', 'id2']})
 
     assert resp.get_json() == expected
 
     assert resp.status_code == 200
 
     assert mapper.get_mappings.call_args_list == [
-        ((ObjectID(NamespaceID('ns'), 'id'), ns_filter_expected), {})]
+        ((ObjectID(NamespaceID('ns'), 'id1'), ns_filter_expected), {}),
+        ((ObjectID(NamespaceID('ns'), 'id2'), ns_filter_expected), {})]
+
+
+def test_get_mappings_fail_no_body():
+    cli, _ = build_app()
+
+    resp = cli.get('/api/v1/mapping/ns')
+    check_mapping_fail_no_body(resp)
+
+
+def test_get_mapping_fail_bad_json():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', data='{"foo": ["bar", "baz"}]')
+    check_mapping_fail_bad_json(resp)
+
+
+def test_get_mapping_fail_not_dict():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', json=['foo', 'bar'])
+    check_mapping_fail_not_dict(resp)
+
+
+def test_get_mapping_fail_ids_not_list():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', json={'ids': {'id': 'id'}})
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'Expected list at /ids in request body')
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_get_mapping_fail_ids_empty():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', json={'ids': []})
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30000,
+                  'apperror': 'Missing input parameter',
+                  'message': '30000 Missing input parameter: No ids supplied'
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_get_mapping_fail_bad_id():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', json={'ids': ['id', None, 'id1']})
+    check_get_mapping_fail_bad_id(resp)
+
+    resp = cli.get('/api/v1/mapping/ans', json={'ids': ['id', '   \t    ', 'id1']})
+    check_get_mapping_fail_bad_id(resp)
+
+
+def check_get_mapping_fail_bad_id(resp):
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30000,
+                  'apperror': 'Missing input parameter',
+                  'message': '30000 Missing input parameter: null or whitespace-only id in list'
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_get_mapping_fail_too_many_ids():
+    cli, _ = build_app()
+    resp = cli.get('/api/v1/mapping/ans', json={'ids': [str(x) for x in range(1001)]})
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30001,
+                  'apperror': 'Illegal input parameter',
+                  'message': ('30001 Illegal input parameter: ' +
+                              'A maximum of 1000 ids are allowed')
+                  }
+        }
+    assert resp.status_code == 400
 
 
 def test_get_mappings_fail_whitespace_in_filter():
     cli, _ = build_app()
 
-    resp = cli.get('/api/v1/mapping/ns/id?namespace_filter=ns1,    ,   ns2  , ns3')
+    resp = cli.get('/api/v1/mapping/ns?namespace_filter=ns1,    ,   ns2  , ns3')
 
     assert resp.get_json() == {
         'error': {'httpcode': 400,
@@ -751,5 +924,5 @@ def test_get_mappings_fail_whitespace_in_filter():
 
 
 def test_get_mappings_fail_illegal_ns_id():
-    fail_illegal_ns_id_get('/api/v1/mapping/foo*bar/aid')
-    fail_illegal_ns_id_get('/api/v1/mapping/foobar/aid?namespace_filter=foo*bar')
+    fail_illegal_ns_id_get('/api/v1/mapping/foo*bar', json={'ids': ['id']})
+    fail_illegal_ns_id_get('/api/v1/mapping/foobar?namespace_filter=foo*bar', json={'ids': ['id']})
