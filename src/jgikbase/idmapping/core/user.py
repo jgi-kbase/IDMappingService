@@ -46,7 +46,7 @@ class Username:
     :ivar name: the username.
     """
 
-    # TODO CONFIG specify handler classes in config & load dynamically
+    # TODO CFG specify handler classes in config & load dynamically
 
     def __init__(self, username: str) -> None:
         """

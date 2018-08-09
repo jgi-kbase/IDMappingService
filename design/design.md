@@ -173,7 +173,7 @@ RETURNS:
  }
 ```
 
-The `users` field is only present if the `Authorization` header is supplied and the user is
+The `users` field is only populated if the `Authorization` header is supplied and the user is
 a namespace or general administrator.
 
 #### List namespaces
