@@ -9,7 +9,7 @@ from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
 import flask
-from typing import List, Tuple, Optional, Set
+from typing import List, Tuple, Optional, Set, Dict
 import traceback
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from operator import itemgetter
@@ -73,26 +73,28 @@ def _objids_to_jsonable(oids: Set[ObjectID]):
                   key=itemgetter('ns', 'id'))
 
 
-def _check_id(id_, name: str) -> str:
-    if not isinstance(id_, str):
-        raise IllegalParameterError('Expected string for parameter ' + name)
-    id_ = id_.strip()
-    if not id_:
-        raise MissingParameterError(name)
-    return id_
-
-
-def _get_object_ids_from_json(request) -> Tuple[str, str]:
+def _get_object_id_dict_from_json(request) -> Dict[str, str]:
     # flask has a built in get_json() method but the errors it throws suck.
     ids = json.loads(request.data)
     if not isinstance(ids, dict):
         raise IllegalParameterError('Expected JSON mapping in request body')
-    admin_id = _check_id(ids.get('admin_id'), 'admin_id')
-    other_id = _check_id(ids.get('other_id'), 'other_id ')
-    return admin_id, other_id
+    if not ids:
+        raise MissingParameterError('No ids supplied')
+    for id_ in ids:
+        # json keys must be strings
+        if not id_.strip():
+            raise MissingParameterError('whitespace only key in input JSON')
+        val = ids[id_]
+        if not isinstance(val, str):
+            raise IllegalParameterError('value for key {} in input JSON is not string: {}'.format(
+                id_, val))
+        if not val.strip():
+            raise MissingParameterError('value for key {} in input JSON is whitespace only'.format(
+                id_))
+    return ids
 
 
-def _get_object_ids_from_json_list(request) -> List[str]:
+def _get_object_id_list_from_json(request) -> List[str]:
     # flask has a built in get_json() method but the errors it throws suck.
     body = json.loads(request.data)
     if not isinstance(body, dict):
@@ -173,19 +175,25 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['PUT', 'POST'])
     def create_mapping(admin_ns, other_ns):
         authsource, token = _get_auth(request)
-        admin_id, other_id = _get_object_ids_from_json(request)
-        app.config[_APP].create_mapping(authsource, token,
-                                        ObjectID(NamespaceID(admin_ns), admin_id),
-                                        ObjectID(NamespaceID(other_ns), other_id))
+        ids = _get_object_id_dict_from_json(request)
+        if len(ids) > 10000:
+            raise IllegalParameterError('A maximum of 10000 ids are allowed')
+        for id_ in ids:
+            app.config[_APP].create_mapping(authsource, token,
+                                            ObjectID(NamespaceID(admin_ns), id_.strip()),
+                                            ObjectID(NamespaceID(other_ns), ids[id_].strip()))
         return ('', 204)
 
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['DELETE'])
     def remove_mapping(admin_ns, other_ns):
         authsource, token = _get_auth(request)
-        admin_id, other_id = _get_object_ids_from_json(request)
-        app.config[_APP].remove_mapping(authsource, token,
-                                        ObjectID(NamespaceID(admin_ns), admin_id),
-                                        ObjectID(NamespaceID(other_ns), other_id))
+        ids = _get_object_id_dict_from_json(request)
+        if len(ids) > 10000:
+            raise IllegalParameterError('A maximum of 10000 ids are allowed')
+        for id_ in ids:
+            app.config[_APP].remove_mapping(authsource, token,
+                                            ObjectID(NamespaceID(admin_ns), id_.strip()),
+                                            ObjectID(NamespaceID(other_ns), ids[id_].strip()))
         return ('', 204)
 
     @app.route('/api/v1/mapping/<ns>/', methods=['GET'])
@@ -196,7 +204,7 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
             ns_filter = [NamespaceID(n.strip()) for n in ns_filter.split(',')]
         else:
             ns_filter = []
-        ids = _get_object_ids_from_json_list(request)
+        ids = _get_object_id_list_from_json(request)
         if len(ids) > 1000:
             raise IllegalParameterError('A maximum of 1000 ids are allowed')
         ret = {}
