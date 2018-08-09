@@ -187,62 +187,87 @@ RETURNS:
 }
 ```
 
-#### Create a mapping
+#### Create mappings
 
 ```
 HEADERS:
 Authorization: [Auth source] <token>
 
 PUT /api/v1/mapping/<administrative namespace>/<namespace>/
-{"admin_id": <administrative id>,
- "other_id": <id>
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
  }
 ```
 
 POST is also accepted, although not strictly correct.
 
+A maximum of 10000 ids may be supplied.
+
 #### List mappings
 
 ```
 GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][?separate]
-{"id": <id>}
+{"ids": [<id1>, ..., <idN>]}
 
 RETURNS:
 if not separate:
-    {"mappings": [{"namespace": <namespace1>, "id": <id1>},
-                   ...
-                  {"namespace": <namespaceN>, "id": <idN>}
-                  ]
+    {<id1>: {"mappings" [{"ns": <namespace1_1>, "id": <id1_1>},
+                          ...
+                         {"ns": <namespace1_N>, "id": <id1_N>}
+                         ]
+             },
+     ...
+     <idN>: {"mappings" [{"ns": <namespaceN_1>, "id": <idN_1>},
+                          ...
+                         {"ns": <namespaceN_N>, "id": <idN_N>}
+                         ]
+             }
      }
 else:
-    {"admin": [{"namespace": <namespace1>, "id": <id1>},
-                ...
-               {"namespace": <namespaceN>, "id": <idN>}
-               ],
-     "other": [{"namespace": <namespaceN+1>, "id": <idN+1>},
-                ...
-               {"namespace": <namespaceN+M>, "id": <idN+M>}
-               ]
+    {<id1>: {"admin": [{"ns": <namespace1_1>, "id": <id1_1>},
+                        ...
+                       {"ns": <namespace1_N>, "id": <id1_N>}
+                       ],
+             "other": [{"ns": <namespace1_N+1>, "id": <id1_N+1>},
+                        ...
+                       {"ns": <namespace1_N+M>, "id": <id1_N+M>}
+                      ]
+             },
+      ...
+     <idN>: {"admin": [{"ns": <namespaceN_1>, "id": <idN_1>},
+                        ...
+                       {"ns": <namespaceN_N>, "id": <idN_N>}
+                       ],
+             "other": [{"ns": <namespaceN_N+1>, "id": <idN_N+1>},
+                        ...
+                       {"ns": <namespaceN_N+M>, "id": <idN_N+M>}
+                      ]
+             },
      }
 ```
+
+A maximum of 1000 ids may be supplied.
 
 The namespaces in the `admin` key are administrative namespaces; those in the `other` key are
 not. Note that a mapping may occur twice in the output - once in the `admin` section and once in
 the `other` section.
 
-#### Delete a mapping
+#### Delete mappings
 
 ```
 HEADERS:
 Authorization: [Auth source] <token>
 
 DELETE /api/v1/mapping/<administrative namespace>/<namespace>/
-{"admin_id": <administrative id>,
- "other_id": <id>
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
  }
 ```
 
+A maximum of 10000 ids may be supplied.
+
 ## Future work
 
-* Bulk mapping creation and search endpoints.
-* Provide administrator access via outside authentication systems, such as KBase and JGI auth.
+* Delete all mappings from one namespace to another
