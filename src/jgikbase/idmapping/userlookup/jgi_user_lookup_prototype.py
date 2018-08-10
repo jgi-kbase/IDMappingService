@@ -5,7 +5,7 @@ from typing import Optional, Tuple  # pragma: no cover
 from jgikbase.idmapping.core.arg_check import not_none  # pragma: no cover
 import requests  # pragma: no cover
 from jgikbase.idmapping.core.errors import InvalidTokenError  # pragma: no cover
-from typing import Dict
+from typing import Dict  # pragma: no cover
 
 
 # This is a prototype for interfacing with the JGI authentication system, Caliban.
@@ -13,7 +13,9 @@ from typing import Dict
 # The reasons it is a prototype are:
 # 1) JGI uses integer user IDs rather than user names as immutable IDs, which are not very
 #    readable. Maybe this is ok and the UI should be responsible for displaying readable
-#    user names, but it needs some discussion / thought.
+#    user names, but it needs some discussion / thought. Furthermore, many JGI user names are
+#    simply the user's email address, which would obviously mean we'd be exposing presumably
+#    private email addresses.
 # 2) JGI accounts can be merged, which means a single account can have multiple user IDs.
 #    The prototype does not account for that at this point and as such if a user merges one
 #    account into another, they will lose access to the data linked to the first account.
@@ -37,7 +39,6 @@ class JGIUserLookup(UserLookup):  # pragma: no cover
 
     def get_user(self, token: Token) -> Tuple[User, bool, Optional[int], Optional[int]]:
         not_none(token, 'token')
-        # yes the token is in the url
         r = requests.get(self.auth_url + 'api/sessions/' + token.token + '.json')
         if 400 <= r.status_code <= 499:
             raise InvalidTokenError('JGI auth server reported token is invalid: ' +

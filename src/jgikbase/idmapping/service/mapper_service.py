@@ -14,11 +14,15 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 
 # TODO LOG all calls & errors
 # TODO ROOT with gitcommit, version, servertime
+# TODO CODE try getting rid of src dir and see what happens
 
 # Set up a blueprint later if necessary
 # Not sure what's worth doing here for documentation. Swagger at some point ideally.
 
 _APP = 'ID_MAPPER'
+
+_TRUE = 'true'
+_FALSE = 'false'
 
 
 def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None):
@@ -83,6 +87,19 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         app.config[_APP].remove_user_from_namespace(
             admin_authsource, token, NamespaceID(namespace),
             User(AuthsourceID(authsource), Username(user)))
+        return ('', 204)
+
+    @app.route('/api/v1/namespace/<namespace>/set', methods=['PUT'])
+    def set_namespace_params(namespace):
+        """ Change settings on a namespace. """
+        authsource, token = _get_auth(request)
+        pubmap = request.args.get('publicly_mappable')
+        if pubmap:  # expand later if more settings are allowed
+            if pubmap not in [_TRUE, _FALSE]:
+                raise IllegalParameterError(
+                    "Expected value of 'true' or 'false' for publicly_mappable")
+            app.config[_APP].set_namespace_publicly_mappable(
+                authsource, token, NamespaceID(namespace), pubmap == _TRUE)
         return ('', 204)
 
     @app.route('/api/v1/namespace/<namespace>', methods=['GET'])
