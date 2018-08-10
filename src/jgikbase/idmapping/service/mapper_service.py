@@ -34,7 +34,7 @@ def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None):
     # TODO ERR call id, time
 
 
-def _get_auth(request, required=True) -> Optional[Tuple[AuthsourceID, Token]]:
+def _get_auth(request, required=True) -> Tuple[Optional[AuthsourceID], Optional[Token]]:
     """
     :returns None if required is False and there is no authorization header.
     :raises NoTokenError: if required is True and there's no authorization header.
@@ -45,7 +45,7 @@ def _get_auth(request, required=True) -> Optional[Tuple[AuthsourceID, Token]]:
     if not auth:
         if required:
             raise NoTokenError()
-        return None
+        return (None, None)
     auth = auth.strip().split()
     if len(auth) != 2:
         raise IllegalParameterError('Expected authsource and token in header.')
@@ -76,14 +76,20 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                                                User(AuthsourceID(authsource), Username(user)))
         return ('', 204)
 
+    @app.route('/api/v1/namespace/<namespace>/user/<authsource>/<user>', methods=['DELETE'])
+    def remove_user_from_namespace(namespace, authsource, user):
+        """ Add a user to a namespace. """
+        admin_authsource, token = _get_auth(request)
+        app.config[_APP].remove_user_from_namespace(
+            admin_authsource, token, NamespaceID(namespace),
+            User(AuthsourceID(authsource), Username(user)))
+        return ('', 204)
+
     @app.route('/api/v1/namespace/<namespace>', methods=['GET'])
     def get_namespace(namespace):
         """ Get a namespace. """
         auth = _get_auth(request, False)
-        if auth:
-            ns = app.config[_APP].get_namespace(NamespaceID(namespace), auth[0], auth[1])
-        else:
-            ns = app.config[_APP].get_namespace(NamespaceID(namespace))
+        ns = app.config[_APP].get_namespace(NamespaceID(namespace), auth[0], auth[1])
         return flask.jsonify({'namespace': ns.namespace_id.id,
                               'publicly_mappable': ns.is_publicly_mappable,
                               'users': _users_to_jsonable(ns.authed_users)})
