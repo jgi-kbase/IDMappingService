@@ -2,7 +2,7 @@ from unittest.mock import create_autospec
 from jgikbase.idmapping.core.mapper import IDMapper
 from jgikbase.idmapping.service.mapper_service import create_app
 from jgikbase.idmapping.builder import IDMappingBuilder
-from jgikbase.idmapping.core.object_id import Namespace, NamespaceID
+from jgikbase.idmapping.core.object_id import Namespace, NamespaceID, ObjectID
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
@@ -430,3 +430,38 @@ def check_get_namespaces(returned, expected):
     assert resp.status_code == 200
 
     assert mapper.get_namespaces.call_args_list == [((), {})]
+
+
+def test_create_mapping_put():
+    cli, mapper = build_app()
+    resp = cli.put('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+    check_create_mapping(resp, mapper)
+
+
+def test_create_mapping_post():
+    cli, mapper = build_app()
+    resp = cli.post('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+    check_create_mapping(resp, mapper)
+
+
+def check_create_mapping(resp, mapper):
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.create_mapping.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'),
+        ObjectID(NamespaceID('ans'), 'aid'),
+        ObjectID(NamespaceID('ns'), 'id')), {})]
+
+
+def test_create_mapping_fail_no_token():
+    fail_no_token_put('/api/v1/mapping/ans/aid/ns/id')
+
+
+def test_create_mapping_fail_munged_auth():
+    fail_munged_auth_put('/api/v1/mapping/ans/aid/ns/id')
+    fail_munged_auth_post('/api/v1/mapping/ans/aid/ns/id')
+
+
+def test_create_mapping_fail_illegal_ns_id():
+    fail_illegal_ns_id_put('/api/v1/mapping/foo&bar/aid/ns/id')
