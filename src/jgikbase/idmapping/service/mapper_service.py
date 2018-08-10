@@ -63,6 +63,7 @@ def _users_to_jsonable(users: List[User]) -> List[str]:
 def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     """ Create the flask app. """
     app = Flask(__name__)
+    app.url_map.strict_slashes = False  # otherwise GET /loc/ won't match GET /loc
     app.config[_APP] = builder.build_id_mapping_system()
 
     @app.route('/api/v1/namespace/<namespace>', methods=['PUT', 'POST'])
@@ -110,6 +111,12 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         return flask.jsonify({'namespace': ns.namespace_id.id,
                               'publicly_mappable': ns.is_publicly_mappable,
                               'users': _users_to_jsonable(ns.authed_users)})
+
+    @app.route('/api/v1/namespace', methods=['GET'])
+    def get_namespaces():
+        public, private = app.config[_APP].get_namespaces()
+        return flask.jsonify({'publicly_mappable': sorted([ns.id for ns in public]),
+                              'privately_mappable': sorted([ns.id for ns in private])})
 
     ##################################
     # error handlers

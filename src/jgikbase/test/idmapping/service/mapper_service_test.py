@@ -393,3 +393,40 @@ def test_set_namespace_publicly_mappable_fail_munged_auth():
 
 def test_set_namespace_publicly_mappable_fail_illegal_ns_id():
     fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/set?publicly_mappable=true')
+
+
+def test_get_namespaces_empty():
+    check_get_namespaces((set(), set()), {'publicly_mappable': [], 'privately_mappable': []})
+
+
+def test_get_namespaces_public():
+    check_get_namespaces(
+        (set([NamespaceID('zedsdead'), NamespaceID('foo'), NamespaceID('bar')]), set()),
+        {'publicly_mappable': ['bar', 'foo', 'zedsdead'], 'privately_mappable': []})
+
+
+def test_get_namespaces_private():
+    check_get_namespaces(
+        (set(), set([NamespaceID('zedsdead'), NamespaceID('foo'), NamespaceID('bar')])),
+        {'publicly_mappable': [], 'privately_mappable': ['bar', 'foo', 'zedsdead']})
+
+
+def test_get_namespaces_both():
+    check_get_namespaces(
+        (set([NamespaceID('whoo'), NamespaceID('whee'), NamespaceID('pewpewpew')]),
+         set([NamespaceID('zedsdead'), NamespaceID('foo'), NamespaceID('bar')])),
+        {'publicly_mappable': ['pewpewpew', 'whee', 'whoo'],
+         'privately_mappable': ['bar', 'foo', 'zedsdead']})
+
+
+def check_get_namespaces(returned, expected):
+    cli, mapper = build_app()
+
+    mapper.get_namespaces.return_value = returned
+
+    resp = cli.get('/api/v1/namespace/')
+
+    assert resp.get_json() == expected
+    assert resp.status_code == 200
+
+    assert mapper.get_namespaces.call_args_list == [((), {})]
