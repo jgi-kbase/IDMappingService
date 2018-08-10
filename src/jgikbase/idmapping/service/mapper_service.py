@@ -19,6 +19,16 @@ from json.decoder import JSONDecodeError
 import random
 import time
 
+VERSION = '0.1.0-dev1'
+
+try:
+    from jgikbase.idmapping import gitcommit
+except ImportError:
+    # tested manually
+    raise ValueError('Did not find git commit file at ' +            # pragma: no cover
+                     'src/jgikbase/idmapping/gitcommit.py. ' +       # pragma: no cover
+                     'The build may not have completed correctly.')  # pragma: no cover
+
 # TODO LOG all calls & errors
 # TODO ROOT with gitcommit, version, servertime
 # TODO CODE try getting rid of src dir and see what happens
@@ -47,13 +57,17 @@ _TRUE = 'true'
 _FALSE = 'false'
 
 
+def epoch_ms():
+    return int(round(time.time() * 1000))
+
+
 def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None, errprefix: str=''):
     traceback.print_exc()  # TODO LOG remove when logging works
     errjson = {'httpcode': httpcode,
                'httpstatus': responses[httpcode],
                'message': errprefix + str(err),
                'callid': flask_req_global.req_id,
-               'time': int(round(time.time() * 1000))}
+               'time': epoch_ms()}
     if errtype:
         errjson['appcode'] = errtype.error_code
         errjson['apperror'] = errtype.error_type
@@ -140,6 +154,15 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     ###########
     # Endpoints
     ###########
+
+    @app.route('/', methods=['GET'])
+    def root():
+        """ Get information about the service. """
+        # TODO ROOT add paths and a configurable contact email at some point.
+        return flask.jsonify({'service': 'ID Mapping Service',
+                              'version': VERSION,
+                              'gitcommithash': gitcommit.commit,
+                              'servertime': epoch_ms()})
 
     @app.route('/api/v1/namespace/<namespace>', methods=['PUT', 'POST'])
     def create_namespace(namespace):
