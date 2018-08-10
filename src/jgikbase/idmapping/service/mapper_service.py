@@ -148,7 +148,9 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
 
     @app.route('/api/v1/namespace/<namespace>/user/<authsource>/<user>', methods=['DELETE'])
     def remove_user_from_namespace(namespace, authsource, user):
-        """ Add a user to a namespace. """
+        """
+        Remove a user from a namespace. Removing a non-existant user throws an error.
+        """
         admin_authsource, token = _get_auth(request)
         app.config[_APP].remove_user_from_namespace(
             admin_authsource, token, NamespaceID(namespace),
@@ -179,12 +181,14 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
 
     @app.route('/api/v1/namespace', methods=['GET'])
     def get_namespaces():
+        """ Get all namespaces. """
         public, private = app.config[_APP].get_namespaces()
         return flask.jsonify({'publicly_mappable': sorted([ns.id for ns in public]),
                               'privately_mappable': sorted([ns.id for ns in private])})
 
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['PUT', 'POST'])
     def create_mapping(admin_ns, other_ns):
+        """ Create a mapping. """
         request.get_data()  # see note 1) above
         authsource, token = _get_auth(request)
         ids = _get_object_id_dict_from_json(request)
@@ -198,6 +202,7 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
 
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['DELETE'])
     def remove_mapping(admin_ns, other_ns):
+        """ Remove a mapping. """
         request.get_data()  # see note 1) above
         authsource, token = _get_auth(request)
         ids = _get_object_id_dict_from_json(request)
@@ -211,6 +216,7 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
 
     @app.route('/api/v1/mapping/<ns>/', methods=['GET'])
     def get_mappings(ns):
+        """ Find mappings. """
         request.get_data()  # see note 1) above
         ns_filter = request.args.get('namespace_filter')
         separate = request.args.get('separate')
