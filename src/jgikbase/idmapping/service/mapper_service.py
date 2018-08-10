@@ -9,12 +9,15 @@ from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
 import flask
+from flask import g as flask_req_global
 from typing import List, Tuple, Optional, Set, Dict
 import traceback
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from operator import itemgetter
 import json
 from json.decoder import JSONDecodeError
+import random
+import time
 
 # TODO LOG all calls & errors
 # TODO ROOT with gitcommit, version, servertime
@@ -48,7 +51,9 @@ def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None, errpre
     traceback.print_exc()  # TODO LOG remove when logging works
     errjson = {'httpcode': httpcode,
                'httpstatus': responses[httpcode],
-               'message': errprefix + str(err)}
+               'message': errprefix + str(err),
+               'callid': flask_req_global.req_id,
+               'time': int(round(time.time() * 1000))}
     if errtype:
         errjson['appcode'] = errtype.error_code
         errjson['apperror'] = errtype.error_type
@@ -127,9 +132,14 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     app.url_map.strict_slashes = False  # otherwise GET /loc/ won't match GET /loc
     app.config[_APP] = builder.build_id_mapping_system()
 
-    ##########
+    @app.before_request
+    def add_request_id():
+        flask_req_global.req_id = str(random.randrange(10000000000000000)).zfill(16)  # nosec
+        # bandit doesn't like random for crypo purposes, but we're not doing that here
+
+    ###########
     # Endpoints
-    ##########
+    ###########
 
     @app.route('/api/v1/namespace/<namespace>', methods=['PUT', 'POST'])
     def create_namespace(namespace):
@@ -240,9 +250,9 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                 ret[id_] = {'mappings': _objids_to_jsonable(a)}
         return flask.jsonify(ret)
 
-    ##################################
+    ################
     # error handlers
-    ##################################
+    ################
 
     @app.errorhandler(IDMappingError)
     def general_app_errors(err):
