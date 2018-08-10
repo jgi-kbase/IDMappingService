@@ -3,7 +3,7 @@ from flask.app import Flask
 from flask import request
 from jgikbase.idmapping.core.errors import NoTokenError, AuthenticationError,\
     ErrorType, IllegalParameterError, IDMappingError, NoDataException, UnauthorizedError
-from jgikbase.idmapping.core.user import AuthsourceID, User
+from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
@@ -46,7 +46,7 @@ def _get_auth(request, required=True) -> Optional[Tuple[AuthsourceID, Token]]:
         if required:
             raise NoTokenError()
         return None
-    auth = auth.strip().split()  # TODO NOW test strip
+    auth = auth.strip().split()
     if len(auth) != 2:
         raise IllegalParameterError('Expected authsource and token in header.')
     return AuthsourceID(auth[0]), Token(auth[1])
@@ -66,6 +66,14 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         """ Create a namespace. """
         authsource, token = _get_auth(request)
         app.config[_APP].create_namespace(authsource, token, NamespaceID(namespace))
+        return ('', 204)
+
+    @app.route('/api/v1/namespace/<namespace>/user/<authsource>/<user>', methods=['PUT'])
+    def add_user_to_namespace(namespace, authsource, user):
+        """ Add a user to a namespace. """
+        admin_authsource, token = _get_auth(request)
+        app.config[_APP].add_user_to_namespace(admin_authsource, token, NamespaceID(namespace),
+                                               User(AuthsourceID(authsource), Username(user)))
         return ('', 204)
 
     @app.route('/api/v1/namespace/<namespace>', methods=['GET'])
