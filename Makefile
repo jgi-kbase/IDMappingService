@@ -19,4 +19,5 @@ test:
 test-mongo:
 	IDMAP_TEST_FILE=$(TEST_CFG) pytest --verbose src/jgikbase/test/idmapping/storage/mongo
 
-	
+docker_image:
+	./build/build_docker_image.sh
