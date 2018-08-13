@@ -465,3 +465,29 @@ def test_create_mapping_fail_munged_auth():
 
 def test_create_mapping_fail_illegal_ns_id():
     fail_illegal_ns_id_put('/api/v1/mapping/foo&bar/aid/ns/id')
+
+
+def test_remove_mapping():
+    cli, mapper = build_app()
+
+    resp = cli.delete('/api/v1/mapping/ans/aid/ns/id', headers={'Authorization': 'source tokey'})
+
+    assert resp.data == b''
+    assert resp.status_code == 204
+
+    assert mapper.remove_mapping.call_args_list == [((
+        AuthsourceID('source'), Token('tokey'),
+        ObjectID(NamespaceID('ans'), 'aid'),
+        ObjectID(NamespaceID('ns'), 'id')), {})]
+
+
+def test_remove_mapping_fail_no_token():
+    fail_no_token_delete('/api/v1/mapping/ans/aid/ns/id')
+
+
+def test_remove_mapping_fail_munged_auth():
+    fail_munged_auth_delete('/api/v1/mapping/ans/aid/ns/id')
+
+
+def test_remove_mapping_fail_illegal_ns_id():
+    fail_illegal_ns_id_delete('/api/v1/mapping/foo&bar/aid/ns/id')
