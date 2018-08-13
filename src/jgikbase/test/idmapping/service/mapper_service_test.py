@@ -235,7 +235,13 @@ def fail_munged_auth_check(resp):
 
 
 def test_create_namespace_fail_illegal_ns_id():
-    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar')
+    fail_illegal_ns_id_put('/api/v1/namespace/foo*bar')
+
+
+def fail_illegal_ns_id_get(url):
+    cli, _ = build_app()
+    resp = cli.get(url, headers={'Authorization': 'source tokey'})
+    fail_illegal_ns_id_check(resp)
 
 
 def fail_illegal_ns_id_put(url):
@@ -257,7 +263,7 @@ def fail_illegal_ns_id_check(resp):
                   'appcode': 30001,
                   'apperror': 'Illegal input parameter',
                   'message': ('30001 Illegal input parameter: ' +
-                              'Illegal character in namespace id foo&bar: &')
+                              'Illegal character in namespace id foo*bar: *')
                   }
         }
     assert resp.status_code == 400
@@ -307,7 +313,7 @@ def test_add_user_to_namespace_fail_munged_auth():
 
 
 def test_add_user_to_namespace_fail_illegal_ns_id():
-    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/user/bar/baz')
+    fail_illegal_ns_id_put('/api/v1/namespace/foo*bar/user/bar/baz')
 
 
 def test_remove_user_from_namespace():
@@ -333,7 +339,7 @@ def test_remove_user_from_namespace_fail_munged_auth():
 
 
 def test_remove_user_from_namespace_fail_illegal_ns_id():
-    fail_illegal_ns_id_delete('/api/v1/namespace/foo&bar/user/bar/baz')
+    fail_illegal_ns_id_delete('/api/v1/namespace/foo*bar/user/bar/baz')
 
 
 def test_set_namespace_publicly_mappable():
@@ -392,7 +398,7 @@ def test_set_namespace_publicly_mappable_fail_munged_auth():
 
 
 def test_set_namespace_publicly_mappable_fail_illegal_ns_id():
-    fail_illegal_ns_id_put('/api/v1/namespace/foo&bar/set?publicly_mappable=true')
+    fail_illegal_ns_id_put('/api/v1/namespace/foo*bar/set?publicly_mappable=true')
 
 
 def test_get_namespaces_empty():
@@ -464,7 +470,7 @@ def test_create_mapping_fail_munged_auth():
 
 
 def test_create_mapping_fail_illegal_ns_id():
-    fail_illegal_ns_id_put('/api/v1/mapping/foo&bar/aid/ns/id')
+    fail_illegal_ns_id_put('/api/v1/mapping/foo*bar/aid/ns/id')
 
 
 def test_remove_mapping():
@@ -490,4 +496,102 @@ def test_remove_mapping_fail_munged_auth():
 
 
 def test_remove_mapping_fail_illegal_ns_id():
-    fail_illegal_ns_id_delete('/api/v1/mapping/foo&bar/aid/ns/id')
+    fail_illegal_ns_id_delete('/api/v1/mapping/foo*bar/aid/ns/id')
+
+
+def test_get_mappings_empty():
+    check_get_mappings((set(), set()), {'admin': [], 'other': []})
+
+
+def to_oid(namespace, id_):
+    return(ObjectID(NamespaceID(namespace), id_))
+
+
+def test_get_mappings_admin():
+    check_get_mappings(
+        (set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+              to_oid('ns3', 'jd1')]),
+         set()),
+        {'admin': [{'namespace': 'ns1', 'id': 'id1'},
+                   {'namespace': 'ns1', 'id': 'id3'},
+                   {'namespace': 'ns3', 'id': 'id1'},
+                   {'namespace': 'ns3', 'id': 'jd1'}],
+         'other': []})
+
+
+def test_get_mappings_other():
+    check_get_mappings(
+        (set(),
+         set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+              to_oid('ns3', 'jd1')])),
+        {'admin': [],
+         'other': [{'namespace': 'ns1', 'id': 'id1'},
+                   {'namespace': 'ns1', 'id': 'id3'},
+                   {'namespace': 'ns3', 'id': 'id1'},
+                   {'namespace': 'ns3', 'id': 'jd1'}]})
+
+
+def test_get_mappings_both():
+    check_get_mappings(
+        (set([to_oid('whee', 'myadiders'), to_oid('whoo', 'someid'), to_oid('baz', 'someid'),
+              to_oid('whee', 'myadidas')]),
+         set([to_oid('ns3', 'id1'), to_oid('ns1', 'id3'), to_oid('ns1', 'id1'),
+              to_oid('ns3', 'jd1')])),
+        {'admin': [{'namespace': 'baz', 'id': 'someid'},
+                   {'namespace': 'whee', 'id': 'myadidas'},
+                   {'namespace': 'whee', 'id': 'myadiders'},
+                   {'namespace': 'whoo', 'id': 'someid'}],
+         'other': [{'namespace': 'ns1', 'id': 'id1'},
+                   {'namespace': 'ns1', 'id': 'id3'},
+                   {'namespace': 'ns3', 'id': 'id1'},
+                   {'namespace': 'ns3', 'id': 'jd1'}]})
+
+
+def test_get_mappings_with_empty_filter():
+    check_get_mappings(
+        (set([to_oid('ns3', 'id1')]), set()),
+        {'admin': [{'namespace': 'ns3', 'id': 'id1'}], 'other': []},
+        ns_filter='?namespace_filter=   \t    ')
+
+
+def test_get_mappings_with_filter():
+    check_get_mappings(
+        (set([to_oid('ns3', 'id1')]), set()),
+        {'admin': [{'namespace': 'ns3', 'id': 'id1'}], 'other': []},
+        ns_filter='?namespace_filter=   \t  ns3, ns1,  \t ns2   ',
+        ns_filter_expected=[NamespaceID('ns3'), NamespaceID('ns1'), NamespaceID('ns2')])
+
+
+def check_get_mappings(returned, expected, ns_filter='', ns_filter_expected=[]):
+    cli, mapper = build_app()
+    mapper.get_mappings.return_value = returned
+
+    resp = cli.get('/api/v1/mapping/ns/id' + ns_filter)
+
+    assert resp.get_json() == expected
+
+    assert resp.status_code == 200
+
+    assert mapper.get_mappings.call_args_list == [
+        ((ObjectID(NamespaceID('ns'), 'id'), ns_filter_expected), {})]
+
+
+def test_get_mappings_fail_whitespace_in_filter():
+    cli, _ = build_app()
+
+    resp = cli.get('/api/v1/mapping/ns/id?namespace_filter=ns1,    ,   ns2  , ns3')
+
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30000,
+                  'apperror': 'Missing input parameter',
+                  'message': '30000 Missing input parameter: namespace id'
+                  }
+        }
+    assert resp.status_code == 400
+
+
+def test_get_mappings_fail_illegal_ns_id():
+    fail_illegal_ns_id_get('/api/v1/mapping/foo*bar/aid')
+    fail_illegal_ns_id_get('/api/v1/mapping/foobar/aid?namespace_filter=foo*bar')

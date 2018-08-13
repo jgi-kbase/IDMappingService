@@ -8,9 +8,10 @@ from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
 import flask
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 import traceback
 from werkzeug.exceptions import MethodNotAllowed, NotFound
+from operator import itemgetter
 
 # TODO LOG all calls & errors
 # TODO ROOT with gitcommit, version, servertime
@@ -60,11 +61,20 @@ def _users_to_jsonable(users: List[User]) -> List[str]:
     return sorted([u.authsource_id.id + '/' + u.username.name for u in users])
 
 
+def _objids_to_jsonable(oids: Set[ObjectID]):
+    return sorted([{'namespace': o.namespace_id.id, 'id': o.id} for o in oids],
+                  key=itemgetter('namespace', 'id'))
+
+
 def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     """ Create the flask app. """
     app = Flask(__name__)
     app.url_map.strict_slashes = False  # otherwise GET /loc/ won't match GET /loc
     app.config[_APP] = builder.build_id_mapping_system()
+
+    ##########
+    # Endpoints
+    ##########
 
     @app.route('/api/v1/namespace/<namespace>', methods=['PUT', 'POST'])
     def create_namespace(namespace):
@@ -134,6 +144,17 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                                         ObjectID(NamespaceID(std_ns), std_id))
         return ('', 204)
 
+    @app.route('/api/v1/mapping/<ns>/<eyedee>', methods=['GET'])
+    def get_mappings(ns, eyedee):
+        ns_filter = request.args.get('namespace_filter')
+        if ns_filter and ns_filter.strip():
+            ns_filter = [NamespaceID(n.strip()) for n in ns_filter.split(',')]
+        else:
+            ns_filter = []
+        admin, other = app.config[_APP].get_mappings(ObjectID(NamespaceID(ns), eyedee), ns_filter)
+        return flask.jsonify({'admin': _objids_to_jsonable(admin),
+                              'other': _objids_to_jsonable(other)})
+
     ##################################
     # error handlers
     ##################################
@@ -164,7 +185,7 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
         return _format_error(err, 404)
 
     @app.errorhandler(MethodNotAllowed)
-    def method_not_alllowed(err):
+    def method_not_allowed(err):
         """ Handle invalid method requests. """
         return _format_error(err, 405)
 
