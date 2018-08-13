@@ -40,16 +40,6 @@ except ImportError:
 # and required less work. Push the bulk implementation further down in the stack as necessitated
 # by peformance needs.
 
-# NOTE 1: I *&*_&*& hate flask. If you do `request.headers.get()`, it parses the data and, if
-#         the content-type header says form data, will set request.data to None
-#         (which means request.get_data() is also None). So you can't get the data if you
-#         don't care about the content type, which you don't if the client is curl, which
-#         always sets content-type to form data if you use --data. That means you always
-#         have to set content-type manually from curl, even if the service only accepts json.
-#         Stupid.
-#
-#         What's even better is that I can't figure out how to replicate this behavior in
-#         the unit tests.
 
 _APP = 'ID_MAPPER'
 
@@ -105,7 +95,7 @@ def _objids_to_jsonable(oids: Set[ObjectID]):
 
 def _get_object_id_dict_from_json(request) -> Dict[str, str]:
     # flask has a built in get_json() method but the errors it throws suck.
-    ids = json.loads(request.data)
+    ids = json.loads(request.get_data())
     if not isinstance(ids, dict):
         raise IllegalParameterError('Expected JSON mapping in request body')
     if not ids:
@@ -126,7 +116,7 @@ def _get_object_id_dict_from_json(request) -> Dict[str, str]:
 
 def _get_object_id_list_from_json(request) -> List[str]:
     # flask has a built in get_json() method but the errors it throws suck.
-    body = json.loads(request.data)
+    body = json.loads(request.get_data())
     if not isinstance(body, dict):
         raise IllegalParameterError('Expected JSON mapping in request body')
     ids = body.get('ids')
@@ -224,7 +214,6 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['PUT', 'POST'])
     def create_mapping(admin_ns, other_ns):
         """ Create a mapping. """
-        request.get_data()  # see note 1) above
         authsource, token = _get_auth(request)
         ids = _get_object_id_dict_from_json(request)
         if len(ids) > 10000:
@@ -238,7 +227,6 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.route('/api/v1/mapping/<admin_ns>/<other_ns>', methods=['DELETE'])
     def remove_mapping(admin_ns, other_ns):
         """ Remove a mapping. """
-        request.get_data()  # see note 1) above
         authsource, token = _get_auth(request)
         ids = _get_object_id_dict_from_json(request)
         if len(ids) > 10000:
@@ -252,7 +240,6 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.route('/api/v1/mapping/<ns>/', methods=['GET'])
     def get_mappings(ns):
         """ Find mappings. """
-        request.get_data()  # see note 1) above
         ns_filter = request.args.get('namespace_filter')
         separate = request.args.get('separate')
         if ns_filter and ns_filter.strip():

@@ -315,6 +315,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             query[_FLD_NS_ID] = {'$in': [nid.id for nid in nids]}
         try:
             nsdocs = self._db[_COL_NAMESPACES].find(query)
+            # TODO BUG throw error if nids and missing namespace
             return {self._to_ns(nsdoc) for nsdoc in nsdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
