@@ -193,35 +193,42 @@ RETURNS:
 HEADERS:
 Authorization: [Auth source] <token>
 
-PUT /api/v1/mapping/<administrative namespace>/<administrative ID>/<namespace>/<ID>
+PUT /api/v1/mapping/<administrative namespace>/<namespace>/
+{"admin_id": <administrative id>,
+ "other_id": <id>
+ }
 ```
-
-Any unusual characters, but especially slashes, in the IDs must be url-escaped.
 
 POST is also accepted, although not strictly correct.
 
 #### List mappings
 
 ```
-GET /api/v1/mapping/<namespace>/<ID>/[?namespace_filter=<namespace CSL>]
+GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][?separate]
+{"id": <id>}
 
 RETURNS:
-{"admin": [{"namespace": <namespace1>, "id": <id1>},
-            ...
-           {"namespace": <namespaceN>, "id": <idN>}
-           ],
- "other": [{"namespace": <namespaceN+1>, "id": <idN+1>},
-            ...
-           {"namespace": <namespaceN+M>, "id": <idN+M>}
-           ]
- }
+if not separate:
+    {"mappings": [{"namespace": <namespace1>, "id": <id1>},
+                   ...
+                  {"namespace": <namespaceN>, "id": <idN>}
+                  ]
+     }
+else:
+    {"admin": [{"namespace": <namespace1>, "id": <id1>},
+                ...
+               {"namespace": <namespaceN>, "id": <idN>}
+               ],
+     "other": [{"namespace": <namespaceN+1>, "id": <idN+1>},
+                ...
+               {"namespace": <namespaceN+M>, "id": <idN+M>}
+               ]
+     }
 ```
 
 The namespaces in the `admin` key are administrative namespaces; those in the `other` key are
 not. Note that a mapping may occur twice in the output - once in the `admin` section and once in
 the `other` section.
-
-Any unusual characters, but especially slashes, in the ID must be url-escaped.
 
 #### Delete a mapping
 
@@ -229,10 +236,11 @@ Any unusual characters, but especially slashes, in the ID must be url-escaped.
 HEADERS:
 Authorization: [Auth source] <token>
 
-DELETE /api/v1/mapping/<administrative namespace>/<administrative ID>/<namespace>/<ID>
+DELETE /api/v1/mapping/<administrative namespace>/<namespace>/
+{"admin_id": <administrative id>,
+ "other_id": <id>
+ }
 ```
-
-Any unusual characters, but especially slashes, in the IDs must be url-escaped.
 
 ## Future work
 
