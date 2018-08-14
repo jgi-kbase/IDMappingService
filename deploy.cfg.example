@@ -27,7 +27,8 @@ dont-trust-x-ip-headers=false
 # Defines which authentication sources are active. Other than local authentication, active
 # authentication sources will need further configuration below to tell the service how to build
 # the user lookup instance for the authentication source. If an authentication source is
-# inactive, users from that source will be unable to use the ID mapping service.
+# inactive, users from that source will be unable to use ID mapping service functions that
+# require authentication.
 authentication-enabled=local
 #authentication-enabled=local, kbase
 

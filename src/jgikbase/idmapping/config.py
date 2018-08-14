@@ -28,6 +28,9 @@ class KBaseConfig:
     mongo-user (optional)
     mongo-pwd (optional)
     authentication-enabled (optional)
+    authentication-admin-enabled (optional)
+    keys specific to each authentication source. See the example deploy.cfg file in this repo
+    or the class variables.
     dont-trust-x-ip-headers (optional)
 
     The last key instructs the server to ignore the X-Real-IP and X-Forwarded-For

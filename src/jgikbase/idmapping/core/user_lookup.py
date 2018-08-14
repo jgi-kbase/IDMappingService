@@ -156,6 +156,7 @@ class LocalUserLookup(UserLookup):
     """
 
     LOCAL = AuthsourceID('local')
+    """ The ID of the authentication source for local users. """
 
     def __init__(self, storage: IDMappingStorage) -> None:
         '''
