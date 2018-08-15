@@ -17,14 +17,17 @@ from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now,\
     assert_json_error_correct
 from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
-from jgikbase.idmapping.core.user import Username
+from jgikbase.idmapping.core.user import Username, AuthsourceID, User
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID
+from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 
 # These tests check that all the parts of the system play nice together. That generally means,
 # per endpoint, one happy path test and one unhappy path test, where the unhappy path goes
 # through as much of the stack as possible.
 # The unit tests are responsible for really getting into the nooks and crannies of each class.
+
+# Should test logging here...? Skip for now. Maybe add later.
 
 
 DB_NAME = 'test_db_idmapping_service_integration'
@@ -108,7 +111,7 @@ def service_port(mongo):
     requests.get('http://localhost:' + port + '/ohgodnothehumanity')
 
 
-def get_mongo_storage_instance(mongo):
+def get_storage_instance(mongo) -> IDMappingStorage:
     client = MongoClient('localhost:' + str(mongo.port))
     return IDMappingMongoStorage(client[DB_NAME])
 
@@ -129,7 +132,7 @@ def test_root(service_port):
 
 
 def test_create_and_get_namespace(service_port, mongo):
-    storage = get_mongo_storage_instance(mongo)
+    storage = get_storage_instance(mongo)
     t = Token('foobar')
 
     # fail to create a namespace
@@ -180,7 +183,7 @@ def test_create_and_get_namespace(service_port, mongo):
 
 
 def test_add_remove_user(service_port, mongo):
-    storage = get_mongo_storage_instance(mongo)
+    storage = get_storage_instance(mongo)
 
     lut = Token('foobar')
 
@@ -261,3 +264,36 @@ def test_add_remove_user(service_port, mongo):
                    }
          })
     assert r.status_code == 404
+
+
+def test_set_public_and_list_namespaces(service_port, mongo):
+    storage = get_storage_instance(mongo)
+
+    lut = Token('foobar')
+
+    u = Username('lu')
+    storage.create_local_user(u, lut.get_hashed_token())
+    storage.set_local_user_as_admin(u, True)
+    priv = NamespaceID('priv')
+    storage.create_namespace(priv)
+    storage.add_user_to_namespace(priv, User(AuthsourceID('local'), u))
+    storage.set_namespace_publicly_mappable(priv, True)
+    pub = NamespaceID('pub')
+    storage.create_namespace(pub)
+    storage.add_user_to_namespace(pub, User(AuthsourceID('local'), u))
+
+    r = requests.put('http://localhost:' + service_port +
+                     '/api/v1/namespace/priv/set?publicly_mappable=false',
+                     headers={'Authorization': 'local ' + lut.token})
+
+    assert r.status_code == 204
+
+    r = requests.put('http://localhost:' + service_port +
+                     '/api/v1/namespace/pub/set?publicly_mappable=true',
+                     headers={'Authorization': 'local ' + lut.token})
+
+    assert r.status_code == 204
+
+    r = requests.get('http://localhost:' + service_port + '/api/v1/namespace')
+
+    assert r.json() == {'publicly_mappable': ['pub'], 'privately_mappable': ['priv']}
