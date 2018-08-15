@@ -19,6 +19,7 @@ from pymongo.mongo_client import MongoClient
 from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
 from jgikbase.idmapping.core.user import Username
 from jgikbase.idmapping.core.tokens import Token
+from jgikbase.idmapping.core.object_id import NamespaceID
 
 # These tests check that all the parts of the system play nice together. That generally means,
 # per endpoint, one happy path test and one unhappy path test, where the unhappy path goes
@@ -27,6 +28,10 @@ from jgikbase.idmapping.core.tokens import Token
 
 
 DB_NAME = 'test_db_idmapping_service_integration'
+
+KBASE_URL = 'http://fake_url_for_mocking.com'
+KBASE_ADMIN_ROLE = 'fake_role_for_mocking'
+KBASE_TOKEN = 'fake_token_for_mocking'
 
 
 def create_deploy_cfg(mongo_port):
@@ -40,9 +45,9 @@ def create_deploy_cfg(mongo_port):
 
     cfg['idmapping']['auth-source-kbase-factory-module'] = (
         'jgikbase.idmapping.userlookup.kbase_user_lookup')
-    cfg['idmapping']['auth-source-kbase-init-token'] = 'fake_token_for_mocking'
-    cfg['idmapping']['auth-source-kbase-init-url'] = 'http://fake_url_for_mocking.com'
-    cfg['idmapping']['auth-source-kbase-init-admin-role'] = 'fake_role_for_mocking'
+    cfg['idmapping']['auth-source-kbase-init-token'] = KBASE_TOKEN
+    cfg['idmapping']['auth-source-kbase-init-url'] = KBASE_URL
+    cfg['idmapping']['auth-source-kbase-init-admin-role'] = KBASE_ADMIN_ROLE
     _, path = tempfile.mkstemp('.cfg', 'deploy-', dir=test_utils.get_temp_dir(), text=True)
 
     with open(path, 'w') as handle:
@@ -172,3 +177,38 @@ def test_create_and_get_namespace(service_port, mongo):
                    }
          })
     assert r.status_code == 404
+
+
+def test_add_remove_user(service_port, mongo):
+    storage = get_mongo_storage_instance(mongo)
+
+    lut = Token('foobar')
+
+    storage.create_local_user(Username('lu'), lut.get_hashed_token())
+    storage.set_local_user_as_admin(Username('lu'), True)
+    storage.create_namespace(NamespaceID('myns'))
+
+    # tests integration with all parts of the kbase user handler
+    with requests_mock.Mocker(real_http=True) as m:
+        m.get(KBASE_URL + '/api/V2/token', request_headers={'Authorization': 'mytoken'},
+              json={'user': 'u1', 'expires': 4800, 'cachefor': 5600})
+
+        m.get(KBASE_URL + '/api/V2/me', request_headers={'Authorization': 'mytoken'},
+              json={'customroles': [KBASE_ADMIN_ROLE]})
+
+        m.get(KBASE_URL + '/api/V2/users/?list=imauser',
+              request_headers={'Authorization': KBASE_TOKEN},
+              json={'imauser': 'im totally a user omg'})
+
+        r = requests.put('http://localhost:' + service_port +
+                         '/api/v1/namespace/myns/user/kbase/imauser',
+                         headers={'Authorization': 'kbase mytoken'})
+
+    assert r.status_code == 204
+
+    r = requests.get('http://localhost:' + service_port + '/api/v1/namespace/myns',
+                     headers={'Authorization': 'local ' + lut.token})
+
+    assert r.json() == {'namespace': 'myns',
+                        'publicly_mappable': False,
+                        'users': ['kbase/imauser']}
