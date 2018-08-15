@@ -7,6 +7,7 @@ from logging import Formatter
 from typing import List  # @UnusedImport pydev
 from logging import LogRecord  # @UnusedImport pydev
 import time
+import re
 
 MONGO_EXE = 'test.mongo.exe'
 TEST_TEMP_DIR = 'test.temp.dir'
@@ -76,6 +77,21 @@ def assert_ms_epoch_close_to_now(time_):
     now_ms = time.time() * 1000
     assert now_ms + 1000 > time_
     assert now_ms - 1000 < time_
+
+
+CALLID_PATTERN = re.compile('^\d{16}$')
+
+
+def assert_json_error_correct(got, expected):
+    time_ = got['error']['time']
+    callid = got['error']['callid']
+    del got['error']['time']
+    del got['error']['callid']
+
+    assert got == expected
+    assert CALLID_PATTERN.match(callid) is not None
+
+    assert_ms_epoch_close_to_now(time_)
 
 
 class TerstFermerttr(Formatter):

@@ -13,7 +13,18 @@ import requests
 import logging
 import time
 import re
-from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now
+from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now,\
+    assert_json_error_correct
+from pymongo.mongo_client import MongoClient
+from jgikbase.idmapping.storage.mongo.id_mapping_mongo_storage import IDMappingMongoStorage
+from jgikbase.idmapping.core.user import Username
+from jgikbase.idmapping.core.tokens import Token
+
+# These tests check that all the parts of the system play nice together. That generally means,
+# per endpoint, one happy path test and one unhappy path test, where the unhappy path goes
+# through as much of the stack as possible.
+# The unit tests are responsible for really getting into the nooks and crannies of each class.
+
 
 DB_NAME = 'test_db_idmapping_service_integration'
 
@@ -82,7 +93,7 @@ def service_port(mongo):
     portint = test_utils.find_free_port()
 
     Thread(target=app.run, kwargs={'port': portint}).start()
-    time.sleep(0.02)
+    time.sleep(0.05)
     port = str(portint)
     print('running id mapping service at localhost:' + port)
 
@@ -90,6 +101,11 @@ def service_port(mongo):
 
     # shutdown the server
     requests.get('http://localhost:' + port + '/ohgodnothehumanity')
+
+
+def get_mongo_storage_instance(mongo):
+    client = MongoClient('localhost:' + str(mongo.port))
+    return IDMappingMongoStorage(client[DB_NAME])
 
 
 def test_root(service_port):
@@ -105,3 +121,54 @@ def test_root(service_port):
     assert re.match('[a-f\d]{40}', commit) is not None
     assert_ms_epoch_close_to_now(time_)
     assert r.status_code == 200
+
+
+def test_create_and_get_namespace(service_port, mongo):
+    storage = get_mongo_storage_instance(mongo)
+    t = Token('foobar')
+
+    # fail to create a namespace
+    r = requests.put('http://localhost:' + service_port + '/api/v1/namespace/myns',
+                     headers={'Authorization': 'local ' + t.token})
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 401,
+                   'httpstatus': 'Unauthorized',
+                   'appcode': 10020,
+                   'apperror': 'Invalid token',
+                   'message': '10020 Invalid token'
+                   }
+         })
+    assert r.status_code == 401
+
+    # succeed at creating a namespace
+    storage.create_local_user(Username('user1'), t.get_hashed_token())
+    storage.set_local_user_as_admin(Username('user1'), True)
+
+    r = requests.put('http://localhost:' + service_port + '/api/v1/namespace/myns',
+                     headers={'Authorization': 'local ' + t.token})
+
+    assert r.status_code == 204
+
+    # get the namespace with a populated user list
+    r = requests.get('http://localhost:' + service_port + '/api/v1/namespace/myns',
+                     headers={'Authorization': 'local ' + t.token})
+
+    assert r.json() == {'namespace': 'myns', 'publicly_mappable': False, 'users': []}
+
+    assert r.status_code == 200
+
+    # fail getting a namespace
+    r = requests.get('http://localhost:' + service_port + '/api/v1/namespace/myns1')
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50010,
+                   'apperror': 'No such namespace',
+                   'message': '50010 No such namespace: myns1'
+                   }
+         })
+    assert r.status_code == 404
