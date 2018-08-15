@@ -440,8 +440,13 @@ def check_get_namespaces(returned, expected):
 
 def test_create_mapping_put():
     cli, mapper = build_app()
-    resp = cli.put('/api/v1/mapping/ans/ns', headers={'Authorization': 'source tokey'},
-                   json={'aid1': 'id1', 'id2': 'id2'})
+    # this shouldn't pass if request.get_data() isn't called before checking
+    # auth, but it does. If you're actually running a server this will
+    # cause a json parse erro with the get_data() call.
+    resp = cli.put('/api/v1/mapping/ans/ns',
+                   headers={'Authorization': 'source tokey',
+                            'content-type': 'x-www-form-urlencoded'},
+                   data='{"aid1": "id1", "id2": "id2"}')
     check_create_mapping(resp, mapper)
 
 
