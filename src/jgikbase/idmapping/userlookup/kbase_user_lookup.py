@@ -8,6 +8,7 @@ from jgikbase.idmapping.core.tokens import Token
 import requests
 from jgikbase.idmapping.core.errors import InvalidTokenError
 from typing import Tuple, Optional, Dict
+import logging
 
 
 # WARNING - this is tested by mocking the requests library. The test suite never tests it against
@@ -61,9 +62,10 @@ class KBaseUserLookup(UserLookup):
             try:
                 j = r.json()
             except Exception as e:  # @UnusedVariable
-                # TODO LOGGING log page text
-                raise IOError('Non-JSON response from KBase auth server, status code: ' +
-                              str(r.status_code))
+                err = ('Non-JSON response from KBase auth server, status code: ' +
+                       str(r.status_code))
+                logging.getLogger(__name__).info('%s, response:\n%s', err, r.text)
+                raise IOError(err)
             # assume that if we get json then at least this is the auth server and we can
             # rely on the error structure.
             if j['error']['apperror'] == 'Invalid token':

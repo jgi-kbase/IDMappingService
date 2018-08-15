@@ -3,10 +3,41 @@ from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 import requests_mock
 from pytest import raises
-from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.test.idmapping.test_utils import assert_exception_correct, TerstFermerttr
 from jgikbase.idmapping.core.errors import InvalidTokenError
 import copy
 from jgikbase.idmapping.core.user_lookup import LookupInitializationError
+from pytest import fixture
+from logging import StreamHandler
+import logging
+
+
+@fixture(scope='module')
+def init_logger():
+    print('log collector init')
+    handler = StreamHandler()
+    formatter = TerstFermerttr()
+    handler.setFormatter(formatter)
+    # remove any current handlers, since tests run in one process
+    logging.getLogger().handlers.clear()
+    logging.getLogger().addHandler(handler)
+    logging.getLogger().setLevel('INFO')
+    return formatter.logs
+
+
+@fixture
+def log_collector(init_logger):
+    print('clearing logs')
+    init_logger.clear()
+    return init_logger
+
+
+def assert_logs_correct(logs, logstring):
+    assert len(logs) == 1
+    logrecord = logs[0]
+    assert logrecord.name == 'jgikbase.idmapping.userlookup.kbase_user_lookup'
+    assert logrecord.levelname == 'INFO'
+    assert logrecord.getMessage() == logstring
 
 
 def test_init():
@@ -61,15 +92,20 @@ def test_init_fail_None_input():
     fail_init('url', Token('foo'), None, TypeError('kbase_system_admin cannot be None'))
 
 
-def test_init_fail_not_json():
+def test_init_fail_not_json(log_collector):
+    html = '<html><body>Sorry mylittleponypron.com has been shut down</body></html>'
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/',
               request_headers={'Accept': 'application/json'},
               status_code=404,
-              text='<html><body>Sorry mylittleponypron.com has been shut down</body></html>')
+              text=html)
 
         fail_init('http://my1stauthservice.com/', Token('foo'), 'admin',
                   IOError('Non-JSON response from KBase auth server, status code: 404'))
+
+    assert_logs_correct(
+        log_collector, 'Non-JSON response from KBase auth server, status code: 404, response:\n' +
+        html)
 
 
 def test_init_fail_auth_returned_error():
@@ -152,17 +188,22 @@ def test_get_user_fail_None_input():
     fail_get_user(kbuh, None, TypeError('token cannot be None'))
 
 
-def test_get_user_fail_not_json_token():
+def test_get_user_fail_not_json_token(log_collector):
+    html = '<html><body>Sorry gopsasquatchpron.com has been shut down</body></html>'
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
               status_code=404,
-              text='<html><body>Sorry gopsasquatchpron.com has been shut down</body></html>')
+              text=html)
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
         fail_get_user(kbuh, Token('bar'),
                       IOError('Non-JSON response from KBase auth server, status code: 404'))
+
+    assert_logs_correct(
+        log_collector, 'Non-JSON response from KBase auth server, status code: 404, response:\n' +
+        html)
 
 
 def test_get_user_fail_invalid_token_token():
@@ -192,7 +233,8 @@ def test_get_user_fail_auth_returned_other_error_token():
                       IOError('Error from KBase auth server: 10000 Authentication failed: crap'))
 
 
-def test_get_user_fail_not_json_me():
+def test_get_user_fail_not_json_me(log_collector):
+    html = '<html><body>Sorry notthensa.com has been shut down</body></html>'
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/token',
               request_headers={'Authorization': 'bar'},
@@ -201,12 +243,16 @@ def test_get_user_fail_not_json_me():
         m.get('http://my1stauthservice.com/api/api/V2/me',
               request_headers={'Authorization': 'bar'},
               status_code=404,
-              text='<html><body>Sorry notthensa.com has been shut down</body></html>')
+              text=html)
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'mapping_admin')
 
         fail_get_user(kbuh, Token('bar'),
                       IOError('Non-JSON response from KBase auth server, status code: 404'))
+
+    assert_logs_correct(
+        log_collector, 'Non-JSON response from KBase auth server, status code: 404, response:\n' +
+        html)
 
 
 def test_get_user_fail_invalid_token_me():
@@ -273,17 +319,22 @@ def test_is_valid_user_fail_None_input():
     fail_is_valid_user(kbuh, None, TypeError('username cannot be None'))
 
 
-def test_is_valid_user_fail_not_json():
+def test_is_valid_user_fail_not_json(log_collector):
+    html = '<html><body>Sorry oscarthegrouchpron.com has been shut down</body></html>'
     with requests_mock.Mocker() as m:
         m.get('http://my1stauthservice.com/api/api/V2/users/?list=supahusah',
               request_headers={'Authorization': 'foo'},
               status_code=502,
-              text='<html><body>Sorry oscarthegrouchpron.com has been shut down</body></html>')
+              text=html)
 
         kbuh = get_user_handler('http://my1stauthservice.com/api', Token('foo'), 'admin')
 
         fail_is_valid_user(kbuh, Username('supahusah'),
                            IOError('Non-JSON response from KBase auth server, status code: 502'))
+
+    assert_logs_correct(
+        log_collector, 'Non-JSON response from KBase auth server, status code: 502, response:\n' +
+        html)
 
 
 def test_is_valid_user_fail_invalid_token():
