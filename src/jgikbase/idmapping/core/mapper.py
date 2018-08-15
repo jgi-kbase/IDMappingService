@@ -9,8 +9,11 @@ from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from jgikbase.idmapping.core.user import User, AuthsourceID
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError
 from jgikbase.idmapping.core.tokens import Token
+import logging
 
-# TODO LOG useful info (not errors) like user X added user Y to namespace Z
+
+def _log(msg, *args):
+    logging.getLogger(__name__).info(msg, *args)
 
 
 class IDMapper:
@@ -41,7 +44,7 @@ class IDMapper:
         self._lookup = user_lookup
         self._admin_authsources = admin_authsources
 
-    def _check_sys_admin(self, authsource_id: AuthsourceID, token: Token) -> None:
+    def _check_sys_admin(self, authsource_id: AuthsourceID, token: Token) -> User:
         """
         :raises NoSuchAuthsourceError: if there's no handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
@@ -55,6 +58,7 @@ class IDMapper:
         if not admin:
             raise UnauthorizedError('User {}/{} is not a system administrator'.format(
                 user.authsource_id.id, user.username.name))
+        return user
 
     def create_namespace(
             self,
@@ -75,8 +79,10 @@ class IDMapper:
         :raises UnauthorizedError: if the user is not a system administrator.
         """
         not_none(namespace_id, 'namespace_id')
-        self._check_sys_admin(authsource_id, token)
+        admin = self._check_sys_admin(authsource_id, token)
         self._storage.create_namespace(namespace_id)
+        _log('Admin %s/%s created namespace %s', admin.authsource_id.id, admin.username.name,
+             namespace_id.id)
 
     def _check_valid_user(self, user):
         """
@@ -112,9 +118,13 @@ class IDMapper:
         """
         not_none(namespace_id, 'namespace_id')
         not_none(user, 'user')
-        self._check_sys_admin(authsource_id, token)
+        admin = self._check_sys_admin(authsource_id, token)
         self._check_valid_user(user)
         self._storage.add_user_to_namespace(namespace_id, user)
+        _log('Admin %s/%s added user %s/%s to namespace %s',
+             admin.authsource_id.id, admin.username.name,
+             user.authsource_id.id, user.username.name,
+             namespace_id.id)
 
     def remove_user_from_namespace(
             self,
@@ -139,8 +149,12 @@ class IDMapper:
         """
         not_none(namespace_id, 'namespace_id')
         not_none(user, 'user')
-        self._check_sys_admin(authsource_id, token)
+        admin = self._check_sys_admin(authsource_id, token)
         self._storage.remove_user_from_namespace(namespace_id, user)
+        _log('Admin %s/%s removed user %s/%s from namespace %s',
+             admin.authsource_id.id, admin.username.name,
+             user.authsource_id.id, user.username.name,
+             namespace_id.id)
 
     def _check_authed_for_ns_get(self, user: User, namespace_id: NamespaceID) -> None:
         """
@@ -185,6 +199,9 @@ class IDMapper:
         user, _ = self._lookup.get_user(authsource_id, token)
         self._check_authed_for_ns_get(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
+        _log('User %s/%s set namespace %s public map property to %s',
+             user.authsource_id.id, user.username.name,
+             namespace_id.id, publicly_mappable)
 
     def get_namespace(
             self,
@@ -270,6 +287,13 @@ class IDMapper:
         if not ns.is_publicly_mappable:
             self._check_authed_for_ns(user, ns)
         self._storage.add_mapping(administrative_oid, oid)
+        # this might be too much of a performance hit. If so, push the bulk operations down to
+        # this level and do... what exactly? Log 10000 entries?
+        # Maybe need to add an id or timestamp or something to the mappings and just log that.
+        _log('User %s/%s created mapping %s/%s <---> %s/%s',
+             user.authsource_id.id, user.username.name,
+             administrative_oid.namespace_id.id, administrative_oid.id,
+             oid.namespace_id.id, oid.id)
 
     def remove_mapping(
             self,
@@ -302,6 +326,13 @@ class IDMapper:
         self._check_authed_for_ns(user, adminns)
         self._storage.get_namespace(oid.namespace_id)  # check for existence
         self._storage.remove_mapping(administrative_oid, oid)
+        # this might be too much of a performance hit. If so, push the bulk operations down to
+        # this level and do... what exactly? Log 10000 entries?
+        # Maybe need to add an id or timestamp or something to the mappings and just log that.
+        _log('User %s/%s removed mapping %s/%s <---> %s/%s',
+             user.authsource_id.id, user.username.name,
+             administrative_oid.namespace_id.id, administrative_oid.id,
+             oid.namespace_id.id, oid.id)
 
     def get_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
                      ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
