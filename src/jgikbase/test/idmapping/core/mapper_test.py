@@ -19,6 +19,8 @@ def init_logger():
     handler = StreamHandler()
     formatter = TerstFermerttr()
     handler.setFormatter(formatter)
+    # remove any current handlers, since tests run in one process
+    logging.getLogger().handlers.clear()
     logging.getLogger().addHandler(handler)
     logging.getLogger().setLevel('INFO')
     return formatter.logs
