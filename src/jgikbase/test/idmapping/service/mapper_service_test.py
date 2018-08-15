@@ -360,15 +360,20 @@ def check_set_namespace_publicly_mappable(arg, expected):
         AuthsourceID('source'), Token('tokey'), NamespaceID('foo'), expected), {})]
 
 
-def test_set_namespace_no_op():
-    cli, mapper = build_app()
+def test_set_namespace_fail_no_op():
+    cli, _ = build_app()
 
     resp = cli.put('/api/v1/namespace/foo/set', headers={'Authorization': 'source tokey'})
 
-    assert resp.data == b''
-    assert resp.status_code == 204
-
-    assert mapper.set_namespace_publicly_mappable.call_args_list == []
+    assert resp.get_json() == {
+        'error': {'httpcode': 400,
+                  'httpstatus': 'Bad Request',
+                  'appcode': 30000,
+                  'apperror': 'Missing input parameter',
+                  'message': '30000 Missing input parameter: No settings provided.'
+                  }
+        }
+    assert resp.status_code == 400
 
 
 def test_set_namespace_publicly_mappable_illegal_input():

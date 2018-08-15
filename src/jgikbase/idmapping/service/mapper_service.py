@@ -168,6 +168,8 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
                     "Expected value of 'true' or 'false' for publicly_mappable")
             app.config[_APP].set_namespace_publicly_mappable(
                 authsource, token, NamespaceID(namespace), pubmap == _TRUE)
+        else:
+            raise MissingParameterError('No settings provided.')
         return ('', 204)
 
     @app.route('/api/v1/namespace/<namespace>', methods=['GET'])
