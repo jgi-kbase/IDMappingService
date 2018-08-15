@@ -188,6 +188,7 @@ def test_add_remove_user(service_port, mongo):
     storage.set_local_user_as_admin(Username('lu'), True)
     storage.create_namespace(NamespaceID('myns'))
 
+    # add a user
     # tests integration with all parts of the kbase user handler
     with requests_mock.Mocker(real_http=True) as m:
         m.get(KBASE_URL + '/api/V2/token', request_headers={'Authorization': 'mytoken'},
@@ -206,9 +207,57 @@ def test_add_remove_user(service_port, mongo):
 
     assert r.status_code == 204
 
+    # check the user is there
     r = requests.get('http://localhost:' + service_port + '/api/v1/namespace/myns',
                      headers={'Authorization': 'local ' + lut.token})
 
     assert r.json() == {'namespace': 'myns',
                         'publicly_mappable': False,
                         'users': ['kbase/imauser']}
+
+    # fail adding the same user. The KBase info is cached now so we don't need to mock it again
+    r = requests.put('http://localhost:' + service_port +
+                     '/api/v1/namespace/myns/user/kbase/imauser',
+                     headers={'Authorization': 'kbase mytoken'})
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 40000,
+                   'apperror': 'User already exists',
+                   'message': ('40000 User already exists: User kbase/imauser already ' +
+                               'administrates namespace myns')
+                   }
+         })
+    assert r.status_code == 400
+
+    # remove the user using a local admin
+    r = requests.delete('http://localhost:' + service_port +
+                        '/api/v1/namespace/myns/user/kbase/imauser',
+                        headers={'Authorization': 'local ' + lut.token})
+
+    assert r.status_code == 204
+
+    # check the user is gone
+    r = requests.get('http://localhost:' + service_port + '/api/v1/namespace/myns',
+                     headers={'Authorization': 'local ' + lut.token})
+
+    assert r.json() == {'namespace': 'myns', 'publicly_mappable': False, 'users': []}
+
+    # fail removing the user with a kbase admin
+    r = requests.delete('http://localhost:' + service_port +
+                        '/api/v1/namespace/myns/user/kbase/imauser',
+                        headers={'Authorization': 'kbase mytoken'})
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50000,
+                   'apperror': 'No such user',
+                   'message': ('50000 No such user: User kbase/imauser does not ' +
+                               'administrate namespace myns')
+                   }
+         })
+    assert r.status_code == 404
