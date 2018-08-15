@@ -3,28 +3,14 @@ from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.mapper import IDMapper
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import raises
-from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.test.idmapping.test_utils import assert_exception_correct, TerstFermerttr
 from jgikbase.idmapping.core.user_lookup import UserLookupSet
 from jgikbase.idmapping.core.user import AuthsourceID, Username, User
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError, NoSuchNamespaceError
 from jgikbase.idmapping.core.tokens import Token
 from pytest import fixture
 import logging
-from logging import Formatter, StreamHandler
-from typing import List  # @UnusedImport pydev
-from logging import LogRecord  # @UnusedImport pydev
-
-
-class TerstFermerttr(Formatter):
-
-    logs: List[LogRecord] = []
-
-    def __init__(self):
-        pass
-
-    def format(self, record):
-        self.logs.append(record)
-        return 'no logs here, no sir'
+from logging import StreamHandler
 
 
 @fixture(scope='module')

@@ -3,6 +3,9 @@ import socket
 from contextlib import closing
 from pathlib import Path
 import configparser
+from logging import Formatter
+from typing import List  # @UnusedImport pydev
+from logging import LogRecord  # @UnusedImport pydev
 
 MONGO_EXE = 'test.mongo.exe'
 TEST_TEMP_DIR = 'test.temp.dir'
@@ -66,6 +69,18 @@ def find_free_port() -> int:
 def assert_exception_correct(got: Exception, expected: Exception):
     assert type(got) == type(expected)
     assert got.args == expected.args
+
+
+class TerstFermerttr(Formatter):
+
+    logs: List[LogRecord] = []
+
+    def __init__(self):
+        pass
+
+    def format(self, record):
+        self.logs.append(record)
+        return 'no logs here, no sir'
 
 
 class TestException(Exception):
