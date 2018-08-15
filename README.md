@@ -10,4 +10,6 @@ Build status (master):
   * try mongo 4 - maybe wait for a couple bugfix versions
 * documentation
 * integration tests
+  * with KBase auth server
+    * lot of work for little gain
 * Release notes (dev) and tag

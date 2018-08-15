@@ -15,12 +15,14 @@ import time
 import re
 from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now
 
+DB_NAME = 'test_db_idmapping_service_integration'
+
 
 def create_deploy_cfg(mongo_port):
     cfg = ConfigParser()
     cfg.add_section('idmapping')
     cfg['idmapping']['mongo-host'] = 'localhost:' + str(mongo_port)
-    cfg['idmapping']['mongo-db'] = 'test_db_idmapping_service_integration'
+    cfg['idmapping']['mongo-db'] = DB_NAME
 
     cfg['idmapping']['authentication-enabled'] = 'local, kbase'
     cfg['idmapping']['authentication-admin-enabled'] = 'local, kbase'
@@ -50,6 +52,19 @@ def mongo():
     print('running mongo {}{} on port {} in dir {}'.format(
         mongo.db_version, ' with WiredTiger' if wt else '', mongo.port, mongo.temp_dir))
 
+    yield mongo
+
+    del_temp = test_utils.get_delete_temp_files()
+    print('shutting down mongo, delete_temp_files={}'.format(del_temp))
+    mongo.destroy(del_temp)
+    if del_temp:
+        shutil.rmtree(test_utils.get_temp_dir())
+
+
+@fixture
+def service_port(mongo):
+    mongo.clear_database(DB_NAME, drop_indexes=True)
+
     os.environ['ID_MAPPING_CONFIG'] = create_deploy_cfg(mongo.port)
 
     with requests_mock.Mocker() as m:
@@ -64,22 +79,21 @@ def mongo():
         request.environ.get('werkzeug.server.shutdown')()
         return ('', 200)
 
-    Thread(target=app.run).start()
-    time.sleep(0.01)
-    yield mongo
+    portint = test_utils.find_free_port()
+
+    Thread(target=app.run, kwargs={'port': portint}).start()
+    time.sleep(0.02)
+    port = str(portint)
+    print('running id mapping service at localhost:' + port)
+
+    yield port
 
     # shutdown the server
-    requests.get('http://localhost:5000/ohgodnothehumanity')
-
-    del_temp = test_utils.get_delete_temp_files()
-    print('shutting down mongo, delete_temp_files={}'.format(del_temp))
-    mongo.destroy(del_temp)
-    if del_temp:
-        shutil.rmtree(test_utils.get_temp_dir())
+    requests.get('http://localhost:' + port + '/ohgodnothehumanity')
 
 
-def test_root(mongo):
-    r = requests.get('http://localhost:5000/')
+def test_root(service_port):
+    r = requests.get('http://localhost:' + service_port)
     j = r.json()
 
     time_ = j['servertime']
