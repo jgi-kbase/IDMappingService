@@ -8,13 +8,13 @@ from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
     UnauthorizedError, NoSuchUserError
 import re
-import time
 from jgikbase.idmapping.service import mapper_service
 from logging import LogRecord
 import json
 from flask.app import Flask
 from flask import g
 from typing import IO
+from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now
 
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
@@ -32,12 +32,6 @@ def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
 
 
 _CALLID_PATTERN = re.compile('^\d{16}$')
-
-
-def assert_ms_epoch_close_to_now(time_):
-    now_ms = time.time() * 1000
-    assert now_ms + 1000 > time_
-    assert now_ms - 1000 < time_
 
 
 def assert_error_correct(got, expected):
