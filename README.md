@@ -6,14 +6,9 @@ Build status (master):
 
 ## TODO
 
-* dockerize
 * travis
-  * docker build
   * try mongo 4 - maybe wait for a couple bugfix versions
-* logging in core class - need a log interceptor
+* logging in core class
 * documentation
 * integration tests
-* gunicorn app
-* bulk endpoints
-* combined list format
 * Release notes (dev) and tag

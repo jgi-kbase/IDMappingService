@@ -10,7 +10,7 @@ from jgikbase.idmapping.core.object_id import NamespaceID, ObjectID
 from http.client import responses  # @UnresolvedImport dunno why pydev cries here, it's stdlib
 import flask
 from flask import g as flask_req_global
-from typing import List, Tuple, Optional, Set, Dict
+from typing import List, Tuple, Optional, Set, Dict, IO
 import traceback
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from operator import itemgetter
@@ -18,6 +18,8 @@ import json
 from json.decoder import JSONDecodeError
 import random
 import time
+import logging
+from logging import StreamHandler, Formatter
 
 VERSION = '0.1.0-dev1'
 
@@ -29,9 +31,9 @@ except ImportError:
                      'src/jgikbase/idmapping/gitcommit.py. ' +       # pragma: no cover
                      'The build may not have completed correctly.')  # pragma: no cover
 
-# TODO LOG all calls & errors
-# TODO ROOT with gitcommit, version, servertime
 # TODO CODE try getting rid of src dir and see what happens
+# TODO TEST test mapping with same namespace in integration tests
+# TODO TEST test wrong content type header in integration tests
 
 # Set up a blueprint later if necessary
 # Not sure what's worth doing here for documentation. Swagger at some point ideally.
@@ -42,6 +44,11 @@ except ImportError:
 
 
 _APP = 'ID_MAPPER'
+_IGNORE_IP_HEADERS = 'IGNORE_IP_HEADERS'
+
+_X_REAL_IP = 'X-Real-IP'
+_X_FORWARDED_FOR = 'X-Forwarded-For'
+_USER_AGENT = 'User-Agent'
 
 _TRUE = 'true'
 _FALSE = 'false'
@@ -51,8 +58,32 @@ def epoch_ms():
     return int(round(time.time() * 1000))
 
 
+def get_ip_address(request, ignore_ip_headers):
+    if not ignore_ip_headers:
+        xff = request.headers.get(_X_FORWARDED_FOR)
+        real_ip = request.headers.get(_X_REAL_IP)
+
+        if xff and xff.strip():
+            return xff.split(',')[0].strip()
+        if real_ip and real_ip.strip():
+            return real_ip.strip()
+    return request.remote_addr.strip()
+
+
+def _log(msg, *args):
+    logging.getLogger(__name__).info(msg, *args)
+
+
+def _format_exception(err):
+    # seriously what the fuck
+    return ''.join(traceback.format_exception(etype=type(err), value=err, tb=err.__traceback__))
+
+
+def _log_exception(err: Exception):
+    logging.getLogger(__name__).error('Logging exception:\n' + _format_exception(err))
+
+
 def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None, errprefix: str=''):
-    traceback.print_exc()  # TODO LOG remove when logging works
     errjson = {'httpcode': httpcode,
                'httpstatus': responses[httpcode],
                'message': errprefix + str(err),
@@ -62,8 +93,22 @@ def _format_error(err: Exception, httpcode: int, errtype: ErrorType=None, errpre
         errjson['appcode'] = errtype.error_code
         errjson['apperror'] = errtype.error_type
     return (flask.jsonify({'error': errjson}), httpcode)
-    # TODO LOG log error
-    # TODO ERR call id, time
+
+
+def format_ip_headers(request, ignore_ip_headers):
+    if not ignore_ip_headers:
+        # could parameterize format string if necessary
+        log = []
+        xff = request.headers.get(_X_FORWARDED_FOR)
+        real_ip = request.headers.get(_X_REAL_IP)
+        if xff and xff.strip():
+            log.append(_X_FORWARDED_FOR + ': ' + xff.strip())
+        if real_ip and real_ip.strip():
+            log.append(_X_REAL_IP + ': ' + real_ip.strip())
+        if log:
+            log.append('Remote IP: ' + request.remote_addr.strip())
+            return ', '.join(log)
+    return None
 
 
 def _get_auth(request, required=True) -> Tuple[Optional[AuthsourceID], Optional[Token]]:
@@ -130,16 +175,62 @@ def _get_object_id_list_from_json(request) -> List[str]:
     return ids
 
 
-def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
+class JSONFlaskLogFormatter(Formatter):
+    """ A JSON formatter for service logs. """
+
+    def __init__(self, service_name):
+        super().__init__()
+        self.service_name = service_name
+
+    def format(self, record):
+        log = {'service': self.service_name,
+               'level': record.levelname,
+               'time': epoch_ms(),
+               'source': record.name,
+               'ip': flask_req_global.ip,
+               'method': flask_req_global.method,
+               'callid': flask_req_global.req_id,
+               'msg': record.getMessage()
+               }
+        # https://docs.python.org/3.6/library/sys.html#sys.exc_info
+        if record.exc_info and record.exc_info != (None, None, None):
+            log['excep'] = _format_exception(record.exc_info[1])
+        return json.dumps(log)
+
+
+def _configure_loggers(logstream: IO[str]=None):
+    # make some of this configurable if needed
+    handler = StreamHandler(logstream)
+    handler.setFormatter(JSONFlaskLogFormatter('IDMappingService'))
+    logging.getLogger().addHandler(handler)
+    logging.getLogger().setLevel('INFO')
+    logging.getLogger('werkzeug').setLevel('WARNING')
+    logging.getLogger('flask.app').setLevel('WARNING')
+
+
+def create_app(builder: IDMappingBuilder=IDMappingBuilder(), logstream: IO[str]=None):
     """ Create the flask app. """
+    _configure_loggers(logstream)
     app = Flask(__name__)
     app.url_map.strict_slashes = False  # otherwise GET /loc/ won't match GET /loc
     app.config[_APP] = builder.build_id_mapping_system()
+    app.config[_IGNORE_IP_HEADERS] = builder.get_cfg().ignore_ip_headers
 
     @app.before_request
-    def add_request_id():
-        flask_req_global.req_id = str(random.randrange(10000000000000000)).zfill(16)  # nosec
+    def preprocess_request():
         # bandit doesn't like random for crypo purposes, but we're not doing that here
+        flask_req_global.req_id = str(random.randrange(10000000000000000)).zfill(16)  # nosec
+        flask_req_global.method = request.method
+        flask_req_global.ip = get_ip_address(request, app.config[_IGNORE_IP_HEADERS])
+        iph = format_ip_headers(request, app.config[_IGNORE_IP_HEADERS])
+        if iph:
+            _log(iph)
+
+    @app.after_request
+    def postprocess_request(response):
+        _log('%s %s %s %s', request.method, request.path, response.status_code,
+             request.headers.get(_USER_AGENT))
+        return response
 
     ###########
     # Endpoints
@@ -267,41 +358,49 @@ def create_app(builder: IDMappingBuilder=IDMappingBuilder()):
     @app.errorhandler(IDMappingError)
     def general_app_errors(err):
         """ Handle general application errors. These are user-caused and always map to 400. """
+        _log_exception(err)
         return _format_error(err, 400, err.error_type)
 
     @app.errorhandler(JSONDecodeError)
     def json_errors(err):
         """ Handle invalid input JSON. """
+        _log_exception(err)
         return _format_error(err, 400, errprefix='Input JSON decode error: ')
 
     @app.errorhandler(AuthenticationError)
     def authentication_errors(err):
         """ Handle authentication errors. """
+        _log_exception(err)
         return _format_error(err, 401, err.error_type)
 
     @app.errorhandler(UnauthorizedError)
     def authorization_errors(err):
         """ Handle authorization errors. """
+        _log_exception(err)
         return _format_error(err, 403, err.error_type)
 
     @app.errorhandler(NoDataException)
     def no_data_errors(err):
         """ Handle requests for data, such as namespaces, that don't exist. """
+        _log_exception(err)
         return _format_error(err, 404, err.error_type)
 
     @app.errorhandler(NotFound)
     def not_found_errors(err):
         """ Handle plain old not found errors thrown by Flask. """
+        _log_exception(err)
         return _format_error(err, 404)
 
     @app.errorhandler(MethodNotAllowed)
     def method_not_allowed(err):
         """ Handle invalid method requests. """
+        _log_exception(err)
         return _format_error(err, 405)
 
     @app.errorhandler(Exception)
     def all_errors(err):
         """ Catch-all error handler of last resort """
+        _log_exception(err)
         return _format_error(err, 500)
 
     return app
