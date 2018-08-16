@@ -1,3 +1,5 @@
+FROM kbase/kb_jre:latest as dockerize
+
 FROM python:3.6-alpine
 
 # These ARGs values are passed in via the docker build command
@@ -5,8 +7,14 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG BRANCH=develop
 
+RUN apk add gcc linux-headers libc-dev
+COPY --from=dockerize /kb/deployment/bin/dockerize /usr/bin/
 
-COPY deployment/ /kb/deployment/
+ADD requirements.txt /tmp/
+
+RUN pip install -r /tmp/requirements.txt
+
+ADD . /kb
 
 # The BUILD_DATE value seem to bust the docker cache when the timestamp changes, move to
 # the end
@@ -17,16 +25,15 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       us.kbase.vcs-branch=$BRANCH \
       maintainer="Steve Chan sychan@lbl.gov"
 
-WORKDIR /kb/module
-ENV KB_DEPLOYMENT_CONFIG=/kb/deployment/conf/deployment.cfg
-ENV PYTHONPATH=$PYTHONPATH:/kb/module/src
+WORKDIR /kb/
+ENV KB_DEPLOYMENT_CONFIG=/kb/deploy.cfg
+ENV PYTHONPATH=$PYTHONPATH:/kb/src
 
-ENTRYPOINT [ "/kb/deployment/bin/dockerize" ]
-
-# TODO DOCKER parameterize the worker count
+ENTRYPOINT [ "/usr/bin/dockerize" ]
 
 # Here are some default params passed to dockerize. They would typically
 # be overidden by docker-compose at startup
-CMD [  "-template", "/kb/deployment/conf/.templates/deployment.cfg.templ:/kb/deployment/conf/deployment.cfg", \
-       "gunicorn", "--worker-class", "gevent", "--timeout", "300",
-       "--workers", "17", "--bind", ":8080", "app:app" ]
+CMD [  "-template", "/kb/deployment/conf/.templates/deployment.cfg.templ:/kb/deploy.cfg", \
+      "-template", "/kb/deployment/conf/.templates/settings.py.templ:/kb/settings.py", \
+      "gunicorn", "-c", "/kb/settings.py", "--worker-class", "gevent", \
+      "app:app" ]

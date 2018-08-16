@@ -1,0 +1,4 @@
+timeout="{{ default .Env.timeout "300" }}"
+workers="{{ default .Env.workers "17" }}"
+bind="{{ default .Env.bind ":8080" }}"
+loglevel="{{ default .Env.loglevel "info" }}"
