@@ -25,6 +25,12 @@ def build_app():
 _CALLID_PATTERN = re.compile('^\d{16}$')
 
 
+def assert_ms_epoch_close_to_now(time_):
+    now_ms = time.time() * 1000
+    assert now_ms + 1000 > time_
+    assert now_ms - 1000 < time_
+
+
 def assert_error_correct(got, expected):
     time_ = got['error']['time']
     callid = got['error']['callid']
@@ -34,9 +40,24 @@ def assert_error_correct(got, expected):
     assert got == expected
     assert _CALLID_PATTERN.match(callid) is not None
 
-    now_ms = time.time() * 1000
-    assert now_ms + 1000 > time_
-    assert now_ms - 1000 < time_
+    assert_ms_epoch_close_to_now(time_)
+
+
+def test_root():
+    cli, _ = build_app()
+
+    resp = cli.get('/')
+    j = resp.get_json()
+
+    time_ = j['servertime']
+    commit = j['gitcommithash']
+    del j['servertime']
+    del j['gitcommithash']
+
+    assert j == {'service': 'ID Mapping Service', 'version': '0.1.0-dev1'}
+    assert re.match('[a-f\d]{40}', commit) is not None
+    assert_ms_epoch_close_to_now(time_)
+    assert resp.status_code == 200
 
 
 def test_get_namespace_no_auth():

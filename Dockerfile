@@ -16,6 +16,9 @@ RUN pip install -r /tmp/requirements.txt
 
 ADD . /kb
 
+CD /kb
+RUN make
+
 # The BUILD_DATE value seem to bust the docker cache when the timestamp changes, move to
 # the end
 LABEL org.label-schema.build-date=$BUILD_DATE \
