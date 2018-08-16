@@ -21,6 +21,7 @@ from jgikbase.idmapping.core.user import Username, AuthsourceID, User
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.object_id import NamespaceID
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
+import json
 
 # These tests check that all the parts of the system play nice together. That generally means,
 # per endpoint, one happy path test and one unhappy path test, where the unhappy path goes
@@ -273,7 +274,6 @@ def test_set_public_and_list_namespaces(service_port, mongo):
 
     u = Username('lu')
     storage.create_local_user(u, lut.get_hashed_token())
-    storage.set_local_user_as_admin(u, True)
     priv = NamespaceID('priv')
     storage.create_namespace(priv)
     storage.add_user_to_namespace(priv, User(AuthsourceID('local'), u))
@@ -297,3 +297,123 @@ def test_set_public_and_list_namespaces(service_port, mongo):
     r = requests.get('http://localhost:' + service_port + '/api/v1/namespace')
 
     assert r.json() == {'publicly_mappable': ['pub'], 'privately_mappable': ['priv']}
+
+    r = requests.put('http://localhost:' + service_port +
+                     '/api/v1/namespace/missing/set?publicly_mappable=false',
+                     headers={'Authorization': 'local ' + lut.token})
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50010,
+                   'apperror': 'No such namespace',
+                   'message': '50010 No such namespace: missing'
+                   }
+         })
+    assert r.status_code == 404
+
+
+def test_mapping(service_port, mongo):
+    storage = get_storage_instance(mongo)
+
+    lut = Token('foobar')
+
+    u = Username('lu')
+    storage.create_local_user(u, lut.get_hashed_token())
+    priv = NamespaceID('priv')
+    storage.create_namespace(priv)
+    storage.add_user_to_namespace(priv, User(AuthsourceID('local'), u))
+    pub = NamespaceID('pub')
+    storage.create_namespace(pub)
+    storage.set_namespace_publicly_mappable(pub, True)
+
+    # create mappings
+    # test that the service ignores incorrect headers
+    r = requests.put('http://localhost:' + service_port + '/api/v1/mapping/priv/pub',
+                     headers={'Authorization': 'local ' + lut.token,
+                              'content-type': 'x-www-form-urlencoded'},
+                     data=json.dumps({'id1': 'id2', 'id3': 'id4', 'id5': 'id6'}))
+
+    assert r.status_code == 204
+
+    # fail create mappings
+    r = requests.put('http://localhost:' + service_port + '/api/v1/mapping/priv/pub',
+                     headers={'Authorization': 'focal ' + lut.token},
+                     data=json.dumps({'id10': 'id11'}))
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50020,
+                   'apperror': 'No such authentication source',
+                   'message': '50020 No such authentication source: focal'
+                   }
+         })
+    assert r.status_code == 404
+
+    # get mappings
+    r = requests.get('http://localhost:' + service_port + '/api/v1/mapping/pub?separate',
+                     headers={'Authorization': 'local ' + lut.token},
+                     data=json.dumps({'ids': ['id2', 'id4', 'id8']}))
+
+    assert r.json() == {'id2': {'other': [{'ns': 'priv', 'id': 'id1'}],
+                                'admin': []
+                                },
+                        'id4': {'other': [{'ns': 'priv', 'id': 'id3'}],
+                                'admin': []
+                                },
+                        'id8': {'other': [], 'admin': []}
+                        }
+
+    # fail get mappings
+    r = requests.get('http://localhost:' + service_port + '/api/v1/mapping/plub?separate',
+                     headers={'Authorization': 'local ' + lut.token},
+                     data=json.dumps({'ids': ['id2', 'id4', 'id8']}))
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50010,
+                   'apperror': 'No such namespace',
+                   'message': "50010 No such namespace: ['plub']"
+                   }
+         })
+    assert r.status_code == 404
+
+    # delete mappings
+    r = requests.delete('http://localhost:' + service_port + '/api/v1/mapping/priv/pub',
+                        headers={'Authorization': 'local ' + lut.token,
+                                 'content-type': 'x-www-form-urlencoded'},
+                        data=json.dumps({'id1': 'id7', 'id3': 'id4', 'id5': 'id6'}))
+
+    assert r.status_code == 204
+
+    # get mappings
+    r = requests.get('http://localhost:' + service_port + '/api/v1/mapping/pub',
+                     headers={'Authorization': 'local ' + lut.token},
+                     data=json.dumps({'ids': ['id2', 'id4']}))
+
+    assert r.json() == {'id2': {'mappings': [{'ns': 'priv', 'id': 'id1'}]},
+                        'id4': {'mappings': []}
+                        }
+
+    # fail delete mappings
+    r = requests.delete('http://localhost:' + service_port + '/api/v1/mapping/pub/priv',
+                        headers={'Authorization': 'local ' + lut.token,
+                                 'content-type': 'x-www-form-urlencoded'},
+                        data=json.dumps({'id2': 'id1'}))
+
+    assert_json_error_correct(
+        r.json(),
+        {'error': {'httpcode': 403,
+                   'httpstatus': 'Forbidden',
+                   'appcode': 20000,
+                   'apperror': 'Unauthorized',
+                   'message': ('20000 Unauthorized: User local/lu may not administrate ' +
+                               'namespace pub')
+                   }
+         })
+    assert r.status_code == 403
