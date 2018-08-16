@@ -519,22 +519,10 @@ def test_get_namespaces_with_nids(idstorage):
     assert idstorage.get_namespaces(nids=nids) == set([expected[1], expected[2]])
 
 
-def test_get_namespaces_fail_None_input(idstorage):
-    fail_get_namespaces(idstorage, {NamespaceID('foo'), None}, TypeError('None item in nids'))
-
-
-def test_get_namespaces_fail_no_such_namepsace(idstorage):
-    idstorage.create_namespace(NamespaceID('foo'))
-    fail_get_namespaces(idstorage, {NamespaceID('zoo'), NamespaceID('foo'), NamespaceID('baz'),
-                                    NamespaceID('aioli_compote_drizzled_on_artisian_tater_tots')},
-                        NoSuchNamespaceError(
-                            "['aioli_compote_drizzled_on_artisian_tater_tots', 'baz', 'zoo']"))
-
-
-def fail_get_namespaces(idstorage, nids, expected):
+def test_get_namespaces_fail(idstorage):
     with raises(Exception) as got:
-        idstorage.get_namespaces(nids)
-    assert_exception_correct(got.value, expected)
+        idstorage.get_namespaces({NamespaceID('foo'), None})
+    assert_exception_correct(got.value, TypeError('None item in nids'))
 
 
 def test_add_and_get_mapping(idstorage):

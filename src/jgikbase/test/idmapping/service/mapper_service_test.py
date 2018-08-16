@@ -1,31 +1,22 @@
-from unittest.mock import create_autospec, Mock
+from unittest.mock import create_autospec
 from jgikbase.idmapping.core.mapper import IDMapper
-from jgikbase.idmapping.service.mapper_service import create_app, JSONFlaskLogFormatter
+from jgikbase.idmapping.service.mapper_service import create_app
 from jgikbase.idmapping.builder import IDMappingBuilder
 from jgikbase.idmapping.core.object_id import Namespace, NamespaceID, ObjectID
 from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
-    UnauthorizedError, NoSuchUserError
+    UnauthorizedError
 import re
 import time
-from jgikbase.idmapping.service import mapper_service
-from logging import LogRecord
-import json
-from flask.app import Flask
-from flask import g
-from typing import IO
 
 
-def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
+def build_app():
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
     mapper = create_autospec(IDMapper, spec_set=True, instance=True)
-    cfg = Mock()
     builder.build_id_mapping_system.return_value = mapper
-    builder.get_cfg.return_value = cfg
-    cfg.ignore_ip_headers = ignore_ip_headers
 
-    app = create_app(builder, logstream)
+    app = create_app(builder)
     cli = app.test_client()
 
     return cli, mapper
@@ -52,196 +43,8 @@ def assert_error_correct(got, expected):
     assert_ms_epoch_close_to_now(time_)
 
 
-def mock_request_for_ip_headers(remote_addr, xff, real_ip):
-    req = Mock()
-    req.headers.get.side_effect = [xff, real_ip]
-    req.remote_addr = remote_addr
-    return req
-
-
-def test_get_ip_address_no_headers_with_ignore():
-    req = mock_request_for_ip_headers('4.5.6.7', None, None)
-
-    assert mapper_service.get_ip_address(req, True) == '4.5.6.7'
-    assert req.headers.get.call_args_list == []
-
-
-def test_get_ip_address_no_headers_no_ignore():
-    req = mock_request_for_ip_headers('    \t  4.5.6.7    ', None, None)
-
-    assert mapper_service.get_ip_address(req, False) == '4.5.6.7'
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_get_ip_address_whitespace_headers_no_ignore():
-    req = mock_request_for_ip_headers('4.5.6.7', '    \t    ', '    \t    ')
-
-    assert mapper_service.get_ip_address(req, False) == '4.5.6.7'
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_get_ip_address_with_headers_with_ignore():
-    req = mock_request_for_ip_headers('4.5.6.7', '1.2.3.4, 5.6.7.8', '9.10.11.12')
-
-    assert mapper_service.get_ip_address(req, True) == '4.5.6.7'
-    assert req.headers.get.call_args_list == []
-
-
-def test_get_ip_address_with_xff_and_real():
-    req = mock_request_for_ip_headers('4.5.6.7', '   1.2.3.4    ,    5.6.7.8   ', '9.10.11.12')
-
-    assert mapper_service.get_ip_address(req, False) == '1.2.3.4'
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_get_ip_address_with_xff():
-    req = mock_request_for_ip_headers('4.5.6.7', '1.2.3.4, 5.6.7.8', None)
-
-    assert mapper_service.get_ip_address(req, False) == '1.2.3.4'
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_get_ip_address_with_real():
-    req = mock_request_for_ip_headers('4.5.6.7', None, '     9.10.11.12      ')
-
-    assert mapper_service.get_ip_address(req, False) == '9.10.11.12'
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_format_ip_headers_no_headers_with_ignore():
-    req = mock_request_for_ip_headers('    \t  4.5.6.7    ', None, None)
-
-    assert mapper_service.format_ip_headers(req, True) is None
-    assert req.headers.get.call_args_list == []
-
-
-def test_format_ip_headers_no_headers_no_ignore():
-    req = mock_request_for_ip_headers('    \t  4.5.6.7    ', None, None)
-
-    assert mapper_service.format_ip_headers(req, False) is None
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_format_ip_headers_whitespace_headers_no_ignore():
-    req = mock_request_for_ip_headers('    \t  4.5.6.7    ', '    \t    ', '    \t    ')
-
-    assert mapper_service.format_ip_headers(req, False) is None
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_format_ip_headers_with_headers_with_ignore():
-    req = mock_request_for_ip_headers('4.5.6.7', '1.2.3.4, 5.6.7.8', '9.10.11.12')
-
-    assert mapper_service.format_ip_headers(req, True) is None
-    assert req.headers.get.call_args_list == []
-
-
-def test_format_ip_headers_with_xff_and_real():
-    req = mock_request_for_ip_headers('   4.5.6.7  \t ', '   1.2.3.4    ,    5.6.7.8   ',
-                                      '    9.10.11.12  \t  ')
-
-    assert mapper_service.format_ip_headers(req, False) == (
-        'X-Forwarded-For: 1.2.3.4    ,    5.6.7.8, X-Real-IP: 9.10.11.12, Remote IP: 4.5.6.7')
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_format_ip_headers_with_xff():
-    req = mock_request_for_ip_headers('   4.5.6.7  \t ', '   1.2.3.4    ,    5.6.7.8   ', None)
-
-    assert mapper_service.format_ip_headers(req, False) == (
-        'X-Forwarded-For: 1.2.3.4    ,    5.6.7.8, Remote IP: 4.5.6.7')
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_format_ip_headers_with_real():
-    req = mock_request_for_ip_headers('   4.5.6.7  \t ', None, '    9.10.11.12  \t  ')
-
-    assert mapper_service.format_ip_headers(req, False) == (
-        'X-Real-IP: 9.10.11.12, Remote IP: 4.5.6.7')
-    assert req.headers.get.call_args_list == [(('X-Forwarded-For',), {}), (('X-Real-IP',), {})]
-
-
-def test_log_formatter_no_exception():
-    app = Flask('foo')
-    f = JSONFlaskLogFormatter('service name')
-    with app.test_request_context('/'):
-        g.ip = '4.5.6.7'
-        g.method = 'POST'
-        g.req_id = '1564161'
-        format1 = f.format(LogRecord('my name', 40, 'path', 2, '%s foo %s', ('bar', 'baz'),
-                                     None, None, None))
-        format2 = f.format(LogRecord('my name', 40, 'path', 2, '%s foo %s', ('bar', 'baz'),
-                                     (None, None, None), None, None))
-    contents1 = json.loads(format1)
-    contents2 = json.loads(format2)
-    time1 = contents1['time']
-    del contents1['time']
-    time2 = contents2['time']
-    del contents2['time']
-
-    expected = {
-        'service': 'service name',
-        'level': 'ERROR',
-        'source': 'my name',
-        'ip': '4.5.6.7',
-        'method': 'POST',
-        'callid': '1564161',
-        'msg': 'bar foo baz'
-        }
-
-    assert contents1 == expected
-    assert contents2 == expected
-
-    assert_ms_epoch_close_to_now(time1)
-    assert_ms_epoch_close_to_now(time2)
-
-
-def test_log_formatter_with_exception():
-    app = Flask('foo')
-    f = JSONFlaskLogFormatter('service name')
-
-    def exception_method():
-        raise NoSuchUserError('userfoo')
-
-    try:
-        exception_method()
-    except Exception as err:
-        e = err
-    exc_info = (type(e), e, e.__traceback__)
-    with app.test_request_context('/'):
-        g.ip = '4.5.6.7'
-        g.method = 'POST'
-        g.req_id = '1564161'
-        format_ = f.format(LogRecord('my name', 40, 'path', 2, '%s foo %s', ('bar', 'baz'),
-                                     exc_info, None, None))
-    contents = json.loads(format_)
-    time_ = contents['time']
-    del contents['time']
-    excep = contents['excep']
-    del contents['excep']
-
-    print(contents)
-    assert contents == {
-        'service': 'service name',
-        'level': 'ERROR',
-        'source': 'my name',
-        'ip': '4.5.6.7',
-        'method': 'POST',
-        'callid': '1564161',
-        'msg': 'bar foo baz'
-        }
-
-    assert_ms_epoch_close_to_now(time_)
-
-    assert 'exception_method()' in excep
-    assert 'NoSuchUserError: 50000 No such user: userfoo' in excep
-    assert 'Traceback (most' in excep
-
-
-def test_root_and_logging():
-    # Also tests basic logging
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
+def test_root():
+    cli, _ = build_app()
 
     resp = cli.get('/')
     j = resp.get_json()
@@ -255,82 +58,6 @@ def test_root_and_logging():
     assert re.match('[a-f\d]{40}', commit) is not None
     assert_ms_epoch_close_to_now(time_)
     assert resp.status_code == 200
-
-    assert len(logstream.write.call_args_list) == 2
-    assert logstream.write.call_args_list[1][0][0] == '\n'
-    logjson = json.loads(logstream.write.call_args_list[0][0][0])
-
-    time_ = logjson['time']
-    del logjson['time']
-    callid = logjson['callid']
-    del logjson['callid']
-
-    assert logjson == {'service': 'IDMappingService',
-                       'level': 'INFO',
-                       'source': 'jgikbase.idmapping.service.mapper_service',
-                       'ip': '127.0.0.1',
-                       'method': 'GET',
-                       'msg': 'GET / 200 werkzeug/0.14.1'}
-    assert_ms_epoch_close_to_now(time_)
-    assert _CALLID_PATTERN.match(callid) is not None
-
-
-def test_root_and_logging_with_xff_and_real_headers():
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
-
-    cli.get('/', headers={'x-forwarded-for': '    1.2.3.4,    5.6.7.8   ',
-                          'x-real-ip': '   7.8.9.10    '})  # already tested response, don't care
-
-    assert len(logstream.write.call_args_list) == 4
-    assert logstream.write.call_args_list[1][0][0] == '\n'
-    assert logstream.write.call_args_list[3][0][0] == '\n'
-    ipjson = json.loads(logstream.write.call_args_list[0][0][0])
-    respjson = json.loads(logstream.write.call_args_list[2][0][0])
-
-    # don't check these again, checked above.
-    del ipjson['time']
-    del respjson['time']
-    del ipjson['callid']
-    del respjson['callid']
-
-    assert ipjson == {
-        'service': 'IDMappingService',
-        'level': 'INFO',
-        'source': 'jgikbase.idmapping.service.mapper_service',
-        'ip': '1.2.3.4',
-        'method': 'GET',
-        'msg': 'X-Forwarded-For: 1.2.3.4,    5.6.7.8, X-Real-IP: 7.8.9.10, Remote IP: 127.0.0.1'}
-
-    assert respjson == {'service': 'IDMappingService',
-                        'level': 'INFO',
-                        'source': 'jgikbase.idmapping.service.mapper_service',
-                        'ip': '1.2.3.4',
-                        'method': 'GET',
-                        'msg': 'GET / 200 werkzeug/0.14.1'}
-
-
-def test_root_and_logging_with_xff_and_real_headers_ignored():
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream, ignore_ip_headers=True)
-
-    cli.get('/', headers={'x-forwarded-for': '    1.2.3.4,    5.6.7.8   ',
-                          'x-real-ip': '   7.8.9.10    '})  # already tested response, don't care
-
-    assert len(logstream.write.call_args_list) == 2
-    assert logstream.write.call_args_list[1][0][0] == '\n'
-    respjson = json.loads(logstream.write.call_args_list[0][0][0])
-
-    # don't check these again, checked above.
-    del respjson['time']
-    del respjson['callid']
-
-    assert respjson == {'service': 'IDMappingService',
-                        'level': 'INFO',
-                        'source': 'jgikbase.idmapping.service.mapper_service',
-                        'ip': '127.0.0.1',
-                        'method': 'GET',
-                        'msg': 'GET / 200 werkzeug/0.14.1'}
 
 
 def test_get_namespace_no_auth():
@@ -361,30 +88,25 @@ def test_get_namespace_with_auth():
 
 
 def test_get_namespace_fail_munged_auth():
-    # general tests of the application error handler for general application errors
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
+    cli, _ = build_app()
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'astoketoketoke'})
 
-    err = '30001 Illegal input parameter: Expected authsource and token in header.'
     assert_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
                    'appcode': 30001,
                    'apperror': 'Illegal input parameter',
-                   'message': err
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Expected authsource and token in header.')
                    }
          })
     assert resp.status_code == 400
-    check_error_logging(logstream, 'GET', '/api/v1/namespace/foo', 400,
-                        'IllegalParameterError: ' + err)
 
 
 def test_get_namespace_fail_invalid_token():
     # really a general test of the authentication error handler
-    logstream = Mock()
-    cli, mapper = build_app(logstream=logstream)
+    cli, mapper = build_app()
     mapper.get_namespace.side_effect = InvalidTokenError()
 
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'as toketoketoke'})
@@ -399,58 +121,11 @@ def test_get_namespace_fail_invalid_token():
                    }
          })
     assert resp.status_code == 401
-    check_error_logging(logstream, 'GET', '/api/v1/namespace/foo', 401,
-                        'InvalidTokenError: 10020 Invalid token')
-
-
-def check_error_logging(logstream_mock, method, url, code, stackstring):
-
-    assert len(logstream_mock.write.call_args_list) == 4
-    assert logstream_mock.write.call_args_list[1][0][0] == '\n'
-    assert logstream_mock.write.call_args_list[3][0][0] == '\n'
-    errjson = json.loads(logstream_mock.write.call_args_list[0][0][0])
-    respjson = json.loads(logstream_mock.write.call_args_list[2][0][0])
-
-    errtime = errjson['time']
-    del errjson['time']
-    errcallid = errjson['callid']
-    del errjson['callid']
-
-    resptime = respjson['time']
-    del respjson['time']
-    respcallid = respjson['callid']
-    del respjson['callid']
-
-    stack = errjson['msg']
-    del errjson['msg']
-
-    assert errjson == {
-        'service': 'IDMappingService',
-        'level': 'ERROR',
-        'source': 'jgikbase.idmapping.service.mapper_service',
-        'ip': '127.0.0.1',
-        'method': method}
-
-    assert stack.startswith('Logging exception:\n')
-    assert 'Traceback (most' in stack
-    assert stackstring in stack
-
-    assert respjson == {'service': 'IDMappingService',
-                        'level': 'INFO',
-                        'source': 'jgikbase.idmapping.service.mapper_service',
-                        'ip': '127.0.0.1',
-                        'method': method,
-                        'msg': '{} {} {} werkzeug/0.14.1'.format(method, url, code)}
-    assert_ms_epoch_close_to_now(errtime)
-    assert _CALLID_PATTERN.match(errcallid) is not None
-    assert_ms_epoch_close_to_now(resptime)
-    assert _CALLID_PATTERN.match(respcallid) is not None
 
 
 def test_get_namespace_fail_no_namespace():
     # really a general test of the no data error handler
-    logstream = Mock()
-    cli, mapper = build_app(logstream=logstream)
+    cli, mapper = build_app()
     mapper.get_namespace.side_effect = NoSuchNamespaceError('foo')
 
     resp = cli.get('/api/v1/namespace/foo')
@@ -466,14 +141,10 @@ def test_get_namespace_fail_no_namespace():
          })
     assert resp.status_code == 404
 
-    check_error_logging(logstream, 'GET', '/api/v1/namespace/foo', 404,
-                        'NoSuchNamespaceError: 50010 No such namespace: foo')
-
 
 def test_get_namespace_fail_valueerror():
     # really a general test of the catch all error handler
-    logstream = Mock()
-    cli, mapper = build_app(logstream=logstream)
+    cli, mapper = build_app()
     mapper.get_namespace.side_effect = ValueError('things are all messed up down here')
 
     resp = cli.get('/api/v1/namespace/foo')
@@ -487,13 +158,9 @@ def test_get_namespace_fail_valueerror():
          })
     assert resp.status_code == 500
 
-    check_error_logging(logstream, 'GET', '/api/v1/namespace/foo', 500,
-                        'ValueError: things are all messed up down here')
-
 
 def test_method_not_allowed():
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
+    cli, _ = build_app()
 
     resp = cli.delete('/api/v1/namespace/foo')
 
@@ -507,30 +174,22 @@ def test_method_not_allowed():
          })
     assert resp.status_code == 405
 
-    check_error_logging(logstream, 'DELETE', '/api/v1/namespace/foo', 405,
-                        'MethodNotAllowed: 405 Method Not Allowed: The method is not allowed ' +
-                        'for the requested URL.')
-
 
 def test_not_found():
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
+    cli, _ = build_app()
 
     resp = cli.get('/api/v1/nothinghere')
 
-    err = ('404 Not Found: The requested URL was not found on the server.  ' +
-           'If you entered the URL manually please check your spelling and try again.')
     assert_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 404,
                    'httpstatus': 'Not Found',
-                   'message': err
+                   'message': ('404 Not Found: The requested URL was not found on the server.  ' +
+                               'If you entered the URL manually please check your spelling ' +
+                               'and try again.')
                    }
          })
     assert resp.status_code == 404
-
-    check_error_logging(logstream, 'GET', '/api/v1/nothinghere', 404,
-                        'NotFound: ' + err)
 
 
 def test_create_namespace_put():
@@ -661,8 +320,7 @@ def fail_illegal_ns_id_check(resp):
 
 def test_create_namespace_fail_unauthorized():
     # general test of the unauthorized error handler
-    logstream = Mock()
-    cli, mapper = build_app(logstream=logstream)
+    cli, mapper = build_app()
 
     mapper.create_namespace.side_effect = UnauthorizedError('YOU SHALL NOT PASS')
 
@@ -681,9 +339,6 @@ def test_create_namespace_fail_unauthorized():
 
     assert mapper.create_namespace.call_args_list == [((
         AuthsourceID('source'), Token('tokey'), NamespaceID('foo')), {})]
-
-    check_error_logging(logstream, 'PUT', '/api/v1/namespace/foo', 403,
-                        'UnauthorizedError: 20000 Unauthorized: YOU SHALL NOT PASS')
 
 
 def test_add_user_to_namespace():
@@ -842,6 +497,9 @@ def check_get_namespaces(returned, expected):
 
 def test_create_mapping_put():
     cli, mapper = build_app()
+    # this shouldn't pass if request.get_data() isn't called before checking
+    # auth, but it does. If you're actually running a server this will
+    # cause a json parse erro with the get_data() call.
     resp = cli.put('/api/v1/mapping/ans/ns',
                    headers={'Authorization': 'source tokey',
                             'content-type': 'x-www-form-urlencoded'},
@@ -893,24 +551,6 @@ def check_mapping_fail_no_body(resp):
                    }
          })
     assert resp.status_code == 400
-
-
-def test_bad_json_error():
-    logstream = Mock()
-    cli, _ = build_app(logstream=logstream)
-    resp = cli.put('/api/v1/mapping/ans/ns',  headers={'Authorization': 'source tokey'},
-                   data='{"foo": ["bar", "baz"}]')
-
-    err = "Expecting ',' delimiter: line 1 column 22 (char 21)"
-    assert_error_correct(
-        resp.get_json(),
-        {'error': {'httpcode': 400,
-                   'httpstatus': 'Bad Request',
-                   'message': 'Input JSON decode error: ' + err
-                   }
-         })
-    assert resp.status_code == 400
-    check_error_logging(logstream, 'PUT', '/api/v1/mapping/ans/ns', 400, 'JSONDecodeError: ' + err)
 
 
 def test_create_mapping_fail_bad_json():

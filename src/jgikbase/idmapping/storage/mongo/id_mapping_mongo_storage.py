@@ -11,7 +11,7 @@ import re
 from jgikbase.idmapping.storage.errors import IDMappingStorageError, StorageInitException
 from jgikbase.idmapping.core.errors import NoSuchUserError, UserExistsError, InvalidTokenError,\
     NamespaceExistsError, NoSuchNamespaceError
-from typing import Set, Iterable, Tuple, Dict, Any, List  # @UnusedImport pydev gets confused here
+from typing import Set, Iterable, Tuple, Dict, Any  # @UnusedImport pydev gets confused here
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 
 # Testing the (many) catch blocks for the general mongo exception is pretty hard, since it
@@ -310,18 +310,12 @@ class IDMappingMongoStorage(_IDMappingStorage):
 
     def get_namespaces(self, nids: Iterable[NamespaceID]=None) -> Set[Namespace]:
         query = {}
-        nidstr: List[str] = []
         if nids:
             no_Nones_in_iterable(nids, 'nids')
-            nidstr = [nid.id for nid in nids]
-            query[_FLD_NS_ID] = {'$in': nidstr}
+            query[_FLD_NS_ID] = {'$in': [nid.id for nid in nids]}
         try:
             nsdocs = self._db[_COL_NAMESPACES].find(query)
-            nsobjs = {self._to_ns(nsdoc) for nsdoc in nsdocs}
-            if nidstr and len(nsobjs) != len(nidstr):
-                missing = set(nidstr) - {ns.namespace_id.id for ns in nsobjs}
-                raise NoSuchNamespaceError(str(sorted(missing)))
-            return nsobjs
+            return {self._to_ns(nsdoc) for nsdoc in nsdocs}
         except PyMongoError as e:
             raise IDMappingStorageError('Connection to database failed: ' + str(e)) from e
 
