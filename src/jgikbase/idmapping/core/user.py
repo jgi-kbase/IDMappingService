@@ -46,7 +46,7 @@ class Username:
     :ivar name: the username.
     """
 
-    # TODO NOW change to UserID
+    # TODO CODE change to UserID. Not necessarily a name
 
     def __init__(self, username: str) -> None:
         """
