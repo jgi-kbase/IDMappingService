@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'JGI/KBase ID Mapping Service'
-copyright = '2018, JGI / KBase'
+copyright = '2018, JGI / KBase'  # @ReservedAssignment
 author = 'gaprice@lbl.gov'
 
 # The short X.Y version

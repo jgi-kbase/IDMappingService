@@ -7,6 +7,8 @@ from jgikbase.idmapping.core.user import AuthsourceID, User, Username
 from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
     UnauthorizedError
+import re
+import time
 
 
 def build_app():
@@ -18,6 +20,23 @@ def build_app():
     cli = app.test_client()
 
     return cli, mapper
+
+
+_CALLID_PATTERN = re.compile('^\d{16}$')
+
+
+def assert_error_correct(got, expected):
+    time_ = got['error']['time']
+    callid = got['error']['callid']
+    del got['error']['time']
+    del got['error']['callid']
+
+    assert got == expected
+    assert _CALLID_PATTERN.match(callid) is not None
+
+    now_ms = time.time() * 1000
+    assert now_ms + 1000 > time_
+    assert now_ms - 1000 < time_
 
 
 def test_get_namespace_no_auth():
@@ -51,15 +70,16 @@ def test_get_namespace_fail_munged_auth():
     cli, _ = build_app()
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'astoketoketoke'})
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'Expected authsource and token in header.')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Expected authsource and token in header.')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -70,14 +90,15 @@ def test_get_namespace_fail_invalid_token():
 
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'as toketoketoke'})
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 401,
-                  'httpstatus': 'Unauthorized',
-                  'appcode': 10020,
-                  'apperror': 'Invalid token',
-                  'message': '10020 Invalid token'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 401,
+                   'httpstatus': 'Unauthorized',
+                   'appcode': 10020,
+                   'apperror': 'Invalid token',
+                   'message': '10020 Invalid token'
+                   }
+         })
     assert resp.status_code == 401
 
 
@@ -88,14 +109,15 @@ def test_get_namespace_fail_no_namespace():
 
     resp = cli.get('/api/v1/namespace/foo')
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 404,
-                  'httpstatus': 'Not Found',
-                  'appcode': 50010,
-                  'apperror': 'No such namespace',
-                  'message': '50010 No such namespace: foo'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'appcode': 50010,
+                   'apperror': 'No such namespace',
+                   'message': '50010 No such namespace: foo'
+                   }
+         })
     assert resp.status_code == 404
 
 
@@ -106,12 +128,13 @@ def test_get_namespace_fail_valueerror():
 
     resp = cli.get('/api/v1/namespace/foo')
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 500,
-                  'httpstatus': 'Internal Server Error',
-                  'message': 'things are all messed up down here'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 500,
+                   'httpstatus': 'Internal Server Error',
+                   'message': 'things are all messed up down here'
+                   }
+         })
     assert resp.status_code == 500
 
 
@@ -120,13 +143,14 @@ def test_method_not_allowed():
 
     resp = cli.delete('/api/v1/namespace/foo')
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 405,
-                  'httpstatus': 'Method Not Allowed',
-                  'message': ('405 Method Not Allowed: The method is not allowed ' +
-                              'for the requested URL.')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 405,
+                   'httpstatus': 'Method Not Allowed',
+                   'message': ('405 Method Not Allowed: The method is not allowed ' +
+                               'for the requested URL.')
+                   }
+         })
     assert resp.status_code == 405
 
 
@@ -135,14 +159,15 @@ def test_not_found():
 
     resp = cli.get('/api/v1/nothinghere')
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 404,
-                  'httpstatus': 'Not Found',
-                  'message': ('404 Not Found: The requested URL was not found on the server.  ' +
-                              'If you entered the URL manually please check your spelling ' +
-                              'and try again.')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 404,
+                   'httpstatus': 'Not Found',
+                   'message': ('404 Not Found: The requested URL was not found on the server.  ' +
+                               'If you entered the URL manually please check your spelling ' +
+                               'and try again.')
+                   }
+         })
     assert resp.status_code == 404
 
 
@@ -187,14 +212,15 @@ def fail_no_token_delete(url):
 
 
 def fail_no_token_check(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 401,
-                  'appcode': 10010,
-                  'apperror': 'No authentication token',
-                  'httpstatus': 'Unauthorized',
-                  'message': '10010 No authentication token'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 401,
+                   'appcode': 10010,
+                   'apperror': 'No authentication token',
+                   'httpstatus': 'Unauthorized',
+                   'message': '10010 No authentication token'
+                   }
+         })
     assert resp.status_code == 401
 
 
@@ -222,15 +248,16 @@ def fail_munged_auth_delete(url):
 
 
 def fail_munged_auth_check(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'Expected authsource and token in header.')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Expected authsource and token in header.')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -257,15 +284,16 @@ def fail_illegal_ns_id_delete(url, json=None):
 
 
 def fail_illegal_ns_id_check(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'Illegal character in namespace id foo*bar: *')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Illegal character in namespace id foo*bar: *')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -277,14 +305,15 @@ def test_create_namespace_fail_unauthorized():
 
     resp = cli.put('/api/v1/namespace/foo', headers={'Authorization': 'source tokey'})
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 403,
-                  'httpstatus': 'Forbidden',
-                  'appcode': 20000,
-                  'apperror': 'Unauthorized',
-                  'message': '20000 Unauthorized: YOU SHALL NOT PASS'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 403,
+                   'httpstatus': 'Forbidden',
+                   'appcode': 20000,
+                   'apperror': 'Unauthorized',
+                   'message': '20000 Unauthorized: YOU SHALL NOT PASS'
+                   }
+         })
     assert resp.status_code == 403
 
     assert mapper.create_namespace.call_args_list == [((
@@ -365,14 +394,15 @@ def test_set_namespace_fail_no_op():
 
     resp = cli.put('/api/v1/namespace/foo/set', headers={'Authorization': 'source tokey'})
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: No settings provided.'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: No settings provided.'
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -382,15 +412,16 @@ def test_set_namespace_publicly_mappable_illegal_input():
     resp = cli.put('/api/v1/namespace/foo/set?publicly_mappable=foobar',
                    headers={'Authorization': 'source tokey'})
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ("30001 Illegal input parameter: Expected value of 'true' or " +
-                              "'false' for publicly_mappable")
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ("30001 Illegal input parameter: Expected value of 'true' or " +
+                               "'false' for publicly_mappable")
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -491,12 +522,13 @@ def test_create_mapping_fail_no_body():
 
 
 def check_mapping_fail_no_body(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'message': 'Input JSON decode error: Expecting value: line 1 column 1 (char 0)'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'message': 'Input JSON decode error: Expecting value: line 1 column 1 (char 0)'
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -508,13 +540,14 @@ def test_create_mapping_fail_bad_json():
 
 
 def check_mapping_fail_bad_json(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'message': ("Input JSON decode error: Expecting ',' delimiter: " +
-                              "line 1 column 22 (char 21)")
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'message': ("Input JSON decode error: Expecting ',' delimiter: " +
+                               "line 1 column 22 (char 21)")
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -526,15 +559,16 @@ def test_create_mapping_fail_not_dict():
 
 
 def check_mapping_fail_not_dict(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'Expected JSON mapping in request body')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Expected JSON mapping in request body')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -546,14 +580,15 @@ def test_create_mapping_fail_no_ids():
 
 
 def check_mapping_fail_no_ids(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: No ids supplied'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: No ids supplied'
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -565,14 +600,15 @@ def test_create_mapping_fail_whitespace_key():
 
 
 def check_mapping_fail_whitespace_key(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: whitespace only key in input JSON'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: whitespace only key in input JSON'
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -584,15 +620,16 @@ def test_create_mapping_fail_non_string_value():
 
 
 def check_mapping_fail_non_string_value(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'value for key id in input JSON is not string: []')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'value for key id in input JSON is not string: []')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -604,15 +641,16 @@ def test_create_mapping_fail_whitespace_value():
 
 
 def check_mapping_fail_whitespace_value(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': ('30000 Missing input parameter: ' +
-                              'value for key id in input JSON is whitespace only')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': ('30000 Missing input parameter: ' +
+                               'value for key id in input JSON is whitespace only')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -624,15 +662,16 @@ def test_create_mapping_fail_too_many_ids():
 
 
 def check_mapping_fail_too_many_ids(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'A maximum of 10000 ids are allowed')
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'A maximum of 10000 ids are allowed')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -916,29 +955,33 @@ def test_get_mapping_fail_not_dict():
 def test_get_mapping_fail_ids_not_list():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': {'id': 'id'}})
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'Expected list at /ids in request body')
-                  }
-        }
+
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'Expected list at /ids in request body')
+                   }
+         })
     assert resp.status_code == 400
 
 
 def test_get_mapping_fail_ids_empty():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': []})
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: No ids supplied'
-                  }
-        }
+
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: No ids supplied'
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -952,29 +995,32 @@ def test_get_mapping_fail_bad_id():
 
 
 def check_get_mapping_fail_bad_id(resp):
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: null or whitespace-only id in list'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: null or whitespace-only id in list'
+                   }
+         })
     assert resp.status_code == 400
 
 
 def test_get_mapping_fail_too_many_ids():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': [str(x) for x in range(1001)]})
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30001,
-                  'apperror': 'Illegal input parameter',
-                  'message': ('30001 Illegal input parameter: ' +
-                              'A maximum of 1000 ids are allowed')
-                  }
-        }
+
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30001,
+                   'apperror': 'Illegal input parameter',
+                   'message': ('30001 Illegal input parameter: ' +
+                               'A maximum of 1000 ids are allowed')
+                   }
+         })
     assert resp.status_code == 400
 
 
@@ -983,14 +1029,15 @@ def test_get_mappings_fail_whitespace_in_filter():
 
     resp = cli.get('/api/v1/mapping/ns?namespace_filter=ns1,    ,   ns2  , ns3')
 
-    assert resp.get_json() == {
-        'error': {'httpcode': 400,
-                  'httpstatus': 'Bad Request',
-                  'appcode': 30000,
-                  'apperror': 'Missing input parameter',
-                  'message': '30000 Missing input parameter: namespace id'
-                  }
-        }
+    assert_error_correct(
+        resp.get_json(),
+        {'error': {'httpcode': 400,
+                   'httpstatus': 'Bad Request',
+                   'appcode': 30000,
+                   'apperror': 'Missing input parameter',
+                   'message': '30000 Missing input parameter: namespace id'
+                   }
+         })
     assert resp.status_code == 400
 
 
