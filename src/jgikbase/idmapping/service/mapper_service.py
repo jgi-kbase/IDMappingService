@@ -25,7 +25,7 @@ VERSION = '0.1.0-dev1'
 
 try:
     from jgikbase.idmapping import gitcommit
-except ImportError:
+except ImportError:  # pragma: no cover
     # tested manually
     raise ValueError('Did not find git commit file at ' +            # pragma: no cover
                      'src/jgikbase/idmapping/gitcommit.py. ' +       # pragma: no cover

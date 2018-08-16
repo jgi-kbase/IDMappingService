@@ -12,6 +12,8 @@ from jgikbase.idmapping.builder import IDMappingBuilder
 from jgikbase.idmapping.core.user_lookup import LocalUserLookup
 from jgikbase.idmapping.core.user import Username
 
+# TODO CLI integration tests. Not super important IMO.
+
 
 class IDMappingCLI:
     """
