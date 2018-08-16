@@ -334,8 +334,6 @@ class IDMappingMongoStorage(_IDMappingStorage):
     def add_mapping(self, primary_OID: ObjectID, secondary_OID: ObjectID) -> None:
         not_none(primary_OID, 'primary_OID')
         not_none(secondary_OID, 'secondary_OID')
-        if primary_OID.namespace_id == secondary_OID.namespace_id:
-            raise ValueError('Namespace IDs cannot be the same')
         try:
             self._db[_COL_MAPPINGS].insert_one(
                 self.to_mapping_mongo_doc(primary_OID, secondary_OID))

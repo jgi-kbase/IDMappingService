@@ -358,12 +358,8 @@ def test_mapping(service_port, mongo):
                      headers={'Authorization': 'local ' + lut.token},
                      data=json.dumps({'ids': ['id2', 'id4', 'id8']}))
 
-    assert r.json() == {'id2': {'other': [{'ns': 'priv', 'id': 'id1'}],
-                                'admin': []
-                                },
-                        'id4': {'other': [{'ns': 'priv', 'id': 'id3'}],
-                                'admin': []
-                                },
+    assert r.json() == {'id2': {'other': [{'ns': 'priv', 'id': 'id1'}], 'admin': []},
+                        'id4': {'other': [{'ns': 'priv', 'id': 'id3'}], 'admin': []},
                         'id8': {'other': [], 'admin': []}
                         }
 
@@ -417,3 +413,20 @@ def test_mapping(service_port, mongo):
                    }
          })
     assert r.status_code == 403
+
+    # test mapping to same namespace
+    r = requests.put('http://localhost:' + service_port + '/api/v1/mapping/priv/priv',
+                     headers={'Authorization': 'local ' + lut.token},
+                     data=json.dumps({'id20': 'id21'}))
+
+    assert r.status_code == 204
+
+    # get mappings
+    r = requests.get('http://localhost:' + service_port + '/api/v1/mapping/priv?separate',
+                     headers={'Authorization': 'local ' + lut.token},
+                     data=json.dumps({'ids': ['id1', 'id21', 'id20']}))
+
+    assert r.json() == {'id1': {'admin': [{'ns': 'pub', 'id': 'id2'}], 'other': []},
+                        'id21': {'other': [{'ns': 'priv', 'id': 'id20'}], 'admin': []},
+                        'id20': {'other': [], 'admin': [{'ns': 'priv', 'id': 'id21'}]}
+                        }
