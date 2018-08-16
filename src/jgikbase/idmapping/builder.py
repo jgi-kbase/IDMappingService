@@ -55,7 +55,6 @@ class IDMappingBuilder:
         :param cfgpath: the the path to the build configuration file. The configuration is memoized
             and used in any future builds, and any other configurations are ignored.
         :raises IDMappingBuildException: if a build error occurs.
-        :raises TypeError: if cfgpath is None.
         """
         self._set_cfg(cfgpath)
         return LocalUserLookup(self._build_storage())
@@ -64,6 +63,15 @@ class IDMappingBuilder:
         if not hasattr(self, 'cfg'):
             self.cfg = KBaseConfig(cfgpath)
         return self.cfg
+
+    def get_cfg(self, cfgpath: Path=None) -> KBaseConfig:
+        """
+        Get the system configuration.
+
+        :param cfgpath: the the path to the build configuration file. The configuration is memoized
+            and used in any future builds, and any other configurations are ignored.
+         """
+        return self._set_cfg(cfgpath)
 
     def _build_storage(self) -> IDMappingStorage:
         if not hasattr(self, '_storage'):
@@ -89,7 +97,6 @@ class IDMappingBuilder:
         :param cfgpath: the the path to the build configuration file. The configuration is memoized
             and used in any future builds, and any other configurations are ignored.
         :raises IDMappingBuildException: if a build error occurs.
-        :raises TypeError: if cfgpath is None.
         """
         cfg = self._set_cfg(cfgpath)
         lookups: Set[UserLookup] = set()

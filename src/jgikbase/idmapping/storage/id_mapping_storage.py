@@ -155,6 +155,8 @@ class IDMappingStorage:  # pragma: no cover
 
         :param ids: specific namespaces to get. By default all namespaces are returned.
         :raises TypeError: if nids contains None.
+        :raises NoSuchNamespaceError: if any of the namespaces in the nids parameter do not
+            exist
         """
         raise NotImplementedError()
 
