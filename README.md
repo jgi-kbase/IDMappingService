@@ -8,7 +8,6 @@ Build status (master):
 
 * travis
   * try mongo 4 - maybe wait for a couple bugfix versions
-* logging in core class
 * documentation
 * integration tests
 * Release notes (dev) and tag

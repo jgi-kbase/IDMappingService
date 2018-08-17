@@ -3,11 +3,42 @@ from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.mapper import IDMapper
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from pytest import raises
-from jgikbase.test.idmapping.test_utils import assert_exception_correct
+from jgikbase.test.idmapping.test_utils import assert_exception_correct, TerstFermerttr
 from jgikbase.idmapping.core.user_lookup import UserLookupSet
 from jgikbase.idmapping.core.user import AuthsourceID, Username, User
 from jgikbase.idmapping.core.errors import NoSuchUserError, UnauthorizedError, NoSuchNamespaceError
 from jgikbase.idmapping.core.tokens import Token
+from pytest import fixture
+import logging
+from logging import StreamHandler
+
+
+@fixture(scope='module')
+def init_logger():
+    print('log collector init')
+    handler = StreamHandler()
+    formatter = TerstFermerttr()
+    handler.setFormatter(formatter)
+    # remove any current handlers, since tests run in one process
+    logging.getLogger().handlers.clear()
+    logging.getLogger().addHandler(handler)
+    logging.getLogger().setLevel('INFO')
+    return formatter.logs
+
+
+@fixture
+def log_collector(init_logger):
+    print('clearing logs')
+    init_logger.clear()
+    return init_logger
+
+
+def assert_logs_correct(logs, logstring):
+    assert len(logs) == 1
+    logrecord = logs[0]
+    assert logrecord.name == 'jgikbase.idmapping.core.mapper'
+    assert logrecord.levelname == 'INFO'
+    assert logrecord.getMessage() == logstring
 
 
 def test_init_fail():
@@ -28,7 +59,7 @@ def fail_init(handlers, admin_authsources, storage, expected):
     assert_exception_correct(got.value, expected)
 
 
-def test_create_namespace():
+def test_create_namespace(log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -36,10 +67,12 @@ def test_create_namespace():
 
     handlers.get_user.return_value = (User(AuthsourceID('as'), Username('foo')), True)
 
-    idm.create_namespace(AuthsourceID('as'), Token('bar'), NamespaceID('foo'))
+    idm.create_namespace(AuthsourceID('as'), Token('bar'), NamespaceID('baz'))
 
     assert handlers.get_user.call_args_list == [((AuthsourceID('as'), Token('bar'),), {})]
-    assert storage.create_namespace.call_args_list == [((NamespaceID('foo'),), {})]
+    assert storage.create_namespace.call_args_list == [((NamespaceID('baz'),), {})]
+
+    assert_logs_correct(log_collector, 'Admin as/foo created namespace baz')
 
 
 def test_create_namespace_fail_None_input():
@@ -84,7 +117,7 @@ def fail_create_namespace(idm, authsource, token, namespace_id, expected):
     assert_exception_correct(got.value, expected)
 
 
-def test_add_user_to_namespace():
+def test_add_user_to_namespace(log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -104,6 +137,8 @@ def test_add_user_to_namespace():
         [((User(AuthsourceID('asone'), Username('u1')),), {})]
     assert storage.add_user_to_namespace.call_args_list == \
         [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
+
+    assert_logs_correct(log_collector, 'Admin astwo/foo added user asone/u1 to namespace ns1')
 
 
 def test_add_user_to_namespace_fail_None_input():
@@ -168,7 +203,7 @@ def fail_add_user_to_namespace(idmapper, authsource, token, namespace_id, user, 
     assert_exception_correct(got.value, expected)
 
 
-def test_remove_user_from_namespace():
+def test_remove_user_from_namespace(log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -185,6 +220,8 @@ def test_remove_user_from_namespace():
     assert handlers.get_user.call_args_list == [((AuthsourceID('astwo'), Token('t'),), {})]
     assert storage.remove_user_from_namespace.call_args_list == \
         [((NamespaceID('ns1'), User(AuthsourceID('asone'), Username('u1'))), {})]
+
+    assert_logs_correct(log_collector, 'Admin astwo/foo removed user asone/u1 from namespace ns1')
 
 
 def test_remove_user_from_namespace_fail_None_input():
@@ -235,12 +272,13 @@ def fail_remove_user_from_namespace(idmapper, authsource, token, namespace_id, u
     assert_exception_correct(got.value, expected)
 
 
-def test_set_namespace_publicly_mappable():
-    check_set_namespace_publicly_mappable(True)
-    check_set_namespace_publicly_mappable(False)
+def test_set_namespace_publicly_mappable(log_collector):
+    check_set_namespace_publicly_mappable(True, log_collector)
+    log_collector.clear()
+    check_set_namespace_publicly_mappable(False, log_collector)
 
 
-def check_set_namespace_publicly_mappable(pub_value):
+def check_set_namespace_publicly_mappable(pub_value, log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -262,6 +300,11 @@ def check_set_namespace_publicly_mappable(pub_value):
     assert storage.get_namespace.call_args_list == [((NamespaceID('n'),), {})]
     assert storage.set_namespace_publicly_mappable.call_args_list == \
         [((NamespaceID('n'), pub_value), {})]
+
+    print(log_collector)
+
+    assert_logs_correct(log_collector, 'User asone/u set namespace n public map property to ' +
+                        str(pub_value))
 
 
 def test_set_namespace_publicly_mappable_fail_None_input():
@@ -440,17 +483,17 @@ def test_get_namespaces_both():
     assert storage.get_namespaces.call_args_list == [((), {})]
 
 
-def test_create_mapping_publicly_mappable():
-    check_create_mapping(Namespace(NamespaceID('n2'), True))
+def test_create_mapping_publicly_mappable(log_collector):
+    check_create_mapping(Namespace(NamespaceID('n2'), True), log_collector)
 
 
-def test_create_mapping_privately_mappable():
+def test_create_mapping_privately_mappable(log_collector):
     targetns = Namespace(NamespaceID('n2'), False, set([
             User(AuthsourceID('a'), Username('n')), User(AuthsourceID('b'), Username('n2'))]))
-    check_create_mapping(targetns)
+    check_create_mapping(targetns, log_collector)
 
 
-def check_create_mapping(targetns: Namespace):
+def check_create_mapping(targetns: Namespace, log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -471,6 +514,8 @@ def check_create_mapping(targetns: Namespace):
                                                     ((NamespaceID('n2'),), {})]
     assert storage.add_mapping.call_args_list == [((ObjectID(NamespaceID('n1'), 'o1'),
                                                     ObjectID(NamespaceID('n2'), 'o2')), {})]
+
+    assert_logs_correct(log_collector, 'User a/n created mapping n1/o1 <---> n2/o2')
 
 
 def test_create_mapping_fail_None_input():
@@ -531,7 +576,7 @@ def fail_create_mapping(idm, authsource_id, token, oid1, oid2, expected):
     assert_exception_correct(got.value, expected)
 
 
-def test_delete_mapping():
+def test_remove_mapping(log_collector):
     storage = create_autospec(IDMappingStorage, spec_set=True, instance=True)
     handlers = create_autospec(UserLookupSet, spec_set=True, instance=True)
 
@@ -552,6 +597,8 @@ def test_delete_mapping():
                                                     ((NamespaceID('n2'),), {})]
     assert storage.remove_mapping.call_args_list == [((ObjectID(NamespaceID('n1'), 'o1'),
                                                        ObjectID(NamespaceID('n2'), 'o2')), {})]
+
+    assert_logs_correct(log_collector, 'User a/n removed mapping n1/o1 <---> n2/o2')
 
 
 def test_remove_mapping_fail_None_input():
