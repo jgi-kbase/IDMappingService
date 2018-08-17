@@ -37,7 +37,7 @@ authentication-enabled=local
 # administrators for the ID mapping service. If an authentication source is not included in this
 # list, none of the users of that authentication source may administer the system.
 # Thus, at least one authentication source should be admin-enabled at all times, unless
-# no further changes to namespaces that require system administration priveleges are desired.
+# no further changes to namespaces that require system administration privileges are desired.
 authentication-admin-enabled=local
 #authentication-admin-enabled=local, kbase
 
