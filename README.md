@@ -61,9 +61,9 @@ sources.
 To add a new authentication source:
 
 1. Implement the `jgikbase.idmapping.core.user_lookup.UserLookup` interface.
-  1. `get_authsource_id()` must return an `AuthsourceID` with the same value as the name of
-    the authsource in the `deploy.cfg` file. Legal authsource IDs consist solely of lowercase
-    ASCII letters.
+   1. `get_authsource_id()` must return an `AuthsourceID` with the same value as the name of
+      the authsource in the `deploy.cfg` file. Legal authsource IDs consist solely of lowercase
+      ASCII letters.
 2. Implement a module level function called build_lookup that takes a `Dict[str, str]` of
    configuration parameters and returns a `UserLookup` instance for the authsource.
 3. Configure the new authentication source in the `deploy.cfg` file.
