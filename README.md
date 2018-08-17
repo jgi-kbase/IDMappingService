@@ -34,16 +34,16 @@ There are three kinds of users for the service:
 * System administrators can create namespaces and add and remove administrators from namespaces.
 * Namespace administrators are assigned by system administrators and can change settings and
   create and remove mappings on the namespaces they administrate.
-* Standard users can read mappings.
+* Standard users can read namespaces and mappings.
 
-All administration activity requires authentication. Accessing mappings does not.
+All administration activity requires authentication. Reading (most) data does not.
 
 ### Authentication
 
 The service supports multiple sources of authentication and is extensible. There are two built in
 authentication sources: `local` and `kbase`. The `local` authentication source is the
 IMS database itself, where users can be created via a CLI. The `kbase` authentication source
-contacts the [KBase](https://kbase.us) auth server to obtain authentication information.
+contacts a [KBase](https://kbase.us) authentication server to obtain authentication information.
 
 Authentication sources are used to:
 
@@ -61,7 +61,7 @@ sources.
 To add a new authentication source:
 
 1. Implement the `jgikbase.idmapping.core.user_lookup.UserLookup` interface.
-  * `get_authsource_id()` must return an `AuthsourceID` with the same value as the name of
+  1. `get_authsource_id()` must return an `AuthsourceID` with the same value as the name of
     the authsource in the `deploy.cfg` file. Legal authsource IDs consist solely of lowercase
     ASCII letters.
 2. Implement a module level function called build_lookup that takes a `Dict[str, str]` of
@@ -90,7 +90,7 @@ auth-source-jgi-init-url=https://signon.jgi.doe.gov
   account is merged, the user will lose access to any namespaces associated with the no longer
   usable account.
 * The JGI authsource uses integer user IDs as immutable IDs, as the user name is mutable. This
-  means that JGI users returned from the system are not very readable. Displaying the user name
+  means that JGI users returned in the API are not very readable. Displaying the user name
   as well is potentially difficult as many user names are presumably private email addresses.
 * There is currently no way to specify JGI users as system admins.
 * The JGI authsource is a prototype only and is undocumented and not automatically tested.
@@ -263,7 +263,7 @@ RETURNS:
 ```
 
 The `users` field is only populated if the `Authorization` header is supplied and the user is
-a namespace or general administrator.
+a namespace or system administrator.
 
 ### List namespaces
 
@@ -296,7 +296,7 @@ A maximum of 10000 ids may be supplied.
 ### List mappings
 
 ```
-GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][?separate]
+GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][&separate]
 {"ids": [<id1>, ..., <idN>]}
 
 RETURNS:
@@ -398,7 +398,7 @@ In `jgikbase.idmapping.core.errors`:
 `NoDataException` and subclasses - 404  
 
 
-Other explicitly mapped errors:
+Other explicitly mapped errors:  
 `json.decoder.JSONDecodeError` - 400  
 `werkzeug.exceptions.NotFound` - 404  
 `werkzeug.exceptions.MethodNotAllowed` - 405  
