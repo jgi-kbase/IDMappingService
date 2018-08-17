@@ -16,8 +16,7 @@ RUN pip install -r /tmp/requirements.txt
 
 ADD . /kb
 
-CD /kb
-RUN make
+RUN cd /kb && make
 
 # The BUILD_DATE value seem to bust the docker cache when the timestamp changes, move to
 # the end

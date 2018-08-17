@@ -33,7 +33,6 @@ jobs:
       env: # The following are secure declarations for DOCKER_USER, DOCKER_PASS
         - secure: "zi2dCjToQ/MI/c5Wzg5hB33DuPACjfJc1l5rQZJ5Koq+VQ///E9UcEdfFjKSs9wyqdIP8ErDvdV4tC7RywaV4N0scmF6RYBj1QtMGwCqMh/CXVEZgmvlDbsOgrutJyg6GRRbUtoxzd0qNQLrx3aayN5BLDM5+kvCGYeW0QfO3UReO24qH42dn3P1onn47kGy93llx5cbg/GL+qTIBjvA5erfNgv8p6Gxp13LfZhs1KOz2I1G4ayQdcd3D0bGh9+r2S0Vqvy+C5l1JY1vDl9lKO0obR030Oud/1WB5+TrFzaHX/66/w6T4yYBTzfnwUd6oDtgs1+dkd6AGySdqukeul5KvZbL2TXcrY6R7bY3GLf0KY8g96WywQY22dOOP9GiNZ1acXVhzFCu/CnZrznkXJgBM3y5swlgXWnRpi+fwZvwf2jHpmDUOE76Gz9VEP/gdTlz3eXLl1jYhEsLblwXBWXUuAH73D6rRxQjhtwAfSx21cWjoNA15zMzcg9l0t6qZQ5NJSRA/GAKbO3Iucu8F7JU1H8FEwrPisKq0jAFKfV7fc6Ju6J+dHDoCQf12EJ03yP9EBUIcOd8JyFiwEEKEEOEG+vGtig2Q2tbtllTJ0EgBAGxplIvZuVshOGQgarMbx2ZSS4jJEXWc77d95/jz6kePuq6pk55F1wt/K/wZ0w="
       script: # Only push to dockerhub if this isn't a PR and we're updating master or develop
-        - docker pull python/3.6-alpine
         - make docker_image
         - IMAGE_NAME=kbase/id_mapper build/push2dockerhub.sh
 
