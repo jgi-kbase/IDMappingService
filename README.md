@@ -18,6 +18,233 @@ Build status (master):
 * CLI - Command Line Interface
 * CSL - Comma Separated List
 
+## Usage
+
+### Namespaces and mappings
+
+A namespace is an arbitrary string consisting of the characters a-z, A-Z, 0-9, and _ with a
+maximum length of 256 characters. Once created by a system administrator, a namespace cannot be
+deleted. Namespaces may have any number of mappings associated with them, limited by the capacity
+of the database. It is expected, but not enforced, that the IMS will contain on the order of no
+more than 1000 namespaces.
+
+A mapping is a tuple of (administrative namespace, administrative ID, namespace, ID) where 
+IDs are arbitrary strings with a maximum length of 1000 characters. Namespace administrators are
+expected to load namespaces and mappings into the system that have appropriate semantics for their
+domain.
+
+Namespaces may be *publicly mappable*, which means that anyone can associate the non-administrative
+portion of a mapping with the namespace. To create or delete a mapping, the user must always be an
+administrator of the administrative namespace (e.g. the first namespace in the mapping tuple).
+If neither namespace is publicly mappable, the user must be an administrator of both namespaces
+to create a mapping. To remove a mapping, the user need only be an administrator of the
+administrative namespace.
+
+Mappings are public, and anyone can read them. Namespaces are publicly readable except for the
+administrator list, which is only readable by system administrators and other namespace
+administrators for that namespace.
+
+### Authentication in brief
+
+To use the IMS's administration functions, a user must provide a valid token from an
+authentication source to the API. There are two levels of administration:
+
+* System administrators can create namespaces and add and remove administrators from namespaces.
+* Namespace administrators are assigned by system administrators and can change settings and
+  create and remove mappings on the namespaces they administrate.
+
+Reading namespaces and mappings requires no authentication or administration privileges.
+
+Two authentication sources are provided (and more can be added via an extension mechanism):
+
+* `local`: Local user accounts and tokens are stored in the IMS database.
+* `kbase`: A KBase (https://kbase.us) authentication service is contacted to get authentication
+  information.
+
+See `Authentication information` below for more details on configuring, enabling, and extending
+authentication sources.
+
+### API
+
+`[Auth source]` defines the source of authentication information, e.g. `local`, `kbase`, etc.
+
+#### Root
+
+```
+GET /
+
+RETURNS:
+{"service": "ID Mapping Service",
+ "version": <service version>,
+ "gitcommithash": <git commit>,
+ "servertime": <ms since epoch>
+ }
+```
+
+#### Create a namespace
+
+Requires the user to be a system administrator.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/namespace/<namespace>
+```
+
+POST is also accepted.
+
+#### Add a namespace administrator to a namespace
+
+Requires the user to be a system administrator.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/namespace/<namespace>/user/<authsource>/<username>
+```
+
+#### Remove a namespace administrator from a namespace
+
+Requires the user to be a system administrator.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+DELETE /api/v1/namespace/<namespace>/user/<authsource>/<username>
+```
+
+#### Alter namespace
+
+Requires the user to be namespace administrator.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/namespace/<namespace>/set/?publicly_mappable=<true or false>
+```
+
+
+#### Show namespace
+
+```
+HEADERS (optional):
+Authorization: [Auth source] <token>
+
+GET /api/v1/namespace/<namespace>
+
+RETURNS:
+{"namespace": <namespace>,
+ "publicly_mappable": <boolean>,
+ "users": [<authsource>/<username>, ...]
+ }
+```
+
+The `users` field is only populated if the `Authorization` header is supplied and the user is
+a namespace or system administrator.
+
+#### List namespaces
+
+```
+GET /api/v1/namespace/
+
+RETURNS:
+{"publicly_mappable": [<namespace>, ...],
+ "privately_mappable": [<namespace>, ...]
+}
+```
+
+#### Create mappings
+
+Requires the user to be namespace administrator for the administrative namespace. If the
+non-administrative namespace is not publicly mappable, the user must also be an administrator
+for that namespace.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+PUT /api/v1/mapping/<administrative namespace>/<namespace>/
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
+ }
+```
+
+POST is also accepted, although not strictly correct.
+
+A maximum of 10000 ids may be supplied.
+
+#### List mappings
+
+```
+GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][&separate]
+{"ids": [<id1>, ..., <idN>]}
+
+RETURNS:
+if not separate:
+    {<id1>: {"mappings" [{"ns": <namespace1_1>, "id": <id1_1>},
+                          ...
+                         {"ns": <namespace1_N>, "id": <id1_N>}
+                         ]
+             },
+     ...
+     <idN>: {"mappings" [{"ns": <namespaceN_1>, "id": <idN_1>},
+                          ...
+                         {"ns": <namespaceN_N>, "id": <idN_N>}
+                         ]
+             }
+     }
+else:
+    {<id1>: {"admin": [{"ns": <namespace1_1>, "id": <id1_1>},
+                        ...
+                       {"ns": <namespace1_N>, "id": <id1_N>}
+                       ],
+             "other": [{"ns": <namespace1_N+1>, "id": <id1_N+1>},
+                        ...
+                       {"ns": <namespace1_N+M>, "id": <id1_N+M>}
+                      ]
+             },
+      ...
+     <idN>: {"admin": [{"ns": <namespaceN_1>, "id": <idN_1>},
+                        ...
+                       {"ns": <namespaceN_N>, "id": <idN_N>}
+                       ],
+             "other": [{"ns": <namespaceN_N+1>, "id": <idN_N+1>},
+                        ...
+                       {"ns": <namespaceN_N+M>, "id": <idN_N+M>}
+                      ]
+             },
+     }
+```
+
+A maximum of 1000 ids may be supplied.
+
+The mappings in the `admin` key are mappings where the provided half of the mapping
+is the administrative half - e.g. the namespace in the url is the administrative namespace
+in the mapping. Mappings in the `other` key denote mappings where the provided half of the
+mapping is not the administrative half.
+
+#### Delete mappings
+
+Requires the user to be a namespace administrator for the administrative namespace.
+
+```
+HEADERS:
+Authorization: [Auth source] <token>
+
+DELETE /api/v1/mapping/<administrative namespace>/<namespace>/
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
+ }
+```
+
+A maximum of 10000 ids may be supplied.
+
 ## Requirements
 
 * Python 3.6+
@@ -27,23 +254,73 @@ Build status (master):
 
 The system is tested on Ubuntu, but should probably work on other operating systems.
 
-## Usage
+## Setup
 
-There are three kinds of users for the service:
+* Install the runtime dependencies
+  * `pip install -r requirements.txt`
+* Start MongoDB
+* From the IDMappingService repo:
+  * `make`
+  * Copy `deploy.cfg.example` to `deploy.cfg` and fill in the MongoDB parameters
 
-* System administrators can create namespaces and add and remove administrators from namespaces.
-* Namespace administrators are assigned by system administrators and can change settings and
-  create and remove mappings on the namespaces they administrate.
-* Standard users can read namespaces and mappings.
+### Starting the service
 
-All administration activity requires authentication. Reading (most) data does not.
+```
+IDMappingService$ export ID_MAPPING_CONFIG=/<path to repo parent directory>/IDMappingService/deploy.cfg
 
-### Authentication
+IDMappingService$ export PYTHONPATH=./src
+
+IDMappingService$ gunicorn --worker-class gevent --timeout 300 --workers 17 --bind :5000 app:app
+[2018-08-16 12:42:44 -0700] [4957] [INFO] Starting gunicorn 19.9.0
+[2018-08-16 12:42:44 -0700] [4957] [INFO] Listening at: http://0.0.0.0:5000 (4957)
+*snip*
+```
+
+### Adding local users via the CLI
+
+Local user administration is done via the `id_mapper` CLI tool. Execute `id_mapper --help`
+to get information about running the CLI. Example usage:
+
+```
+IDMappingService$ ./id_mapper --list-users
+* indicates an administrator:
+
+IDMappingService$ ./id_mapper --user myname1 --create
+Created user myname1 with token:
+ZAM0eUgKvWAoPkNHgEPjAckTw3Q=
+
+IDMappingService$ ./id_mapper --user myname2 --create
+Created user myname2 with token:
+iAChByXJr3Og4gk+Ui/g03aMCLA=
+
+IDMappingService$ ./id_mapper --user myname2 --admin true
+Set user myname2's admin state to true.
+
+IDMappingService$ ./id_mapper --user myname2 --new-token
+Replaced user myname2's token with token:
+FgG4OpIc1/7bx2V3fxUjRK0eV3w=
+
+IDMappingService$ ./id_mapper --list-users
+* indicates an administrator:
+myname1
+myname2 *
+
+IDMappingService$ ./id_mapper --user myname2 --admin false
+Set user myname2's admin state to false.
+
+IDMappingService$ ./id_mapper --list-users
+* indicates an administrator:
+myname1
+myname2
+```
+
+## Authentication information
 
 The service supports multiple sources of authentication and is extensible. There are two built in
 authentication sources: `local` and `kbase`. The `local` authentication source is the
-IMS database itself, where users can be created via a CLI. The `kbase` authentication source
-contacts a [KBase](https://kbase.us) authentication server to obtain authentication information.
+IMS database itself, where users can be created via the CLI as shown above.
+The `kbase` authentication source contacts a [KBase](https://kbase.us) authentication server to
+obtain authentication information.
 
 Authentication sources are used to:
 
@@ -98,265 +375,6 @@ auth-source-jgi-init-url=https://signon.jgi.doe.gov
 
 In summary, more design and implementation is needed before the JGI authsource is ready for
 production use, although it is a proof of concept.
-
-### Namespaces and mappings
-
-A namespace is an arbitrary string consisting of the characters a-z, A-Z, 0-9, and _ with a
-maximum length of 256 characters. Once created, a namespace cannot be deleted. Namespaces may
-have any number of mappings associated with them, limited by the capacity of the database.
-It is expected, but not enforced, that the IMS will contain on the order of no more than 1000
-namespaces.
-
-A mapping is a tuple of (administrative namespace, administrative ID, namespace, ID) where 
-IDs are arbitrary strings with a maximum length of 1000 characters. Administrators are
-expected to load namespaces and mappings into the system that have appropriate semantics for their
-domain.
-
-Namespaces may be *publicly mappable*, which means that anyone can associate the non-administrative
-portion of a mapping with the namespace. To create or delete a mapping, the user must always be an
-administrator of the administrative namespace (e.g. the first namespace in the mapping tuple).
-If neither namespace is publicly mappable, the user must be an administrator of both namespaces
-to create a mapping. To remove a mapping, the user need only be an administrator of the
-administrative namespace.
-
-Mappings are public, and anyone can read them. Namespaces are publicly readable except for the
-administrator list, which is only readable by system administrators and other namespace
-administrators for that namespace.
-
-### Setup
-
-* Install the runtime dependencies
-  * `pip install -r requirements.txt`
-* Start MongoDB
-* From the IDMappingService repo:
-	* `make`
-	* Copy `deploy.cfg.example` to `deploy.cfg` and fill in the MongoDB parameters
-
-### Adding local users via the CLI
-
-Local user administration is done via the `id_mapper` CLI tool. Execute `id_mapper --help`
-to get information about running the CLI. Example usage:
-
-```
-IDMappingService$ ./id_mapper --list-users
-* indicates an administrator:
-
-IDMappingService$ ./id_mapper --user myname1 --create
-Created user myname1 with token:
-ZAM0eUgKvWAoPkNHgEPjAckTw3Q=
-
-IDMappingService$ ./id_mapper --user myname2 --create
-Created user myname2 with token:
-iAChByXJr3Og4gk+Ui/g03aMCLA=
-
-IDMappingService$ ./id_mapper --user myname2 --admin true
-Set user myname2's admin state to true.
-
-IDMappingService$ ./id_mapper --user myname2 --new-token
-Replaced user myname2's token with token:
-FgG4OpIc1/7bx2V3fxUjRK0eV3w=
-
-IDMappingService$ ./id_mapper --list-users
-* indicates an administrator:
-myname1
-myname2 *
-
-IDMappingService$ ./id_mapper --user myname2 --admin false
-Set user myname2's admin state to false.
-
-IDMappingService$ ./id_mapper --list-users
-* indicates an administrator:
-myname1
-myname2
-```
-
-### Starting the service
-
-```
-IDMappingService$ export ID_MAPPING_CONFIG=/<path to repo>/IDMappingService/deploy.cfg
-
-IDMappingService$ export PYTHONPATH=./src
-
-IDMappingService$ gunicorn --worker-class gevent --timeout 300 --workers 17 --bind :5000 app:app
-[2018-08-16 12:42:44 -0700] [4957] [INFO] Starting gunicorn 19.9.0
-[2018-08-16 12:42:44 -0700] [4957] [INFO] Listening at: http://0.0.0.0:5000 (4957)
-*snip*
-```
-
-## API
-
-`[Auth source]` defines the source of authentication information, e.g. `local`, `kbase`, etc.
-
-## Root
-
-```
-GET /
-
-RETURNS:
-{"service": "ID Mapping Service",
- "version": <service version>,
- "gitcommithash": <git commit>,
- "servertime": <ms since epoch>
- }
-```
-
-### Create a namespace
-
-Requires the user to be a system administrator.
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-PUT /api/v1/namespace/<namespace>
-```
-
-POST is also accepted.
-
-### Add a user to a namespace
-
-Requires the user to be a system administrator.
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-PUT /api/v1/namespace/<namespace>/user/<authsource>/<username>
-```
-
-### Remove a user from a namespace
-
-Requires the user to be a system administrator.
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-DELETE /api/v1/namespace/<namespace>/user/<authsource>/<username>
-```
-
-### Alter namespace
-
-Requires the user to be namespace administrator.
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-PUT /api/v1/namespace/<namespace>/set/?publicly_mappable=<true or false>
-```
-
-
-### Show namespace
-
-```
-HEADERS (optional):
-Authorization: [Auth source] <token>
-
-GET /api/v1/namespace/<namespace>
-
-RETURNS:
-{"namespace": <namespace>,
- "publicly_mappable": <boolean>,
- "users": [<authsource>/<username>, ...]
- }
-```
-
-The `users` field is only populated if the `Authorization` header is supplied and the user is
-a namespace or system administrator.
-
-### List namespaces
-
-```
-GET /api/v1/namespace/
-
-RETURNS:
-{"publicly_mappable": [<namespace>, ...],
- "privately_mappable": [<namespace>, ...]
-}
-```
-
-### Create mappings
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-PUT /api/v1/mapping/<administrative namespace>/<namespace>/
-{<administrative id1>: <id1>,
- ...
- <administrative idN>: <idN>
- }
-```
-
-POST is also accepted, although not strictly correct.
-
-A maximum of 10000 ids may be supplied.
-
-### List mappings
-
-```
-GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][&separate]
-{"ids": [<id1>, ..., <idN>]}
-
-RETURNS:
-if not separate:
-    {<id1>: {"mappings" [{"ns": <namespace1_1>, "id": <id1_1>},
-                          ...
-                         {"ns": <namespace1_N>, "id": <id1_N>}
-                         ]
-             },
-     ...
-     <idN>: {"mappings" [{"ns": <namespaceN_1>, "id": <idN_1>},
-                          ...
-                         {"ns": <namespaceN_N>, "id": <idN_N>}
-                         ]
-             }
-     }
-else:
-    {<id1>: {"admin": [{"ns": <namespace1_1>, "id": <id1_1>},
-                        ...
-                       {"ns": <namespace1_N>, "id": <id1_N>}
-                       ],
-             "other": [{"ns": <namespace1_N+1>, "id": <id1_N+1>},
-                        ...
-                       {"ns": <namespace1_N+M>, "id": <id1_N+M>}
-                      ]
-             },
-      ...
-     <idN>: {"admin": [{"ns": <namespaceN_1>, "id": <idN_1>},
-                        ...
-                       {"ns": <namespaceN_N>, "id": <idN_N>}
-                       ],
-             "other": [{"ns": <namespaceN_N+1>, "id": <idN_N+1>},
-                        ...
-                       {"ns": <namespaceN_N+M>, "id": <idN_N+M>}
-                      ]
-             },
-     }
-```
-
-A maximum of 1000 ids may be supplied.
-
-The mappings in the `admin` key are mappings where the provided half of the mapping
-is the administrative half - e.g. the namespace in the url is the administrative namespace
-in the mapping. Mappings in the `other` key denote mappings where the provided half of the
-mapping is not the administrative half.
-
-### Delete mappings
-
-```
-HEADERS:
-Authorization: [Auth source] <token>
-
-DELETE /api/v1/mapping/<administrative namespace>/<namespace>/
-{<administrative id1>: <id1>,
- ...
- <administrative idN>: <idN>
- }
-```
-
-A maximum of 10000 ids may be supplied.
 
 ## Developer notes
 
