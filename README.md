@@ -352,8 +352,8 @@ Note that the user ID allowed character list is currently fairly restrictive (lo
 letters and numbers) and may need adjustment for new authentication sources.
 
 There exists a **prototype** authentication source implementation for JGI. This authsource should
-not be used in production. To configure the JGI authsource, add the following lines to the
-service's `deploy.cfg` file, and enable the authsource in the `authentication-enabled` key:
+not be used in production. To configure the JGI authsource, enable the authsource in the
+`authentication-enabled` key, and add the following lines to the service's `deploy.cfg` file:
 
 ```
 auth-source-jgi-factory-module=jgikbase.idmapping.userlookup.jgi_user_lookup_prototype
