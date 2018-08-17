@@ -620,12 +620,6 @@ def test_add_mapping_fail_input_None(idstorage):
     fail_add_mapping(idstorage, oid, None, TypeError('secondary_OID cannot be None'))
 
 
-def test_add_mapping_fail_same_namespace(idstorage):
-    fail_add_mapping(idstorage, ObjectID(NamespaceID('foo'), 'bar'),
-                     ObjectID(NamespaceID('foo'), 'baz'),
-                     ValueError('Namespace IDs cannot be the same'))
-
-
 def fail_add_mapping(idstorage, pOID, sOID, expected):
     with raises(Exception) as got:
         idstorage.add_mapping(pOID, sOID)

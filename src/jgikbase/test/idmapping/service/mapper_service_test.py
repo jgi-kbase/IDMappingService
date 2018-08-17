@@ -8,13 +8,14 @@ from jgikbase.idmapping.core.tokens import Token
 from jgikbase.idmapping.core.errors import InvalidTokenError, NoSuchNamespaceError,\
     UnauthorizedError, NoSuchUserError
 import re
-import time
 from jgikbase.idmapping.service import mapper_service
 from logging import LogRecord
 import json
 from flask.app import Flask
 from flask import g
 from typing import IO
+from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CALLID_PATTERN,\
+    assert_json_error_correct
 
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
@@ -29,27 +30,6 @@ def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
     cli = app.test_client()
 
     return cli, mapper
-
-
-_CALLID_PATTERN = re.compile('^\d{16}$')
-
-
-def assert_ms_epoch_close_to_now(time_):
-    now_ms = time.time() * 1000
-    assert now_ms + 1000 > time_
-    assert now_ms - 1000 < time_
-
-
-def assert_error_correct(got, expected):
-    time_ = got['error']['time']
-    callid = got['error']['callid']
-    del got['error']['time']
-    del got['error']['callid']
-
-    assert got == expected
-    assert _CALLID_PATTERN.match(callid) is not None
-
-    assert_ms_epoch_close_to_now(time_)
 
 
 def mock_request_for_ip_headers(remote_addr, xff, real_ip):
@@ -272,7 +252,7 @@ def test_root_and_logging():
                        'method': 'GET',
                        'msg': 'GET / 200 werkzeug/0.14.1'}
     assert_ms_epoch_close_to_now(time_)
-    assert _CALLID_PATTERN.match(callid) is not None
+    assert CALLID_PATTERN.match(callid) is not None
 
 
 def test_root_and_logging_with_xff_and_real_headers():
@@ -367,7 +347,7 @@ def test_get_namespace_fail_munged_auth():
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'astoketoketoke'})
 
     err = '30001 Illegal input parameter: Expected authsource and token in header.'
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -389,7 +369,7 @@ def test_get_namespace_fail_invalid_token():
 
     resp = cli.get('/api/v1/namespace/foo', headers={'Authorization': 'as toketoketoke'})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 401,
                    'httpstatus': 'Unauthorized',
@@ -442,9 +422,9 @@ def check_error_logging(logstream_mock, method, url, code, stackstring):
                         'method': method,
                         'msg': '{} {} {} werkzeug/0.14.1'.format(method, url, code)}
     assert_ms_epoch_close_to_now(errtime)
-    assert _CALLID_PATTERN.match(errcallid) is not None
+    assert CALLID_PATTERN.match(errcallid) is not None
     assert_ms_epoch_close_to_now(resptime)
-    assert _CALLID_PATTERN.match(respcallid) is not None
+    assert CALLID_PATTERN.match(respcallid) is not None
 
 
 def test_get_namespace_fail_no_namespace():
@@ -455,7 +435,7 @@ def test_get_namespace_fail_no_namespace():
 
     resp = cli.get('/api/v1/namespace/foo')
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 404,
                    'httpstatus': 'Not Found',
@@ -478,7 +458,7 @@ def test_get_namespace_fail_valueerror():
 
     resp = cli.get('/api/v1/namespace/foo')
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 500,
                    'httpstatus': 'Internal Server Error',
@@ -497,7 +477,7 @@ def test_method_not_allowed():
 
     resp = cli.delete('/api/v1/namespace/foo')
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 405,
                    'httpstatus': 'Method Not Allowed',
@@ -520,7 +500,7 @@ def test_not_found():
 
     err = ('404 Not Found: The requested URL was not found on the server.  ' +
            'If you entered the URL manually please check your spelling and try again.')
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 404,
                    'httpstatus': 'Not Found',
@@ -574,7 +554,7 @@ def fail_no_token_delete(url):
 
 
 def fail_no_token_check(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 401,
                    'appcode': 10010,
@@ -610,7 +590,7 @@ def fail_munged_auth_delete(url):
 
 
 def fail_munged_auth_check(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -646,7 +626,7 @@ def fail_illegal_ns_id_delete(url, json=None):
 
 
 def fail_illegal_ns_id_check(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -668,7 +648,7 @@ def test_create_namespace_fail_unauthorized():
 
     resp = cli.put('/api/v1/namespace/foo', headers={'Authorization': 'source tokey'})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 403,
                    'httpstatus': 'Forbidden',
@@ -760,7 +740,7 @@ def test_set_namespace_fail_no_op():
 
     resp = cli.put('/api/v1/namespace/foo/set', headers={'Authorization': 'source tokey'})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -778,7 +758,7 @@ def test_set_namespace_publicly_mappable_illegal_input():
     resp = cli.put('/api/v1/namespace/foo/set?publicly_mappable=foobar',
                    headers={'Authorization': 'source tokey'})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -885,7 +865,7 @@ def test_create_mapping_fail_no_body():
 
 
 def check_mapping_fail_no_body(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -902,7 +882,7 @@ def test_bad_json_error():
                    data='{"foo": ["bar", "baz"}]')
 
     err = "Expecting ',' delimiter: line 1 column 22 (char 21)"
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -921,7 +901,7 @@ def test_create_mapping_fail_bad_json():
 
 
 def check_mapping_fail_bad_json(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -940,7 +920,7 @@ def test_create_mapping_fail_not_dict():
 
 
 def check_mapping_fail_not_dict(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -961,7 +941,7 @@ def test_create_mapping_fail_no_ids():
 
 
 def check_mapping_fail_no_ids(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -981,7 +961,7 @@ def test_create_mapping_fail_whitespace_key():
 
 
 def check_mapping_fail_whitespace_key(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1001,7 +981,7 @@ def test_create_mapping_fail_non_string_value():
 
 
 def check_mapping_fail_non_string_value(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1022,7 +1002,7 @@ def test_create_mapping_fail_whitespace_value():
 
 
 def check_mapping_fail_whitespace_value(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1043,7 +1023,7 @@ def test_create_mapping_fail_too_many_ids():
 
 
 def check_mapping_fail_too_many_ids(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1337,7 +1317,7 @@ def test_get_mapping_fail_ids_not_list():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': {'id': 'id'}})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1354,7 +1334,7 @@ def test_get_mapping_fail_ids_empty():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': []})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1376,7 +1356,7 @@ def test_get_mapping_fail_bad_id():
 
 
 def check_get_mapping_fail_bad_id(resp):
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1392,7 +1372,7 @@ def test_get_mapping_fail_too_many_ids():
     cli, _ = build_app()
     resp = cli.get('/api/v1/mapping/ans', json={'ids': [str(x) for x in range(1001)]})
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',
@@ -1410,7 +1390,7 @@ def test_get_mappings_fail_whitespace_in_filter():
 
     resp = cli.get('/api/v1/mapping/ns?namespace_filter=ns1,    ,   ns2  , ns3')
 
-    assert_error_correct(
+    assert_json_error_correct(
         resp.get_json(),
         {'error': {'httpcode': 400,
                    'httpstatus': 'Bad Request',

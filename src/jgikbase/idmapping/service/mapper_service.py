@@ -32,8 +32,6 @@ except ImportError:
                      'The build may not have completed correctly.')  # pragma: no cover
 
 # TODO CODE try getting rid of src dir and see what happens
-# TODO TEST test mapping with same namespace in integration tests
-# TODO TEST test wrong content type header in integration tests
 
 # Set up a blueprint later if necessary
 # Not sure what's worth doing here for documentation. Swagger at some point ideally.
