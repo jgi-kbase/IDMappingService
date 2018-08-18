@@ -7,7 +7,7 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG BRANCH=develop
 
-RUN apk add gcc linux-headers libc-dev make
+RUN apk add gcc linux-headers libc-dev make git
 COPY --from=dockerize /kb/deployment/bin/dockerize /usr/bin/
 
 ADD requirements.txt /tmp/
