@@ -173,7 +173,7 @@ RETURNS:
  }
 ```
 
-The `users` field is only present if the `Authorization` header is supplied and the user is
+The `users` field is only populated if the `Authorization` header is supplied and the user is
 a namespace or general administrator.
 
 #### List namespaces
@@ -187,52 +187,87 @@ RETURNS:
 }
 ```
 
-#### Create a mapping
+#### Create mappings
 
 ```
 HEADERS:
 Authorization: [Auth source] <token>
 
-PUT /api/v1/mapping/<administrative namespace>/<administrative ID>/<namespace>/<ID>
+PUT /api/v1/mapping/<administrative namespace>/<namespace>/
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
+ }
 ```
 
-Any unusual characters, but especially slashes, in the IDs must be url-escaped.
-
 POST is also accepted, although not strictly correct.
+
+A maximum of 10000 ids may be supplied.
 
 #### List mappings
 
 ```
-GET /api/v1/mapping/<namespace>/<ID>/[?namespace_filter=<namespace CSL>]
+GET /api/v1/mapping/<namespace>/[?namespace_filter=<namespace CSL>][?separate]
+{"ids": [<id1>, ..., <idN>]}
 
 RETURNS:
-[{"namespace": <namespace1>,
-  "id: <id1>,
-  "is_primary": <boolean1>
-  },
-  ...
- {"namespace": <namespaceN>,
-  "id: <idN>,
-  "is_primary": <booleanN>
-  }
- } 
-]
+if not separate:
+    {<id1>: {"mappings" [{"ns": <namespace1_1>, "id": <id1_1>},
+                          ...
+                         {"ns": <namespace1_N>, "id": <id1_N>}
+                         ]
+             },
+     ...
+     <idN>: {"mappings" [{"ns": <namespaceN_1>, "id": <idN_1>},
+                          ...
+                         {"ns": <namespaceN_N>, "id": <idN_N>}
+                         ]
+             }
+     }
+else:
+    {<id1>: {"admin": [{"ns": <namespace1_1>, "id": <id1_1>},
+                        ...
+                       {"ns": <namespace1_N>, "id": <id1_N>}
+                       ],
+             "other": [{"ns": <namespace1_N+1>, "id": <id1_N+1>},
+                        ...
+                       {"ns": <namespace1_N+M>, "id": <id1_N+M>}
+                      ]
+             },
+      ...
+     <idN>: {"admin": [{"ns": <namespaceN_1>, "id": <idN_1>},
+                        ...
+                       {"ns": <namespaceN_N>, "id": <idN_N>}
+                       ],
+             "other": [{"ns": <namespaceN_N+1>, "id": <idN_N+1>},
+                        ...
+                       {"ns": <namespaceN_N+M>, "id": <idN_N+M>}
+                      ]
+             },
+     }
 ```
 
-Any unusual characters, but especially slashes, in the ID must be url-escaped.
+A maximum of 1000 ids may be supplied.
 
-#### Delete a mapping
+The namespaces in the `admin` key are administrative namespaces; those in the `other` key are
+not. Note that a mapping may occur twice in the output - once in the `admin` section and once in
+the `other` section.
+
+#### Delete mappings
 
 ```
 HEADERS:
 Authorization: [Auth source] <token>
 
-DELETE /api/v1/mapping/<administrative namespace>/<administrative ID>/<namespace>/<ID>
+DELETE /api/v1/mapping/<administrative namespace>/<namespace>/
+{<administrative id1>: <id1>,
+ ...
+ <administrative idN>: <idN>
+ }
 ```
 
-Any unusual characters, but especially slashes, in the IDs must be url-escaped.
+A maximum of 10000 ids may be supplied.
 
 ## Future work
 
-* Bulk mapping creation and search endpoints.
-* Provide administrator access via outside authentication systems, such as KBase and JGI auth.
+* Delete all mappings from one namespace to another

@@ -1,0 +1,65 @@
+# settings for the ID Mapping Service and CLI. Copy this file to deploy.cfg and fill in
+# appropriately.
+
+[idmapping]
+
+# MongoDB information.
+mongo-host=
+mongo-db=
+mongo-user=
+mongo-pwd=
+
+# If "true", make the server ignore the X-Forwarded-For and X-Real-IP headers. Otherwise
+# (the default behavior), the logged IP address for a request, in order of precedence, is
+# 1) the first address in X-Forwarded-For, 2) X-Real-IP, and 3) the address of the client.
+dont-trust-x-ip-headers=false
+
+######
+# Authentication source settings
+#
+# The ID mapper supports multiple sources of authentication and is extensible. Implementations
+# are included for local authentication and KBase (https://kbase.us) authentication.
+#
+# Local authentication ('local' below) is a special built-in case that requires no configuration,
+# unlike other authentication sources. Local users and administrators are created using the
+# ID mapping CLI.
+######
+
+# Defines which authentication sources are active. Other than local authentication, active
+# authentication sources will need further configuration below to tell the service how to build
+# the user lookup instance for the authentication source. If an authentication source is
+# inactive, users from that source will be unable to use ID mapping service functions that
+# require authentication.
+authentication-enabled=local
+#authentication-enabled=local, kbase
+
+# Defines which authentication sources are trusted to determine which of their users are system
+# administrators for the ID mapping service. If an authentication source is not included in this
+# list, none of the users of that authentication source may administer the system.
+# Thus, at least one authentication source should be admin-enabled at all times, unless
+# no further changes to namespaces that require system administration privileges are desired.
+authentication-admin-enabled=local
+#authentication-admin-enabled=local, kbase
+
+# The remainder of the settings are authentication source specific. The keys, per source, are:
+# auth-source-<name>-factory-module=<module>
+# auth-source-<name>-init-<X>=<Y>
+#
+# Where:
+# <name> is the name of the authentication source matching that in the authentication-enabled
+#     and authentication-admin-enabled keys.
+# <module> is the python module for building the user lookup instance for the authentication
+#     source. The module must have a module level method called build_lookup that takes
+#     a Dict[str, str] of configuration parameters and returns a UserLookup instance for
+#     the authsource.
+# <X> and <Y> are a key-value configuration pair that will be passed, along with all the other
+#     key-value pairs defined for a particular authentication source, to the build_lookup
+#     factory method.
+
+# KBase authentication settings
+auth-source-kbase-factory-module=jgikbase.idmapping.userlookup.kbase_user_lookup
+auth-source-kbase-init-url=https://kbase.us/services/auth
+auth-source-kbase-init-token=<insert kbase service token here>
+# This configuration variable defines the name of the custom role in the KBase auth service
+# that specifies the user is a system administrator of the ID mapping service.
+auth-source-kbase-init-admin-role=ID_MAPPER_ADMIN
