@@ -9,6 +9,6 @@ authentication-admin-enabled={{ default .Env.authentication_admin_enabled "local
 
 auth-source-kbase-factory-module=jgikbase.idmapping.userlookup.kbase_user_lookup
 auth-source-kbase-init-url={{ default .Env.auth_source_kbase_init_url "https://ci.kbase.us/services/auth" }}
-auth-source-kbase-init-token={{ default .Env.auth_source_kbase_init_token "" }}
+auth-source-kbase-init-token={{ default .Env.auth_source_kbase_init_token "fake_token_will_cause_kbase_auth_failure" }}
 auth-source-kbase-init-admin-role={{ default .Env.auth_source_kbase_init_admin_role "ID_MAPPER_ADMIN" }}
 
