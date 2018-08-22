@@ -35,7 +35,7 @@ ENTRYPOINT [ "/usr/bin/dockerize" ]
 
 # Here are some default params passed to dockerize. They would typically
 # be overidden by docker-compose at startup
-CMD [  "-template", "/kb/deployment/conf/.templates/deployment.cfg.templ:/kb/deploy.cfg", \
+CMD [ "-template", "/kb/deployment/conf/.templates/deployment.cfg.templ:/kb/deploy.cfg", \
       "-template", "/kb/deployment/conf/.templates/settings.py.templ:/kb/settings.py", \
       "gunicorn", "-c", "/kb/settings.py", "--worker-class", "gevent", \
       "app:app" ]

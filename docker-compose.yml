@@ -19,6 +19,14 @@ services:
       - "120s"
       - "-template"
       - "/kb/deployment/conf/.templates/deployment.cfg.templ:/kb/deployment/conf/deployment.cfg"
+      - "-template"
+      - "/kb/deployment/conf/.templates/settings.py.templ:/kb/settings.py"
+      - "gunicorn"
+      - "-c"
+      - "/kb/settings.py"
+      - "--worker-class"
+      - "gevent"
+      - "app:app"
       # If you needed to pass in context for template evaluation you would put something like
       # these lines that tell dockerize to hit github for an INI style file for the context
     # - "-env"
