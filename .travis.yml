@@ -1,0 +1,44 @@
+sudo: required
+language: python
+python: "3.6"
+
+env:
+    # Runs parallel jobs, 1 for each line. Tests different DB configurations for compatibility.
+    - MONGODB_VER=mongodb-linux-x86_64-2.6.12 WIRED_TIGER=false MAKE=test
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=false MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.4.16 WIRED_TIGER=true  MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=false MAKE=test-mongo
+    - MONGODB_VER=mongodb-linux-x86_64-3.6.6  WIRED_TIGER=true  MAKE=test-mongo
+    
+install:
+  - pip install -r requirements.txt
+  - pip install -r dev-requirements.txt
+ 
+script:
+
+  - wget http://fastdl.mongodb.org/linux/$MONGODB_VER.tgz
+  - tar xfz $MONGODB_VER.tgz
+  - export MONGOD=`pwd`/$MONGODB_VER/bin/mongod
+  - cp -n test.cfg.example test.cfg
+  - sed -i "s#^test.temp.dir=.*#test.temp.dir=temp_test_dir#" test.cfg
+  - sed -i "s#^test.mongo.exe.*#test.mongo.exe=$MONGOD#" test.cfg
+  - sed -i "s#^test.mongo.wired_tiger.*#test.mongo.wired_tiger=$WIRED_TIGER#" test.cfg
+  - cat test.cfg
+
+  - make $MAKE
+
+jobs:
+  include:
+    - stage: deploy
+      env: # The following are secure declarations for DOCKER_USER, DOCKER_PASS
+        - secure: "XjD5QORyBxRLfDe15DCz0R75b/e0ySUVOGABjmS2O4wcGYUFnz0b7LZ5P5p4cQQNVVOE3rZAp5Mce6450E4TvdiKxk/f2J9NOjpgw+P5IHgN+MGUDtfcskPAJtQ2v02YKX5eQp4/UEKBurvqQLYiQHoJR5o/HM4TCpZEwKK/Ee3fZygJYuo2Z7/aId5sJEw9Bb+AJsXL6Z+5Xu3Fzi+zex442M8z0Qk+ylI3GJp4al1e8gko6GbZHldI4/TnZ6WGVQPnBDers13HYnpacbW0n8ol4+jGY94wAWzOOpwmpCpp+JgjfBwzkVcjTBWmnRkrpZaWPIOp3NfUXX3Ovqk6qsPurDbz2ct8t2ST4sP/GbgfGpBH/aby5KfsgUU34+moYQ+JzxhT3DucW5hJONvhmDDc2adgM4qynxBRTVb9HCXKeDVzUERnGWs/GlWQwSQGCFL/nUpyho1NQJc1rE+A2d99vuegJwLGFaI0HuYf7cHv0dgx6zNKDC/B81jMiNuHOAgSeD7yqpOUxS9RzEoI4/IT2BTwP5/Mkp/4TcgIBBktyXgUhWFOugzWgFe1FzrhM7drTvnevNXPMsOIzVCJ4aGVyOTJGgmAlEK5OddAhuvZ5HpoL4zY1QWk7PZxFMBAiem6UAxPVAYKZeyMdNxem2NhsxiRYx7bS8/bFxkGoR8="
+        - secure: "yDYnBJPhIsTHr5QJUMuAzA/DstBX1mEGjUKw/KFPz6MeZ8W16KBwbE8Jv9VHuxHkkoZeewztbUzRyF/XW/VIBfLaCVu6L8gm/+FXOz3RcLSc/0BbaUhAtaB0yXg+Z4m86QsK8ZmTgGAPliq2GNyw3NWYLSHxFZ+rFS/83Z3cuRoqHciot22/lbiC+OfrpufGw7jcU18XG3MWA4eAfhAFj/x0lAqd6yOOARvGhx81s9UWk5w49tFvueHaWJRph5egfEVtpk395ia/e4COzF9m6fUBfUal/NvPBTOhmmijN5U2unJ/XJOwsMtLFc73a0g5nGncSpJWpqhUR4s8teBwk+farTIylZpEnh4f9pw5oRakTb9CkR2TvD8uAbRRYwo5xgzwtDoRcS42qIOlLl9mTiqrEU6ypn0fVMrbndrou3GY56Va7AHqbiC0ru1uUEQeHTDO2uuSoXyu5KjxsfrTPD3F6lkX2E7zyAUwwE4fgXJztbWgBqJYl+JgKDsrTRaq+VSVHh6poykI8Ke6Sqzdyizs3dYqGF7FLUH7ZQqJJhxPDKc5adzily5xKx0uqbV9xhtL5LJR6Nr0HtoscNg24NR3wTsmY6TTrtR3x7Lx6QSgvIMl0FNV6e01kygYH/C9I9lXNrI7L3GdrJSwwcYiftKHLAynL+RhBa6fDU1FvJg="
+      script: # Only push to dockerhub if this isn't a PR and we're updating master or develop
+        - make docker_image
+        - IMAGE_NAME=kbase/id_mapper build/push2dockerhub.sh
+
+after_success:
+  - |
+    if [ "${MAKE}" == "test" ]; then
+      coveralls
+    fi
