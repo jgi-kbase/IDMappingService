@@ -17,6 +17,8 @@ from typing import IO
 from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CALLID_PATTERN,\
     assert_json_error_correct
 
+VERSION = '0.1.0'
+
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
@@ -231,7 +233,7 @@ def test_root_and_logging():
     del j['servertime']
     del j['gitcommithash']
 
-    assert j == {'service': 'ID Mapping Service', 'version': '0.1.0-dev1'}
+    assert j == {'service': 'ID Mapping Service', 'version': VERSION}
     assert re.match('[a-f\d]{40}', commit) is not None
     assert_ms_epoch_close_to_now(time_)
     assert resp.status_code == 200
