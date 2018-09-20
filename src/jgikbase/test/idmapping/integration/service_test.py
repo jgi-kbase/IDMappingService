@@ -30,6 +30,8 @@ import json
 
 # Should test logging here...? Skip for now. Maybe add later.
 
+VERSION = '0.1.0'
+
 
 DB_NAME = 'test_db_idmapping_service_integration'
 
@@ -126,7 +128,7 @@ def test_root(service_port):
     del j['servertime']
     del j['gitcommithash']
 
-    assert j == {'service': 'ID Mapping Service', 'version': '0.1.0-dev1'}
+    assert j == {'service': 'ID Mapping Service', 'version': VERSION}
     assert re.match('[a-f\d]{40}', commit) is not None
     assert_ms_epoch_close_to_now(time_)
     assert r.status_code == 200
