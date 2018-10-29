@@ -1,5 +1,5 @@
 pymongo==3.7.0
-requests==2.18.4
+requests==2.20.0
 cacheout==0.10.2
 Flask==1.0.2
 gunicorn==19.9.0
