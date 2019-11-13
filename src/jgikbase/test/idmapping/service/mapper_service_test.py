@@ -17,7 +17,7 @@ from typing import IO
 from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CALLID_PATTERN,\
     assert_json_error_correct
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 WERKZEUG = 'werkzeug/0.16.0'
 
 
