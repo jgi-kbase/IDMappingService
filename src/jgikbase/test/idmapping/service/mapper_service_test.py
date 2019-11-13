@@ -501,7 +501,7 @@ def test_not_found():
 
     resp = cli.get('/api/v1/nothinghere')
 
-    err = ('404 Not Found: The requested URL was not found on the server.  ' +
+    err = ('404 Not Found: The requested URL was not found on the server. ' +
            'If you entered the URL manually please check your spelling and try again.')
     assert_json_error_correct(
         resp.get_json(),
