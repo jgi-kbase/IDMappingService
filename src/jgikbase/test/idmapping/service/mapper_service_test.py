@@ -17,7 +17,8 @@ from typing import IO
 from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CALLID_PATTERN,\
     assert_json_error_correct
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
+WERKZEUG = 'werkzeug/0.16.0'
 
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
@@ -252,7 +253,7 @@ def test_root_and_logging():
                        'source': 'jgikbase.idmapping.service.mapper_service',
                        'ip': '127.0.0.1',
                        'method': 'GET',
-                       'msg': 'GET / 200 werkzeug/0.14.1'}
+                       'msg': f'GET / 200 {WERKZEUG}'}
     assert_ms_epoch_close_to_now(time_)
     assert CALLID_PATTERN.match(callid) is not None
 
@@ -289,7 +290,7 @@ def test_root_and_logging_with_xff_and_real_headers():
                         'source': 'jgikbase.idmapping.service.mapper_service',
                         'ip': '1.2.3.4',
                         'method': 'GET',
-                        'msg': 'GET / 200 werkzeug/0.14.1'}
+                        'msg': f'GET / 200 {WERKZEUG}'}
 
 
 def test_root_and_logging_with_xff_and_real_headers_ignored():
@@ -312,7 +313,7 @@ def test_root_and_logging_with_xff_and_real_headers_ignored():
                         'source': 'jgikbase.idmapping.service.mapper_service',
                         'ip': '127.0.0.1',
                         'method': 'GET',
-                        'msg': 'GET / 200 werkzeug/0.14.1'}
+                        'msg': f'GET / 200 {WERKZEUG}'}
 
 
 def test_get_namespace_no_auth():
@@ -422,7 +423,7 @@ def check_error_logging(logstream_mock, method, url, code, stackstring):
                         'source': 'jgikbase.idmapping.service.mapper_service',
                         'ip': '127.0.0.1',
                         'method': method,
-                        'msg': '{} {} {} werkzeug/0.14.1'.format(method, url, code)}
+                        'msg': '{} {} {} {}'.format(method, url, code, WERKZEUG)}
     assert_ms_epoch_close_to_now(errtime)
     assert CALLID_PATTERN.match(errcallid) is not None
     assert_ms_epoch_close_to_now(resptime)
@@ -500,7 +501,7 @@ def test_not_found():
 
     resp = cli.get('/api/v1/nothinghere')
 
-    err = ('404 Not Found: The requested URL was not found on the server.  ' +
+    err = ('404 Not Found: The requested URL was not found on the server. ' +
            'If you entered the URL manually please check your spelling and try again.')
     assert_json_error_correct(
         resp.get_json(),

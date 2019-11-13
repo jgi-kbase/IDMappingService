@@ -21,7 +21,7 @@ import time
 import logging
 from logging import StreamHandler, Formatter
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 
 try:
     from jgikbase.idmapping import gitcommit
