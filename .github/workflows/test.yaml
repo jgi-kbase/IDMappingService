@@ -1,0 +1,72 @@
+name: ID Mapping Service test
+
+on:
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
+  push:
+    # run workflow when merging to main or develop
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  handle_service_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.9.19'
+            mongo: 'mongodb-linux-x86_64-3.6.23'
+            wired_tiger: 'false'
+
+    steps:
+    - name: Check out GitHub repo
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{matrix.python}}
+
+    - name: Install dependencies and set up test config
+      shell: bash
+      run: |
+
+        # TODO switch to pipenv
+        # install python libraries
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r dev-requirements.txt
+
+        # set up mongo
+        cd ..
+        wget -q http://fastdl.mongodb.org/linux/${{matrix.mongo}}.tgz
+        tar xfz ${{matrix.mongo}}.tgz
+        export MONGOD=`pwd`/${{matrix.mongo}}/bin/mongod
+        cd -
+
+        # set up test config
+        cp -n test.cfg.example test.cfg
+        sed -i "s#^test.temp.dir =.*#test.temp.dir=temp_test_dir#" test.cfg
+        sed -i "s#^test.mongo.exe.*#test.mongo.exe=$MONGOD#" test.cfg
+        sed -i "s#^test.mongo.wired_tiger.*#test.mongo.wired_tiger=${{matrix.wired_tiger}}#" test.cfg
+
+    - name: Run tests
+      shell: bash
+      run: |
+        export HOMEDIR=`pwd`
+        export PYTHONPATH=$HOMEDIR/src:$PYTHONPATH
+        export IDMAP_TEST_FILE=$HOMEDIR/test.cfg
+        pytest --verbose --cov=src/jgikbase/idmapping --cov-report=xml src
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
