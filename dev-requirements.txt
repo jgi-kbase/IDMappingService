@@ -1,5 +1,5 @@
 bandit==1.4.0
-mypy==0.610
+mypy==1.10.0
 flake8==3.5.0
 coverage==4.0.3
 pytest-cov==2.5.1
