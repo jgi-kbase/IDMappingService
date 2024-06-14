@@ -60,9 +60,16 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
+
         export HOMEDIR=`pwd`
         export PYTHONPATH=$HOMEDIR/src:$PYTHONPATH
         export IDMAP_TEST_FILE=$HOMEDIR/test.cfg
+
+        GITCOMMIT = $(shell git rev-parse HEAD)
+        echo $GITCOMMIT
+        echo "# Don't check this file into git please" > $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
+        echo 'commit = "$(GITCOMMIT)"' >> $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
+
         pytest --verbose --cov=src/jgikbase/idmapping --cov-report=xml src
 
     - name: Upload coverage to Codecov
