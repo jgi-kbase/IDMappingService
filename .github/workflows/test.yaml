@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: '3.8.18'
+          - python: '3.9.19'
             mongo: 'mongodb-linux-x86_64-3.6.23'
             wired_tiger: 'false'
 
