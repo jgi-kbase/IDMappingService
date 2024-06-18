@@ -18,7 +18,7 @@ from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CAL
     assert_json_error_correct
 
 VERSION = '0.1.1'
-WERKZEUG = 'Werkzeug/3.0.3'
+WERKZEUG = 'werkzeug/2.3.7'
 
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
