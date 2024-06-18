@@ -245,7 +245,11 @@ def test_root_and_logging():
     print("--------")
     print(logstream.write.call_args_list[0])
     print("--------")
-    assert logstream.write.call_args_list[1][0][0] == '\n'
+    print(logstream.write.call_args_list[0][0])
+    print("--------")
+    print(logstream.write.call_args_list[0][0][0])
+    print("--------")
+    assert logstream.write.call_args_list[0][0][0] == '\n'
     logjson = json.loads(logstream.write.call_args_list[0][0][0])
 
     time_ = logjson['time']
