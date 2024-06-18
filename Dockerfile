@@ -1,6 +1,6 @@
 FROM kbase/kb_jre:latest as dockerize
 
-FROM python:3.9.19
+FROM python:3.9.19-alpine
 
 # These ARGs values are passed in via the docker build command
 ARG BUILD_DATE
