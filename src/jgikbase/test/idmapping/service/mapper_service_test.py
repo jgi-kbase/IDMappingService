@@ -266,17 +266,10 @@ def test_root_and_logging_with_xff_and_real_headers():
                           'x-real-ip': '   7.8.9.10    '})  # already tested response, don't care
 
     assert len(logstream.write.call_args_list) == 2
-
-    print("---------")
-    print(logstream.write.call_args_list[0])
-    print("---------")
-    print(logstream.write.call_args_list[1])
-    print("---------")
-
-    assert logstream.write.call_args_list[1][0][0] == '\n'
-    assert logstream.write.call_args_list[3][0][0] == '\n'
+    assert logstream.write.call_args_list[0][0][0][-1] == '\n'
+    assert logstream.write.call_args_list[1][0][0][-1] == '\n'
     ipjson = json.loads(logstream.write.call_args_list[0][0][0])
-    respjson = json.loads(logstream.write.call_args_list[2][0][0])
+    respjson = json.loads(logstream.write.call_args_list[1][0][0])
 
     # don't check these again, checked above.
     del ipjson['time']
