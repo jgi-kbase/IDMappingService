@@ -3,4 +3,4 @@ requests==2.20.0
 cacheout==0.10.2
 Flask==2.0.3
 gunicorn==19.9.0
-gevent==24.2.1
+gevent==22.10.2
