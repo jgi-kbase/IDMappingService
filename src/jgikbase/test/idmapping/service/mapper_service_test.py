@@ -18,7 +18,7 @@ from jgikbase.test.idmapping.test_utils import assert_ms_epoch_close_to_now, CAL
     assert_json_error_correct
 
 VERSION = '0.1.1'
-WERKZEUG = 'werkzeug/0.16.0'
+WERKZEUG = 'werkzeug/3.0.3'
 
 
 def build_app(ignore_ip_headers=False, logstream: IO[str]=None):
@@ -240,15 +240,6 @@ def test_root_and_logging():
     assert resp.status_code == 200
 
     assert len(logstream.write.call_args_list) == 1
-    # print("--------")
-    # print(logstream.write.call_args_list)
-    # print("--------")
-    # print(logstream.write.call_args_list[0])
-    # print("--------")
-    # print(logstream.write.call_args_list[0][0])
-    # print("--------")
-    # print(logstream.write.call_args_list[0][0][0])
-    # print("--------")
     assert logstream.write.call_args_list[0][0][0][-1] == '\n'
     logjson = json.loads(logstream.write.call_args_list[0][0][0])
 
