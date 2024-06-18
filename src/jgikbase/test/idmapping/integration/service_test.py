@@ -123,10 +123,6 @@ def test_root(service_port):
     r = requests.get('http://localhost:' + service_port)
     j = r.json()
 
-    print("-----------")
-    print(j)
-    print("-----------")
-
     time_ = j['servertime']
     commit = j['gitcommithash']
     del j['servertime']

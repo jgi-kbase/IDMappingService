@@ -15,7 +15,7 @@ on:
       - develop
 
 jobs:
-  handle_service_tests:
+  id_mapping_service_tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
