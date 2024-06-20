@@ -67,9 +67,7 @@ jobs:
         GITCOMMIT=$(git rev-parse HEAD)
         echo "# Don't check this file into git please" > $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
         echo "commit = '${GITCOMMIT}'" >> $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
-        pytest src/jgikbase/test --cov=src/jgikbase/idmapping --cov-report=xml
-      env:
-        DEBUG: true
+        pytest src/jgikbase/test --cov=src/jgikbase/idmapping --cov-report=xml --timeout=30
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
