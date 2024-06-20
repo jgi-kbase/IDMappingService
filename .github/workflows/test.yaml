@@ -69,11 +69,6 @@ jobs:
         echo "commit = '${GITCOMMIT}'" >> $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
         pytest src/jgikbase/test --cov=src/jgikbase/idmapping --cov-report=xml
 
-        # Terminate pytest if running too long
-        pytest_pid=$!
-        sleep 30  # Wait for 30s
-        pkill -P $pytest_pid  # Terminate pytest and its child processes
-
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
