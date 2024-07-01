@@ -240,6 +240,9 @@ def test_root_and_logging():
     assert resp.status_code == 200
 
     assert len(logstream.write.call_args_list) == 1
+    print("-----------")
+    print(logstream.write.call_args_list)
+    print("-----------")
     logjson = json.loads(logstream.write.call_args_list[0][0][0])
 
     time_ = logjson['time']
