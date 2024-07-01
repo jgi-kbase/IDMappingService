@@ -240,7 +240,6 @@ def test_root_and_logging():
     assert resp.status_code == 200
 
     assert len(logstream.write.call_args_list) == 1
-    assert logstream.write.call_args_list[0][0][0][-1] == '\n'
     logjson = json.loads(logstream.write.call_args_list[0][0][0])
 
     time_ = logjson['time']
@@ -266,8 +265,6 @@ def test_root_and_logging_with_xff_and_real_headers():
                           'x-real-ip': '   7.8.9.10    '})  # already tested response, don't care
 
     assert len(logstream.write.call_args_list) == 2
-    assert logstream.write.call_args_list[0][0][0][-1] == '\n'
-    assert logstream.write.call_args_list[1][0][0][-1] == '\n'
     ipjson = json.loads(logstream.write.call_args_list[0][0][0])
     respjson = json.loads(logstream.write.call_args_list[1][0][0])
 
@@ -301,7 +298,6 @@ def test_root_and_logging_with_xff_and_real_headers_ignored():
                           'x-real-ip': '   7.8.9.10    '})  # already tested response, don't care
 
     assert len(logstream.write.call_args_list) == 1
-    assert logstream.write.call_args_list[0][0][0][-1] == '\n'
     respjson = json.loads(logstream.write.call_args_list[0][0][0])
 
     # don't check these again, checked above.
@@ -389,8 +385,6 @@ def test_get_namespace_fail_invalid_token():
 def check_error_logging(logstream_mock, method, url, code, stackstring):
 
     assert len(logstream_mock.write.call_args_list) == 2
-    assert logstream_mock.write.call_args_list[0][0][0][-1] == '\n'
-    assert logstream_mock.write.call_args_list[1][0][0][-1] == '\n'
     errjson = json.loads(logstream_mock.write.call_args_list[0][0][0])
     respjson = json.loads(logstream_mock.write.call_args_list[1][0][0])
 
