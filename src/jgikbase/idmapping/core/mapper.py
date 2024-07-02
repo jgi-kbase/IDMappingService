@@ -1,6 +1,7 @@
 """
 The core ID mapping code.
 """
+
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_lookup import UserLookupSet
 from typing import Set, cast, Tuple, Iterable
@@ -23,11 +24,11 @@ class IDMapper:
     """
 
     def __init__(
-            self,
-            user_lookup: UserLookupSet,
-            admin_authsources: Set[AuthsourceID],
-            storage: IDMappingStorage
-            ) -> None:
+        self,
+        user_lookup: UserLookupSet,
+        admin_authsources: Set[AuthsourceID],
+        storage: IDMappingStorage,
+    ) -> None:
         """
         Create the mapper.
 
@@ -37,9 +38,9 @@ class IDMapper:
             The admin state returned by other auth sources will be ignored.
         :param storage: the mapping storage system.
         """
-        not_none(user_lookup, 'user_lookup')
-        no_Nones_in_iterable(admin_authsources, 'admin_authsources')
-        not_none(storage, 'storage')
+        not_none(user_lookup, "user_lookup")
+        no_Nones_in_iterable(admin_authsources, "admin_authsources")
+        not_none(storage, "storage")
         self._storage = storage
         self._lookup = user_lookup
         self._admin_authsources = admin_authsources
@@ -50,22 +51,26 @@ class IDMapper:
         :raises InvalidTokenError: if the token is invalid.
         :raises UnauthorizedError: if the user is not a system administrator.
         """
-        not_none(token, 'token')
+        not_none(token, "token")
         if authsource_id not in self._admin_authsources:
-            raise UnauthorizedError(('Auth source {} is not configured as a provider of ' +
-                                    'system administration status').format(authsource_id.id))
+            raise UnauthorizedError(
+                (
+                    "Auth source {} is not configured as a provider of "
+                    + "system administration status"
+                ).format(authsource_id.id)
+            )
         user, admin = self._lookup.get_user(authsource_id, token)
         if not admin:
-            raise UnauthorizedError('User {}/{} is not a system administrator'.format(
-                user.authsource_id.id, user.username.name))
+            raise UnauthorizedError(
+                "User {}/{} is not a system administrator".format(
+                    user.authsource_id.id, user.username.name
+                )
+            )
         return user
 
     def create_namespace(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            namespace_id: NamespaceID
-            ) -> None:
+        self, authsource_id: AuthsourceID, token: Token, namespace_id: NamespaceID
+    ) -> None:
         """
         Create a namespace.
 
@@ -78,28 +83,34 @@ class IDMapper:
         :raises InvalidTokenError: if the token is invalid.
         :raises UnauthorizedError: if the user is not a system administrator.
         """
-        not_none(namespace_id, 'namespace_id')
+        not_none(namespace_id, "namespace_id")
         admin = self._check_sys_admin(authsource_id, token)
         self._storage.create_namespace(namespace_id)
-        _log('Admin %s/%s created namespace %s', admin.authsource_id.id, admin.username.name,
-             namespace_id.id)
+        _log(
+            "Admin %s/%s created namespace %s",
+            admin.authsource_id.id,
+            admin.username.name,
+            namespace_id.id,
+        )
 
     def _check_valid_user(self, user):
         """
         :raises NoSuchAuthsourceError: if there's no handler for the user's authsource.
         :raises NoSuchUserError: if the user is invalid according to the appropriate user handler.
         """
-        not_none(user, 'user')
+        not_none(user, "user")
         if not self._lookup.is_valid_user(user):
-            raise NoSuchUserError('{}/{}'.format(user.authsource_id.id, user.username.name))
+            raise NoSuchUserError(
+                "{}/{}".format(user.authsource_id.id, user.username.name)
+            )
 
     def add_user_to_namespace(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            namespace_id: NamespaceID,
-            user: User
-            ) -> None:
+        self,
+        authsource_id: AuthsourceID,
+        token: Token,
+        namespace_id: NamespaceID,
+        user: User,
+    ) -> None:
         """
         Add a user to a namespace.
 
@@ -116,23 +127,27 @@ class IDMapper:
         :raises InvalidTokenError: if the token is invalid.
         :raises UnauthorizedError: if the user is not a system administrator.
         """
-        not_none(namespace_id, 'namespace_id')
-        not_none(user, 'user')
+        not_none(namespace_id, "namespace_id")
+        not_none(user, "user")
         admin = self._check_sys_admin(authsource_id, token)
         self._check_valid_user(user)
         self._storage.add_user_to_namespace(namespace_id, user)
-        _log('Admin %s/%s added user %s/%s to namespace %s',
-             admin.authsource_id.id, admin.username.name,
-             user.authsource_id.id, user.username.name,
-             namespace_id.id)
+        _log(
+            "Admin %s/%s added user %s/%s to namespace %s",
+            admin.authsource_id.id,
+            admin.username.name,
+            user.authsource_id.id,
+            user.username.name,
+            namespace_id.id,
+        )
 
     def remove_user_from_namespace(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            namespace_id: NamespaceID,
-            user: User
-            ) -> None:
+        self,
+        authsource_id: AuthsourceID,
+        token: Token,
+        namespace_id: NamespaceID,
+        user: User,
+    ) -> None:
         """
         Remove a user from a namespace.
 
@@ -147,14 +162,18 @@ class IDMapper:
         :raises InvalidTokenError: if the token is invalid.
         :raises UnauthorizedError: if the user is not a system administrator.
         """
-        not_none(namespace_id, 'namespace_id')
-        not_none(user, 'user')
+        not_none(namespace_id, "namespace_id")
+        not_none(user, "user")
         admin = self._check_sys_admin(authsource_id, token)
         self._storage.remove_user_from_namespace(namespace_id, user)
-        _log('Admin %s/%s removed user %s/%s from namespace %s',
-             admin.authsource_id.id, admin.username.name,
-             user.authsource_id.id, user.username.name,
-             namespace_id.id)
+        _log(
+            "Admin %s/%s removed user %s/%s from namespace %s",
+            admin.authsource_id.id,
+            admin.username.name,
+            user.authsource_id.id,
+            user.username.name,
+            namespace_id.id,
+        )
 
     def _check_authed_for_ns_get(self, user: User, namespace_id: NamespaceID) -> None:
         """
@@ -168,16 +187,19 @@ class IDMapper:
         :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
         """
         if user not in ns.authed_users:
-            raise UnauthorizedError('User {}/{} may not administrate namespace {}'.format(
-                user.authsource_id.id, user.username.name, ns.namespace_id.id))
+            raise UnauthorizedError(
+                "User {}/{} may not administrate namespace {}".format(
+                    user.authsource_id.id, user.username.name, ns.namespace_id.id
+                )
+            )
 
     def set_namespace_publicly_mappable(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            namespace_id: NamespaceID,
-            publicly_mappable: bool
-            ) -> None:
+        self,
+        authsource_id: AuthsourceID,
+        token: Token,
+        namespace_id: NamespaceID,
+        publicly_mappable: bool,
+    ) -> None:
         """
         Set a namespace to be publicly mappable, or remove that state. A publicly mappable
         namespace may have ID mappings added to it without the user being an administrator
@@ -194,21 +216,25 @@ class IDMapper:
         :raises NoSuchNamespaceError: if the namespace does not exist.
         :raises UnauthorizedError: if the user is not authorized to administrate the namespace.
         """
-        not_none(token, 'token')
-        not_none(namespace_id, 'namespace_id')
+        not_none(token, "token")
+        not_none(namespace_id, "namespace_id")
         user, _ = self._lookup.get_user(authsource_id, token)
         self._check_authed_for_ns_get(user, namespace_id)
         self._storage.set_namespace_publicly_mappable(namespace_id, publicly_mappable)
-        _log('User %s/%s set namespace %s public map property to %s',
-             user.authsource_id.id, user.username.name,
-             namespace_id.id, publicly_mappable)
+        _log(
+            "User %s/%s set namespace %s public map property to %s",
+            user.authsource_id.id,
+            user.username.name,
+            namespace_id.id,
+            publicly_mappable,
+        )
 
     def get_namespace(
-            self,
-            namespace_id: NamespaceID,
-            authsource_id: AuthsourceID=None,
-            token: Token=None
-            ) -> Namespace:
+        self,
+        namespace_id: NamespaceID,
+        authsource_id: AuthsourceID = None,
+        token: Token = None,
+    ) -> Namespace:
         """
         Get a namespace. If user credentials are provided and the user is a system admin or an
         admin of the namespace, the namespace user list will be returned. Otherwise, the user
@@ -223,12 +249,16 @@ class IDMapper:
         :raises NoSuchAuthsourceError: if there's no lookup handler for the provided authsource.
         :raises InvalidTokenError: if the token is invalid.
         """
-        not_none(namespace_id, 'namespace_id')
+        not_none(namespace_id, "namespace_id")
         if bool(authsource_id) ^ bool(token):  # xor
-            raise TypeError('If token or authsource_id is specified, both must be specified')
+            raise TypeError(
+                "If token or authsource_id is specified, both must be specified"
+            )
         ns = self._storage.get_namespace(namespace_id)
         if token:
-            authsource_id = cast(AuthsourceID, authsource_id)  # mypy doesn't understand the xor
+            authsource_id = cast(
+                AuthsourceID, authsource_id
+            )  # mypy doesn't understand the xor
             user, admin = self._lookup.get_user(authsource_id, token)
             if admin or user in ns.authed_users:
                 return ns
@@ -254,12 +284,12 @@ class IDMapper:
         return public, private
 
     def create_mapping(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            administrative_oid: ObjectID,
-            oid: ObjectID
-            ) -> None:
+        self,
+        authsource_id: AuthsourceID,
+        token: Token,
+        administrative_oid: ObjectID,
+        oid: ObjectID,
+    ) -> None:
         """
         Create a mapping. The user must be an administrator of the namespace in the
         administrative_oid and an administrator of the namespace in the oid if it is not
@@ -277,9 +307,9 @@ class IDMapper:
         :raises UnauthorizedError: if the user is not authorized to administrate either of
             the namespaces.
         """
-        not_none(token, 'token')
-        not_none(administrative_oid, 'administrative_oid')
-        not_none(oid, 'oid')
+        not_none(token, "token")
+        not_none(administrative_oid, "administrative_oid")
+        not_none(oid, "oid")
         user, _ = self._lookup.get_user(authsource_id, token)
         adminns = self._storage.get_namespace(administrative_oid.namespace_id)
         self._check_authed_for_ns(user, adminns)
@@ -290,18 +320,23 @@ class IDMapper:
         # this might be too much of a performance hit. If so, push the bulk operations down to
         # this level and do... what exactly? Log 10000 entries?
         # Maybe need to add an id or timestamp or something to the mappings and just log that.
-        _log('User %s/%s created mapping %s/%s <---> %s/%s',
-             user.authsource_id.id, user.username.name,
-             administrative_oid.namespace_id.id, administrative_oid.id,
-             oid.namespace_id.id, oid.id)
+        _log(
+            "User %s/%s created mapping %s/%s <---> %s/%s",
+            user.authsource_id.id,
+            user.username.name,
+            administrative_oid.namespace_id.id,
+            administrative_oid.id,
+            oid.namespace_id.id,
+            oid.id,
+        )
 
     def remove_mapping(
-            self,
-            authsource_id: AuthsourceID,
-            token: Token,
-            administrative_oid: ObjectID,
-            oid: ObjectID
-            ) -> None:
+        self,
+        authsource_id: AuthsourceID,
+        token: Token,
+        administrative_oid: ObjectID,
+        oid: ObjectID,
+    ) -> None:
         """
         Delete a mapping. The user must be an administrator of the namespace in the
         administrative_oid.
@@ -318,9 +353,9 @@ class IDMapper:
         :raises UnauthorizedError: if the user is not authorized to administrate the
             administrative namespace.
         """
-        not_none(token, 'token')
-        not_none(administrative_oid, 'administrative_oid')
-        not_none(oid, 'oid')
+        not_none(token, "token")
+        not_none(administrative_oid, "administrative_oid")
+        not_none(oid, "oid")
         user, _ = self._lookup.get_user(authsource_id, token)
         adminns = self._storage.get_namespace(administrative_oid.namespace_id)
         self._check_authed_for_ns(user, adminns)
@@ -329,13 +364,19 @@ class IDMapper:
         # this might be too much of a performance hit. If so, push the bulk operations down to
         # this level and do... what exactly? Log 10000 entries?
         # Maybe need to add an id or timestamp or something to the mappings and just log that.
-        _log('User %s/%s removed mapping %s/%s <---> %s/%s',
-             user.authsource_id.id, user.username.name,
-             administrative_oid.namespace_id.id, administrative_oid.id,
-             oid.namespace_id.id, oid.id)
+        _log(
+            "User %s/%s removed mapping %s/%s <---> %s/%s",
+            user.authsource_id.id,
+            user.username.name,
+            administrative_oid.namespace_id.id,
+            administrative_oid.id,
+            oid.namespace_id.id,
+            oid.id,
+        )
 
-    def get_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
-                     ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
+    def get_mappings(
+        self, oid: ObjectID, ns_filter: Iterable[NamespaceID] = None
+    ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
         Find mappings given a namespace / id combination.
 
@@ -350,10 +391,10 @@ class IDMapper:
         :raise TypeError: if the object ID is None or the filter contains None.
         :raise NoSuchNamespaceError: if any of the namespaces do not exist.
         """
-        not_none(oid, 'oid')
+        not_none(oid, "oid")
         check = [oid.namespace_id]
         if ns_filter:
-            no_Nones_in_iterable(ns_filter, 'ns_filter')
+            no_Nones_in_iterable(ns_filter, "ns_filter")
             check.extend(ns_filter)
         self._storage.get_namespaces(check)  # check for existence
         return self._storage.find_mappings(oid, ns_filter=ns_filter)
