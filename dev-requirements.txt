@@ -1,6 +1,6 @@
-bandit==1.4.0
+bandit==1.7.9
 coverage==7.5.3
-flake8==3.5.0
+flake8==7.1.0
 mypy==1.10.0
 pytest-cov==2.5.1
 requests-mock==1.5.2
