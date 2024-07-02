@@ -62,12 +62,13 @@ jobs:
       run: |
         export HOMEDIR=`pwd`
         export PYTHONPATH=$HOMEDIR/src:$PYTHONPATH
-        export IDMAP_TEST_FILE=$HOMEDIR/test.cfg
+        # export IDMAP_TEST_FILE=$HOMEDIR/test.cfg
 
-        GITCOMMIT=$(git rev-parse HEAD)
-        echo "# Don't check this file into git please" > $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
-        echo "commit = '${GITCOMMIT}'" >> $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
-        pytest src/jgikbase/test --cov=src/jgikbase/idmapping --cov-report=xml
+        # GITCOMMIT=$(git rev-parse HEAD)
+        # echo "# Don't check this file into git please" > $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
+        # echo "commit = '${GITCOMMIT}'" >> $HOMEDIR/src/jgikbase/idmapping/gitcommit.py
+        # pytest src/jgikbase/test --cov=src/jgikbase/idmapping --cov-report=xml
+        make test
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
