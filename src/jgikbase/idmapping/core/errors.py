@@ -13,46 +13,43 @@ class ErrorType(Enum):
     :ivar error_type: a brief string describing the error type.
     """
 
-    AUTHENTICATION_FAILED = (10000, "Authentication failed")  # noqa: E222 @IgnorePep8
+    AUTHENTICATION_FAILED =  (10000, "Authentication failed")  # noqa: E222 @IgnorePep8
     """ A general authentication error. """
 
-    NO_TOKEN = (10010, "No authentication token")  # noqa: E222 @IgnorePep8
+    NO_TOKEN =               (10010, "No authentication token")  # noqa: E222 @IgnorePep8
     """ No token was provided when required. """
 
-    INVALID_TOKEN = (10020, "Invalid token")  # noqa: E222 @IgnorePep8
+    INVALID_TOKEN =          (10020, "Invalid token")  # noqa: E222 @IgnorePep8
     """ The token provided is not valid. """
 
-    UNAUTHORIZED = (20000, "Unauthorized")  # noqa: E222 @IgnorePep8
+    UNAUTHORIZED =           (20000, "Unauthorized")  # noqa: E222 @IgnorePep8
     """ The user is not authorized to perform the requested action. """
 
-    MISSING_PARAMETER = (30000, "Missing input parameter")  # noqa: E222 @IgnorePep8
+    MISSING_PARAMETER =      (30000, "Missing input parameter")  # noqa: E222 @IgnorePep8
     """ A required input parameter was not provided. """
 
-    ILLEGAL_PARAMETER = (30001, "Illegal input parameter")  # noqa: E222 @IgnorePep8
+    ILLEGAL_PARAMETER =      (30001, "Illegal input parameter")  # noqa: E222 @IgnorePep8
     """ An input parameter had an illegal value. """
 
-    ILLEGAL_USER_NAME = (30010, "Illegal user name")  # noqa: E222 @IgnorePep8
+    ILLEGAL_USER_NAME =      (30010, "Illegal user name")  # noqa: E222 @IgnorePep8
     """ The provided user name was not legal. """
 
-    USER_EXISTS = (40000, "User already exists")  # noqa: E222 @IgnorePep8
+    USER_EXISTS =            (40000, "User already exists")  # noqa: E222 @IgnorePep8
     """ The user could not be created because it already exists. """
 
-    NAMESPACE_EXISTS = (40010, "Namespace already exists")  # noqa: E222 @IgnorePep8
+    NAMESPACE_EXISTS =       (40010, "Namespace already exists")  # noqa: E222 @IgnorePep8
     """ The namespace could not be created because it already exists. """
 
-    NO_SUCH_USER = (50000, "No such user")  # noqa: E222 @IgnorePep8
+    NO_SUCH_USER =           (50000, "No such user")  # noqa: E222 @IgnorePep8
     """ The requested user does not exist. """
 
-    NO_SUCH_NAMESPACE = (50010, "No such namespace")  # noqa: E222 @IgnorePep8
+    NO_SUCH_NAMESPACE =      (50010, "No such namespace")  # noqa: E222 @IgnorePep8
     """ There is no namespace with the specified name. """
 
-    NO_SUCH_AUTHSOURCE = (
-        50020,
-        "No such authentication source",
-    )  # noqa: E222 @IgnorePep8
+    NO_SUCH_AUTHSOURCE =     (50020, "No such authentication source")  # noqa: E222 @IgnorePep8
     """ The requested authentication source does not exist. """
 
-    UNSUPPORTED_OP = (60000, "Unsupported operation")  # noqa: E222 @IgnorePep8
+    UNSUPPORTED_OP =         (60000, "Unsupported operation")  # noqa: E222 @IgnorePep8
     """ The requested operation is not supported. """
 
     def __init__(self, error_code, error_type):
