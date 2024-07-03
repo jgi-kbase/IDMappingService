@@ -80,7 +80,7 @@ def test_token_hash():
 def test_generate_token():
     t = tokens.generate_token()
     assert is_base64(t.token) is True
-    assert len(t.token) is 28
+    assert len(t.token) == 28
 
 
 def is_base64(s: str):

@@ -216,12 +216,12 @@ class KBaseConfig:
             except MissingParameterError as e:
                 raise IDMappingConfigError(
                     (
-                        "Parameter {} in configuration file {}, section {}, has whitespace-only entry"
+                        "Parameter {} in configuration file {}, section {}, "
+                        "has whitespace-only entry"
                     ).format(
                         param_name,
                         config[self._TEMP_KEY_CFG_FILE],
                         self.CFG_SEC,
-                        str(e),
                     )
                 ) from e
             except Exception as e:
@@ -250,7 +250,7 @@ class KBaseConfig:
                     if key == prefix + self.FACTORY_MODULE:
                         factory = val.strip()
                     elif key.startswith(prefix + self.INIT):
-                        lookupcfg[key[len(prefix + self.INIT) :]] = val.strip()
+                        lookupcfg[key[len(prefix + self.INIT):]] = val.strip()
                     else:
                         raise IDMappingConfigError(
                             "Unexpected parameter {} in configuration file {}, section {}".format(
@@ -259,7 +259,8 @@ class KBaseConfig:
                         )
             if not factory:
                 raise IDMappingConfigError(
-                    "Required parameter {} not provided in configuration file {}, section {}".format(
+                    "Required parameter {} not provided in configuration file {}, "
+                    "section {}".format(
                         prefix + self.FACTORY_MODULE,
                         cfg[self._TEMP_KEY_CFG_FILE],
                         self.CFG_SEC,

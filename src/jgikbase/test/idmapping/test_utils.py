@@ -77,7 +77,7 @@ def find_free_port() -> int:
 
 
 def assert_exception_correct(got: Exception, expected: Exception):
-    assert type(got) == type(expected)
+    assert type(got) is type(expected)
     assert got.args == expected.args
 
 
@@ -87,7 +87,7 @@ def assert_ms_epoch_close_to_now(time_):
     assert now_ms - 1000 < time_
 
 
-CALLID_PATTERN = re.compile("^\d{16}$")
+CALLID_PATTERN = re.compile(r"^\d{16}$")
 
 
 def assert_json_error_correct(got, expected):

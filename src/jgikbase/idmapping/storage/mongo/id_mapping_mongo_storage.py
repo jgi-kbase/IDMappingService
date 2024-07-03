@@ -145,7 +145,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
                     _FLD_SCHEMA_VERSION: _SCHEMA_VERSION,
                 }
             )
-        except DuplicateKeyError as e:
+        except DuplicateKeyError:
             # ok, the schema version document is already there, this isn't the first time this
             # database as been used. Now check the document is ok.
             if col.count() != 1:
@@ -255,7 +255,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
                 res.matched_count != 1
             ):  # don't care if user was updated or not, just found
                 raise NoSuchUserError(username.name)
-        except DuplicateKeyError as e:
+        except DuplicateKeyError:
             # since only the token can cause a duplicate key error here, we assume something
             # crazy isn't going and just raise that exception
             raise ValueError("The provided token already exists in the database")
@@ -303,7 +303,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             self._db[_COL_NAMESPACES].insert_one(
                 {_FLD_NS_ID: namespace_id.id, _FLD_PUB_MAP: False, _FLD_USERS: []}
             )
-        except DuplicateKeyError as e:
+        except DuplicateKeyError:
             raise NamespaceExistsError(namespace_id.id)
         except PyMongoError as e:
             raise IDMappingStorageError(
@@ -427,7 +427,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             self._db[_COL_MAPPINGS].insert_one(
                 self.to_mapping_mongo_doc(primary_OID, secondary_OID)
             )
-        except DuplicateKeyError as e:
+        except DuplicateKeyError:
             pass  # don't care, record is already there
         except PyMongoError as e:
             raise IDMappingStorageError(

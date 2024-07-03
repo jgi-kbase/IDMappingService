@@ -305,7 +305,7 @@ def test_root_and_logging():
     del j["gitcommithash"]
 
     assert j == {"service": "ID Mapping Service", "version": VERSION}
-    assert re.match("[a-f\d]{40}", commit) is not None
+    assert re.match(r"[a-f\d]{40}", commit) is not None
     assert_ms_epoch_close_to_now(time_)
     assert resp.status_code == 200
 

@@ -460,7 +460,7 @@ def test_local_create_user():
     t = LocalUserLookup(storage).create_user(Username('foo'))
 
     assert is_base64(t.token) is True
-    assert len(t.token) is 28
+    assert len(t.token) == 28
 
     assert storage.create_local_user.call_args_list == \
         [((Username('foo'), t.get_hashed_token()), {})]
@@ -479,7 +479,7 @@ def test_local_new_token():
     t = LocalUserLookup(storage).new_token(Username('bar'))
 
     assert is_base64(t.token) is True
-    assert len(t.token) is 28
+    assert len(t.token) == 28
 
     assert storage.update_local_user_token.call_args_list == \
         [((Username('bar'), t.get_hashed_token()), {})]

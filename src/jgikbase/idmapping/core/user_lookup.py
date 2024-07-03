@@ -88,7 +88,7 @@ class UserLookupSet:
             validity cache. This time can be overridden by a user handler on a per user basis.
         """
         no_Nones_in_iterable(user_lookup, "user_lookup")
-        self._lookup = {l.get_authsource_id(): l for l in user_lookup}
+        self._lookup = {lookup.get_authsource_id(): lookup for lookup in user_lookup}
         self._cache_timer = time.time if not cache_timer else cache_timer
         self._user_cache = LRUCache(
             timer=self._cache_timer, maxsize=cache_max_size, ttl=cache_user_expiration
