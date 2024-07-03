@@ -1,6 +1,7 @@
 """
 Exceptions thrown by the ID mapping system.
 """
+
 from enum import Enum
 
 
@@ -64,20 +65,20 @@ class IDMappingError(Exception):
     :ivar message: the message for this error.
     """
 
-    def __init__(self, error_type: ErrorType, message: str=None) -> None:
-        '''
+    def __init__(self, error_type: ErrorType, message: str = None) -> None:
+        """
         Create an ID mapping error.
 
         :param error_type: the error type of this error.
         :param message: an error message.
         :raises TypeError: if error_type is None
-        '''
+        """
         if not error_type:  # don't use not_none here, causes circular import
-            raise TypeError('error_type cannot be None')
-        msg = '{} {}'.format(error_type.error_code, error_type.error_type)
+            raise TypeError("error_type cannot be None")
+        msg = "{} {}".format(error_type.error_code, error_type.error_type)
         message = message.strip() if message and message.strip() else None
         if message:
-            msg += ': ' + message
+            msg += ": " + message
         super().__init__(msg)
         self.error_type = error_type
         self.message = message
@@ -142,8 +143,11 @@ class AuthenticationError(IDMappingError):
     An error thrown when authentication of a user fails.
     """
 
-    def __init__(self, error_type: ErrorType=ErrorType.AUTHENTICATION_FAILED, message: str=None
-                 ) -> None:
+    def __init__(
+        self,
+        error_type: ErrorType = ErrorType.AUTHENTICATION_FAILED,
+        message: str = None,
+    ) -> None:
         super().__init__(error_type, message)
 
 
@@ -152,7 +156,7 @@ class NoTokenError(AuthenticationError):
     An error thrown when a token is required but not provided.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.NO_TOKEN, message)
 
 
@@ -161,7 +165,7 @@ class InvalidTokenError(AuthenticationError):
     An error thrown when a provided token is invalid.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.INVALID_TOKEN, message)
 
 
@@ -170,7 +174,7 @@ class UnauthorizedError(IDMappingError):
     An error thrown when a user attempts a disallowed action.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.UNAUTHORIZED, message)
 
 
@@ -179,7 +183,7 @@ class MissingParameterError(IDMappingError):
     An error thrown when a required parameter is missing.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.MISSING_PARAMETER, message)
 
 
@@ -188,7 +192,7 @@ class IllegalParameterError(IDMappingError):
     An error thrown when a provided parameter is illegal.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.ILLEGAL_PARAMETER, message)
 
 
@@ -197,5 +201,5 @@ class IllegalUsernameError(IDMappingError):
     An error thrown when a provided username is illegal.
     """
 
-    def __init__(self, message: str=None) -> None:
+    def __init__(self, message: str = None) -> None:
         super().__init__(ErrorType.ILLEGAL_USER_NAME, message)

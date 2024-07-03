@@ -164,7 +164,7 @@ class IDMappingCLI:
                             help='Create a user. Requires the {} option.'.format(self._USER))
         parser.add_argument(self._NEW_TOKEN, action='store_true',
                             help='Make a new token for a user. Requires the {} option.'.format(
-                                self._USER, self._CREATE))
+                                self._USER))
         parser.add_argument(self._ADMIN, help=(
             "Set whether the user is an admin ('{}') or not ('{}'). Any other values are " +
             'not permitted. Requires the {} option.').format(self._TRUE, self._FALSE, self._USER))

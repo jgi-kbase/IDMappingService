@@ -61,7 +61,7 @@ class KBaseUserLookup(UserLookup):
         if r.status_code != 200:
             try:
                 j = r.json()
-            except Exception as e:  # @UnusedVariable
+            except Exception:
                 err = ('Non-JSON response from KBase auth server, status code: ' +
                        str(r.status_code))
                 logging.getLogger(__name__).info('%s, response:\n%s', err, r.text)
