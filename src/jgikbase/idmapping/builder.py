@@ -30,7 +30,7 @@ class IDMappingBuildException(Exception):
 
 class _SometimesMyPyIsReallyStupid:  # pragma: no cover
     @staticmethod
-    def build_lookup(config: Dict[str, str]) -> UserLookup: # type: ignore[empty-body]
+    def build_lookup(config: Dict[str, str]) -> UserLookup:  # type: ignore[empty-body]
         pass
 
 
