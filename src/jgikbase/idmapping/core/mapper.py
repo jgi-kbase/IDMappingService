@@ -4,7 +4,7 @@ The core ID mapping code.
 
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
 from jgikbase.idmapping.core.user_lookup import UserLookupSet
-from typing import Set, cast, Tuple, Iterable
+from typing import Set, cast, Tuple, Iterable, Optional
 from jgikbase.idmapping.core.arg_check import not_none, no_Nones_in_iterable
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 from jgikbase.idmapping.core.user import User, AuthsourceID
@@ -232,8 +232,8 @@ class IDMapper:
     def get_namespace(
         self,
         namespace_id: NamespaceID,
-        authsource_id: AuthsourceID = None,
-        token: Token = None,
+        authsource_id: Optional[AuthsourceID] = None,
+        token: Optional[Token] = None,
     ) -> Namespace:
         """
         Get a namespace. If user credentials are provided and the user is a system admin or an
@@ -375,7 +375,7 @@ class IDMapper:
         )
 
     def get_mappings(
-        self, oid: ObjectID, ns_filter: Iterable[NamespaceID] = None
+        self, oid: ObjectID, ns_filter: Optional[Iterable[NamespaceID]] = None
     ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
         Find mappings given a namespace / id combination.

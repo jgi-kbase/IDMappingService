@@ -67,7 +67,7 @@ class UserLookupSet:
     def __init__(
         self,
         user_lookup: Set[UserLookup],
-        cache_timer: Callable[[], int] = None,
+        cache_timer: Optional[Callable[[], int]] = None,
         cache_max_size: int = 10000,
         cache_user_expiration: int = 300,
         cache_is_valid_expiration: int = 3600,

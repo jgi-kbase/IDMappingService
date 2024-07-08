@@ -95,13 +95,13 @@ def _log_exception(err: Exception):
 
 
 def _format_error(
-    err: Exception, httpcode: int, errtype: ErrorType = None, errprefix: str = ""
+    err: Exception, httpcode: int, errtype: Optional[ErrorType] = None, errprefix: str = ""
 ):
     errjson = {
         "httpcode": httpcode,
         "httpstatus": responses[httpcode],
         "message": errprefix + str(err),
-        "callid": flask_req_global.req_id,
+        "callid": flask_req_global.req_id,  # type: ignore[attr-defined]
         "time": epoch_ms(),
     }
     if errtype:
@@ -218,7 +218,7 @@ class JSONFlaskLogFormatter(Formatter):
         return json.dumps(log)
 
 
-def _configure_loggers(logstream: IO[str] = None):
+def _configure_loggers(logstream: Optional[IO[str]] = None):
     # make some of this configurable if needed
     handler = StreamHandler(logstream)
     handler.setFormatter(JSONFlaskLogFormatter("IDMappingService"))
@@ -229,7 +229,7 @@ def _configure_loggers(logstream: IO[str] = None):
 
 
 def create_app(
-    builder: IDMappingBuilder = IDMappingBuilder(), logstream: IO[str] = None
+    builder: IDMappingBuilder = IDMappingBuilder(), logstream: Optional[IO[str]] = None
 ):
     """Create the flask app."""
     _configure_loggers(logstream)

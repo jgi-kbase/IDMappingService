@@ -12,7 +12,7 @@ from typing import (
 )  # @UnusedImport PyDev sez it's unused, flake & mypy get it
 import re as _re
 from jgikbase.idmapping.core.errors import MissingParameterError, IllegalParameterError
-from typing import Iterable, Any
+from typing import Any, Iterable, Optional
 
 
 def not_none(obj: object, name: str):
@@ -31,7 +31,7 @@ _REGEX_CACHE: _Dict[str, _Pattern] = {}
 
 
 def check_string(
-    string: str, name: str, legal_characters: str = None, max_len: int = None
+    string: str, name: str, legal_characters: Optional[str] = None, max_len: Optional[int] = None
 ) -> None:
     """
     Check that a string meets a set of criteria:

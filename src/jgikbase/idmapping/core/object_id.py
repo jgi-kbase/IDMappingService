@@ -11,7 +11,7 @@ from jgikbase.idmapping.core.arg_check import (
     no_Nones_in_iterable,
 )
 from jgikbase.idmapping.core.user import User
-from typing import Set
+from typing import Optional, Set
 
 # may want to consider a superclass for simple IDs that does checking & implements hash & eq
 
@@ -61,7 +61,7 @@ class Namespace:
         self,
         namespace_id: NamespaceID,
         is_publicly_mappable: bool,
-        authed_users: Set[User] = None,
+        authed_users: Optional[Set[User]] = None,
     ) -> None:
         """
         Create a namespace.

@@ -116,7 +116,7 @@ class KBaseConfig:
 
     _TRUE = "true"
 
-    def __init__(self, cfgfile: Path = None) -> None:
+    def __init__(self, cfgfile: Optional[Path] = None) -> None:
         """
         Load the configuration.
 
