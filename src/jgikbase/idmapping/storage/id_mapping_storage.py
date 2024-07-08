@@ -12,7 +12,7 @@ from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
 from typing import Iterable, Set, Tuple  # pragma: no cover
 from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
-from typing import Dict
+from typing import Dict, Optional
 
 
 class IDMappingStorage:  # pragma: no cover
@@ -156,7 +156,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_namespaces(self, nids: Iterable[NamespaceID] = None) -> Set[Namespace]:
+    def get_namespaces(self, nids: Optional[Iterable[NamespaceID]] = None) -> Set[Namespace]:
         """
         Get all the namespaces in the system.
 
@@ -206,7 +206,7 @@ class IDMappingStorage:  # pragma: no cover
 
     @_abstractmethod
     def find_mappings(
-        self, oid: ObjectID, ns_filter: Iterable[NamespaceID] = None
+        self, oid: ObjectID, ns_filter: Optional[Iterable[NamespaceID]] = None
     ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
         Find mappings given a namespace / id combination.

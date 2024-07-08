@@ -3,6 +3,7 @@ Exceptions thrown by the ID mapping system.
 """
 
 from enum import Enum
+from typing import Optional
 
 
 class ErrorType(Enum):
@@ -65,7 +66,7 @@ class IDMappingError(Exception):
     :ivar message: the message for this error.
     """
 
-    def __init__(self, error_type: ErrorType, message: str = None) -> None:
+    def __init__(self, error_type: ErrorType, message: Optional[str] = None) -> None:
         """
         Create an ID mapping error.
 
@@ -146,7 +147,7 @@ class AuthenticationError(IDMappingError):
     def __init__(
         self,
         error_type: ErrorType = ErrorType.AUTHENTICATION_FAILED,
-        message: str = None,
+        message: Optional[str] = None,
     ) -> None:
         super().__init__(error_type, message)
 
@@ -156,7 +157,7 @@ class NoTokenError(AuthenticationError):
     An error thrown when a token is required but not provided.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.NO_TOKEN, message)
 
 
@@ -165,7 +166,7 @@ class InvalidTokenError(AuthenticationError):
     An error thrown when a provided token is invalid.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.INVALID_TOKEN, message)
 
 
@@ -174,7 +175,7 @@ class UnauthorizedError(IDMappingError):
     An error thrown when a user attempts a disallowed action.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.UNAUTHORIZED, message)
 
 
@@ -183,7 +184,7 @@ class MissingParameterError(IDMappingError):
     An error thrown when a required parameter is missing.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.MISSING_PARAMETER, message)
 
 
@@ -192,7 +193,7 @@ class IllegalParameterError(IDMappingError):
     An error thrown when a provided parameter is illegal.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.ILLEGAL_PARAMETER, message)
 
 
@@ -201,5 +202,5 @@ class IllegalUsernameError(IDMappingError):
     An error thrown when a provided username is illegal.
     """
 
-    def __init__(self, message: str = None) -> None:
+    def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(ErrorType.ILLEGAL_USER_NAME, message)

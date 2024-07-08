@@ -29,6 +29,7 @@ from typing import (
     Dict,
     Any,
     List,
+    Optional,
 )  # @UnusedImport pydev gets confused here
 from jgikbase.idmapping.core.object_id import NamespaceID, Namespace, ObjectID
 
@@ -394,7 +395,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
                 "Connection to database failed: " + str(e)
             ) from e
 
-    def get_namespaces(self, nids: Iterable[NamespaceID] = None) -> Set[Namespace]:
+    def get_namespaces(self, nids: Optional[Iterable[NamespaceID]] = None) -> Set[Namespace]:
         query = {}
         nidstr: List[str] = []
         if nids:
@@ -456,7 +457,7 @@ class IDMappingMongoStorage(_IDMappingStorage):
             ) from e
 
     def find_mappings(
-        self, oid: ObjectID, ns_filter: Iterable[NamespaceID] = None
+        self, oid: ObjectID, ns_filter: Optional[Iterable[NamespaceID]] = None
     ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         not_none(oid, "oid")
         # could probably make a method & run it twice here but not worth the trouble

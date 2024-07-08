@@ -17,7 +17,7 @@ from logging import LogRecord
 import json
 from flask.app import Flask
 from flask import g
-from typing import IO
+from typing import IO, Optional
 from jgikbase.test.idmapping.test_utils import (
     assert_ms_epoch_close_to_now,
     CALLID_PATTERN,
@@ -28,7 +28,7 @@ VERSION = "0.1.1"
 WERKZEUG = "werkzeug/2.0.3"
 
 
-def build_app(ignore_ip_headers=False, logstream: IO[str] = None):
+def build_app(ignore_ip_headers=False, logstream: Optional[IO[str]] = None):
     builder = create_autospec(IDMappingBuilder, spec_set=True, instance=True)
     mapper = create_autospec(IDMapper, spec_set=True, instance=True)
     cfg = Mock()

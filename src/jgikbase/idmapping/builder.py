@@ -20,7 +20,7 @@ from jgikbase.idmapping.core.user import AuthsourceID
 import importlib
 from jgikbase.idmapping.core.arg_check import not_none
 from jgikbase.idmapping.storage.id_mapping_storage import IDMappingStorage
-from typing import Dict, Set  # @UnusedImport pydev
+from typing import Dict, Set, Optional  # @UnusedImport pydev
 from typing import cast
 
 
@@ -30,7 +30,7 @@ class IDMappingBuildException(Exception):
 
 class _SometimesMyPyIsReallyStupid:  # pragma: no cover
     @staticmethod
-    def build_lookup(config: Dict[str, str]) -> UserLookup:
+    def build_lookup(config: Dict[str, str]) -> UserLookup: # type: ignore[empty-body]
         pass
 
 
@@ -55,7 +55,7 @@ class IDMappingBuilder:
         Create a builder.
         """
 
-    def build_local_user_lookup(self, cfgpath: Path = None) -> LocalUserLookup:
+    def build_local_user_lookup(self, cfgpath: Optional[Path] = None) -> LocalUserLookup:
         """
         Build a local user lookup handler.
 
@@ -71,7 +71,7 @@ class IDMappingBuilder:
             self.cfg = KBaseConfig(cfgpath)
         return self.cfg
 
-    def get_cfg(self, cfgpath: Path = None) -> KBaseConfig:
+    def get_cfg(self, cfgpath: Optional[Path] = None) -> KBaseConfig:
         """
         Get the system configuration.
 
@@ -101,7 +101,7 @@ class IDMappingBuilder:
             self._storage: IDMappingStorage = IDMappingMongoStorage(db)
         return self._storage
 
-    def build_id_mapping_system(self, cfgpath: Path = None) -> IDMapper:
+    def build_id_mapping_system(self, cfgpath: Optional[Path] = None) -> IDMapper:
         """
         Build the ID Mapping system.
 
