@@ -101,7 +101,7 @@ def _format_error(
         "httpcode": httpcode,
         "httpstatus": responses[httpcode],
         "message": errprefix + str(err),
-        "callid": getattr(flask_req_global, 'req_id', None),
+        "callid": getattr(flask_req_global, 'req_id'),
         "time": epoch_ms(),
     }
     if errtype:
