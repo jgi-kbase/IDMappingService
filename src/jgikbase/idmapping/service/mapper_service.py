@@ -241,9 +241,7 @@ def create_app(
     @app.before_request
     def preprocess_request():
         # bandit doesn't like random for crypo purposes, but we're not doing that here
-        flask_req_global.req_id = str(random.randrange(10000000000000000)).zfill(
-            16
-        )  # nosec
+        flask_req_global.req_id = str(random.randrange(10000000000000000)).zfill(16)  # nosec
         flask_req_global.method = request.method
         flask_req_global.ip = get_ip_address(request, app.config[_IGNORE_IP_HEADERS])
         iph = format_ip_headers(request, app.config[_IGNORE_IP_HEADERS])
