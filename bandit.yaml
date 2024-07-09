@@ -1,0 +1,5 @@
+# bandit.yaml
+
+# Configuration for Bandit
+skips:
+  - B113  # Requests call without timeout

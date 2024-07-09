@@ -79,7 +79,7 @@ class KBaseConfig:
     KEY_MONGO_USER = "mongo-user"
     """ The key corresponding to the value containing the MongoDB username. """
 
-    KEY_MONGO_PWD = "mongo-pwd"
+    KEY_MONGO_PWD = "mongo-pwd"  # nosec
     """ The key corresponding to the value containing the MongoDB user password. """
 
     KEY_AUTH_ENABLED = "authentication-enabled"

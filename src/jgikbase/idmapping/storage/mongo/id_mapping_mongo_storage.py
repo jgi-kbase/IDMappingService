@@ -64,7 +64,7 @@ _COL_MAPPINGS = "map"
 # user collection fields
 _FLD_AUTHSOURCE = "auth"
 _FLD_USER = "user"
-_FLD_TOKEN = "hshtkn"
+_FLD_TOKEN = "hshtkn"  # nosec
 _FLD_ADMIN = "admin"
 
 # namespace collection fields

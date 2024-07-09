@@ -24,7 +24,7 @@ class IDMappingCLI:
     _USER = '--user'
     _LIST = '--list-users'
     _CREATE = '--create'
-    _NEW_TOKEN = '--new-token'
+    _NEW_TOKEN = '--new-token'  # nosec
     _ADMIN = '--admin'
 
     _TRUE = 'true'
