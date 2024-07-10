@@ -10,13 +10,16 @@ ARG BRANCH=develop
 RUN apk add gcc linux-headers libc-dev make git
 COPY --from=dockerize /kb/deployment/bin/dockerize /usr/bin/
 
-ADD requirements.txt /tmp/
+# install pipenv
+RUN pip install --upgrade pip && \
+    pip install pipenv
 
-RUN pip install -r /tmp/requirements.txt
-
+WORKDIR /kb
 ADD . /kb
 
-RUN cd /kb && make
+# install deps
+RUN pipenv sync --system
+RUN make
 
 # The BUILD_DATE value seem to bust the docker cache when the timestamp changes, move to
 # the end
@@ -27,7 +30,6 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       us.kbase.vcs-branch=$BRANCH \
       maintainer="Steve Chan sychan@lbl.gov"
 
-WORKDIR /kb/
 ENV KB_DEPLOYMENT_CONFIG=/kb/deploy.cfg
 ENV PYTHONPATH=$PYTHONPATH:/kb/src
 
