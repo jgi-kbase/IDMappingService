@@ -81,9 +81,6 @@ class IDMappingBuilder:
         return self._set_cfg(cfgpath)
 
     def _build_storage(self) -> IDMappingStorage:
-        if type(self.cfg.mongo_db) is not str:
-            raise ValueError("mongo_db name must be a string")
-
         if not hasattr(self, "_storage"):
             if self.cfg.mongo_user:
                 # NOTE this is currently only tested manually.
@@ -100,6 +97,8 @@ class IDMappingBuilder:
                 client.admin.command("ismaster")
             except ConnectionFailure as e:
                 raise IDMappingBuildException("Connection to database failed") from e
+
+            assert isinstance(self.cfg.mongo_db, str)  # fix for mypy complaint
             db = client[self.cfg.mongo_db]
             self._storage: IDMappingStorage = IDMappingMongoStorage(db)
         return self._storage
