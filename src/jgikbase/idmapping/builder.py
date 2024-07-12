@@ -82,7 +82,7 @@ class IDMappingBuilder:
 
     def _build_storage(self) -> IDMappingStorage:
         if type(self.cfg.mongo_db) is not str:
-            raise ValueError("Collection name must be a string")
+            raise ValueError("mongo_db name must be a string")
 
         if not hasattr(self, "_storage"):
             if self.cfg.mongo_user:

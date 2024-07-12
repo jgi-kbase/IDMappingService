@@ -74,13 +74,13 @@ def test_collection_names(idstorage, mongo):
 def test_index_config(idstorage, mongo):
     v = mongo.index_version
     indexes = mongo.client[TEST_DB_NAME]["config"].index_information()
+    test_utils.remove_ns_from_index_info(indexes)
     expected = {
-        "_id_": {"v": v, "key": [("_id", 1)], "ns": "test_id_mapping.config"},
+        "_id_": {"v": v, "key": [("_id", 1)]},
         "schema_1": {
             "v": v,
             "unique": True,
             "key": [("schema", 1)],
-            "ns": "test_id_mapping.config",
         },
     }
     assert indexes == expected
@@ -89,19 +89,18 @@ def test_index_config(idstorage, mongo):
 def test_index_user(idstorage, mongo):
     v = mongo.index_version
     indexes = mongo.client[TEST_DB_NAME]["users"].index_information()
+    test_utils.remove_ns_from_index_info(indexes)
     expected = {
-        "_id_": {"v": v, "key": [("_id", 1)], "ns": "test_id_mapping.users"},
+        "_id_": {"v": v, "key": [("_id", 1)]},
         "user_1": {
             "v": v,
             "unique": True,
             "key": [("user", 1)],
-            "ns": "test_id_mapping.users",
         },
         "hshtkn_1": {
             "v": v,
             "unique": True,
             "key": [("hshtkn", 1)],
-            "ns": "test_id_mapping.users",
         },
     }
     assert indexes == expected
@@ -110,13 +109,13 @@ def test_index_user(idstorage, mongo):
 def test_index_namespace(idstorage, mongo):
     v = mongo.index_version
     indexes = mongo.client[TEST_DB_NAME]["ns"].index_information()
+    test_utils.remove_ns_from_index_info(indexes)
     expected = {
-        "_id_": {"v": v, "key": [("_id", 1)], "ns": "test_id_mapping.ns"},
+        "_id_": {"v": v, "key": [("_id", 1)]},
         "nsid_1": {
             "v": v,
             "unique": True,
             "key": [("nsid", 1)],
-            "ns": "test_id_mapping.ns",
         },
     }
     assert indexes == expected
@@ -125,6 +124,7 @@ def test_index_namespace(idstorage, mongo):
 def test_index_mappings(idstorage, mongo):
     v = mongo.index_version
     indexes = mongo.client[TEST_DB_NAME]["map"].index_information()
+    test_utils.remove_ns_from_index_info(indexes)
     expected = {
         "_id_": {"v": v, "key": [("_id", 1)], "ns": "test_id_mapping.map"},
         "pnsid_1_pid_1_snsid_1_sid_1": {
