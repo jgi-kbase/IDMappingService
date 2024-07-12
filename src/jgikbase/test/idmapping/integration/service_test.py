@@ -130,7 +130,7 @@ def service_port(mongo):
 
 
 def get_storage_instance(mongo) -> IDMappingStorage:
-    client = MongoClient("localhost:" + str(mongo.port))
+    client: MongoClient = MongoClient("localhost:" + str(mongo.port))
     return IDMappingMongoStorage(client[DB_NAME])
 
 

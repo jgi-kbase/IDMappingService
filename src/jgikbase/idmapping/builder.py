@@ -81,10 +81,13 @@ class IDMappingBuilder:
         return self._set_cfg(cfgpath)
 
     def _build_storage(self) -> IDMappingStorage:
+        if type(self.cfg.mongo_db) != str:
+            raise ValueError("Collection name must be a string")
+
         if not hasattr(self, "_storage"):
             if self.cfg.mongo_user:
                 # NOTE this is currently only tested manually.
-                client = MongoClient(
+                client: MongoClient = MongoClient(
                     self.cfg.mongo_host,
                     authSource=self.cfg.mongo_db,
                     username=self.cfg.mongo_user,

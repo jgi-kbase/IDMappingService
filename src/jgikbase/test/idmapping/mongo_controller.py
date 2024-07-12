@@ -80,7 +80,7 @@ class MongoController:
             command, stdout=self._outfile, stderr=subprocess.STDOUT
         )
         time.sleep(1)  # wait for server to start up
-        self.client = MongoClient("localhost", self.port)
+        self.client: MongoClient = MongoClient("localhost", self.port)
         # check that the server is up. See
         # https://api.mongodb.com/python/3.7.0/api/pymongo/mongo_client.html
         #    #pymongo.mongo_client.MongoClient
