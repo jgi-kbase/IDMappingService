@@ -52,6 +52,9 @@ class MongoController:
         if not root_temp_dir:
             raise ValueError("root_temp_dir is None")
 
+        # semver parser
+        s = semver.VersionInfo.parse
+
         # make temp dirs
         root_temp_dir = root_temp_dir.absolute()
         os.makedirs(root_temp_dir, exist_ok=True)
@@ -62,6 +65,7 @@ class MongoController:
         os.makedirs(data_dir)
 
         self.port = test_utils.find_free_port()
+        mongodb_ver = self.get_mongodb_version(mongoexe)
 
         command = [
             str(mongoexe),
@@ -69,8 +73,11 @@ class MongoController:
             str(self.port),
             "--dbpath",
             str(data_dir),
-            "--nojournal",
         ]
+
+        if s(mongodb_ver) < s('6.1.0'):
+            command.extend(['--nojournal'])
+
         if use_wired_tiger:
             command.extend(["--storageEngine", "wiredTiger"])
 
@@ -80,18 +87,36 @@ class MongoController:
             command, stdout=self._outfile, stderr=subprocess.STDOUT
         )
         time.sleep(1)  # wait for server to start up
-        self.client: MongoClient = MongoClient("localhost", self.port)
-        # check that the server is up. See
-        # https://api.mongodb.com/python/3.7.0/api/pymongo/mongo_client.html
-        #    #pymongo.mongo_client.MongoClient
-        self.client.admin.command("ismaster")
+
+        try:
+            self.client: MongoClient = MongoClient('localhost', self.port)
+            # This line will raise an exception if the server is down
+            server_info = self.client.server_info()
+        except Exception as e:
+            raise ValueError("MongoDB server is down") from e
 
         # get some info about the db
-        self.db_version = self.client.server_info()["version"]
+        self.db_version = server_info['version']
         self.index_version = 2 if (semver.compare(self.db_version, "3.4.0") >= 0) else 1
         self.includes_system_indexes = (
             semver.compare(self.db_version, "3.2.0") < 0 and not use_wired_tiger
         )
+
+    def get_mongodb_version(self, mongoexe: Path) -> str:
+        try:
+            process = subprocess.Popen(
+                [str(mongoexe), '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            stdout, stderr = process.communicate()
+
+            if process.returncode == 0:
+                version_line = stdout.decode().split('\n')[0]
+                mongodb_version = version_line.split()[2][1:]
+                return mongodb_version.strip()
+            else:
+                raise ValueError(f"Error: {stderr.decode()}")
+        except Exception as e:
+            raise ValueError("Failed to get MongoDB version") from e
 
     def destroy(self, delete_temp_files: bool) -> None:
         """
