@@ -41,8 +41,8 @@ jobs:
         # TODO switch to pipenv
         # install python libraries
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r dev-requirements.txt
+        pip install pipenv
+        pipenv sync --system --dev
 
         # set up mongo
         cd ..
