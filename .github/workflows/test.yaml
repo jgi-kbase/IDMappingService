@@ -41,7 +41,6 @@ jobs:
       shell: bash
       run: |
 
-        # TODO switch to pipenv
         # install python libraries
         python -m pip install --upgrade pip
         pip install pipenv
