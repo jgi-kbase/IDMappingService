@@ -97,9 +97,7 @@ class IDMappingBuilder:
                 client.admin.command("ismaster")
             except ConnectionFailure as e:
                 raise IDMappingBuildException("Connection to database failed") from e
-
-            assert isinstance(self.cfg.mongo_db, str)  # fix for mypy complaint
-            db = client[self.cfg.mongo_db]
+            db = client[self.cfg.mongo_db]  # type: ignore
             self._storage: IDMappingStorage = IDMappingMongoStorage(db)
         return self._storage
 
