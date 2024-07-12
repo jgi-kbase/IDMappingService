@@ -126,17 +126,15 @@ def test_index_mappings(idstorage, mongo):
     indexes = mongo.client[TEST_DB_NAME]["map"].index_information()
     test_utils.remove_ns_from_index_info(indexes)
     expected = {
-        "_id_": {"v": v, "key": [("_id", 1)], "ns": "test_id_mapping.map"},
+        "_id_": {"v": v, "key": [("_id", 1)]},
         "pnsid_1_pid_1_snsid_1_sid_1": {
             "v": v,
             "unique": True,
             "key": [("pnsid", 1), ("pid", 1), ("snsid", 1), ("sid", 1)],
-            "ns": "test_id_mapping.map",
         },
         "snsid_1_sid_1": {
             "v": v,
             "key": [("snsid", 1), ("sid", 1)],
-            "ns": "test_id_mapping.map",
         },
     }
     assert indexes == expected
