@@ -144,7 +144,7 @@ def test_index_mappings(idstorage, mongo):
 
 def test_startup_and_check_config_doc(idstorage, mongo):
     col = mongo.client[TEST_DB_NAME]["config"]
-    assert list(col.find({})) == 1  # only one config doc
+    assert len(list(col.find({}))) == 1  # only one config doc
     cfgdoc = col.find_one()
     assert cfgdoc["schema"] == "schema"
     assert cfgdoc["schemaver"] == 1
