@@ -84,7 +84,7 @@ class IDMappingBuilder:
         if not hasattr(self, "_storage"):
             if self.cfg.mongo_user:
                 # NOTE this is currently only tested manually.
-                client = MongoClient(
+                client: MongoClient = MongoClient(
                     self.cfg.mongo_host,
                     authSource=self.cfg.mongo_db,
                     username=self.cfg.mongo_user,
@@ -97,7 +97,7 @@ class IDMappingBuilder:
                 client.admin.command("ismaster")
             except ConnectionFailure as e:
                 raise IDMappingBuildException("Connection to database failed") from e
-            db = client[self.cfg.mongo_db]
+            db = client[self.cfg.mongo_db]  # type: ignore
             self._storage: IDMappingStorage = IDMappingMongoStorage(db)
         return self._storage
 

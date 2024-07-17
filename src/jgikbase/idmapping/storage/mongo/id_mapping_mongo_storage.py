@@ -149,7 +149,8 @@ class IDMappingMongoStorage(_IDMappingStorage):
         except DuplicateKeyError:
             # ok, the schema version document is already there, this isn't the first time this
             # database as been used. Now check the document is ok.
-            if col.count() != 1:
+            docs = list(col.find({}))
+            if len(docs) != 1:
                 raise StorageInitException(
                     "Multiple config objects found in the database. "
                     + "This should not happen, something is very wrong."

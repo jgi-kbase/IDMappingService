@@ -24,6 +24,9 @@ jobs:
           - python: '3.9.19'
             mongo: 'mongodb-linux-x86_64-3.6.23'
             wired_tiger: 'false'
+          - python: '3.9.19'
+            mongo: 'mongodb-linux-x86_64-ubuntu2204-7.0.4'
+            wired_tiger: 'true'
 
     steps:
     - name: Check out GitHub repo
@@ -38,7 +41,6 @@ jobs:
       shell: bash
       run: |
 
-        # TODO switch to pipenv
         # install python libraries
         python -m pip install --upgrade pip
         pip install pipenv

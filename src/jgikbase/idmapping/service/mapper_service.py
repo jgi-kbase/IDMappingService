@@ -207,14 +207,15 @@ class JSONFlaskLogFormatter(Formatter):
             "level": record.levelname,
             "time": epoch_ms(),
             "source": record.name,
-            "ip": flask_req_global.ip,
-            "method": flask_req_global.method,
-            "callid": flask_req_global.req_id,
             "msg": record.getMessage(),
         }
         # https://docs.python.org/3.6/library/sys.html#sys.exc_info
         if record.exc_info and record.exc_info != (None, None, None):
             log["excep"] = _format_exception(record.exc_info[1])
+        if flask_req_global:
+            log["ip"] = flask_req_global.ip
+            log["method"] = flask_req_global.method
+            log["callid"] = flask_req_global.req_id
         return json.dumps(log)
 
 
