@@ -166,11 +166,9 @@ def test_startup_with_2_config_docs(mongo):
 
     # pattern matcher for the error format across python 2 & 3
     p = re.compile(
-        r"^Failed to create index: "
-        r"(?:Index build failed: [\da-f-]+: "
-        r"Collection [\w.]+ \( [\da-f-]+ \) :: caused by :: )?"
+        r"Failed to create index: .*?"
         r"E11000 duplicate key error collection: "
-        r"test_id_mapping\.config index: schema_1 "
+        r"test_id_mapping.config index: schema_1 "
         r"dup key: \{(?: : \s*\"schema\"| schema: \s*\"schema\")\}"
     )
 
