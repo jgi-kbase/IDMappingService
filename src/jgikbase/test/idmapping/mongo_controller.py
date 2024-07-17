@@ -14,7 +14,7 @@ import time
 import shutil
 from pymongo.mongo_client import MongoClient
 import semver
-from semver.VersionInfo import parse as sver
+from semver.VersionInfo import parse as sver # type: ignore
 
 
 class MongoController:
