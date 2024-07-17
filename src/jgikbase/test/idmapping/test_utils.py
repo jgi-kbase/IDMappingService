@@ -76,6 +76,11 @@ def find_free_port() -> int:
         return s.getsockname()[1]
 
 
+def remove_ns_from_index_info(index_info: dict) -> None:
+    for index_detail in index_info.values():
+        index_detail.pop("ns", None)
+
+
 def assert_exception_correct(got: Exception, expected: Exception):
     assert type(got) is type(expected)
     assert got.args == expected.args

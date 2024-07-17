@@ -189,6 +189,47 @@ def test_format_ip_headers_with_real():
     ]
 
 
+def test_log_formatter_with_no_test_request_context():
+    f = JSONFlaskLogFormatter("service name")
+    format1 = f.format(
+            LogRecord(
+                "my name", 40, "path", 2, "%s foo %s", ("bar", "baz"), None, None, None
+            )
+        )
+    format2 = f.format(
+        LogRecord(
+            "my name",
+            40,
+            "path",
+            2,
+            "%s foo %s",
+            ("bar", "baz"),
+            (None, None, None),
+            None,
+            None,
+        )
+    )
+    contents1 = json.loads(format1)
+    contents2 = json.loads(format2)
+    time1 = contents1["time"]
+    del contents1["time"]
+    time2 = contents2["time"]
+    del contents2["time"]
+
+    expected = {
+        "service": "service name",
+        "level": "ERROR",
+        "source": "my name",
+        "msg": "bar foo baz",
+    }
+
+    assert contents1 == expected
+    assert contents2 == expected
+
+    assert_ms_epoch_close_to_now(time1)
+    assert_ms_epoch_close_to_now(time2)
+
+
 def test_log_formatter_no_exception():
     app = Flask("foo")
     f = JSONFlaskLogFormatter("service name")
