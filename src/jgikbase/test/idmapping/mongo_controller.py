@@ -14,7 +14,6 @@ import time
 import shutil
 from pymongo.mongo_client import MongoClient
 import semver
-from semver.VersionInfo import parse as sver  # type: ignore
 
 
 class MongoController:
@@ -73,7 +72,7 @@ class MongoController:
             str(data_dir),
         ]
 
-        if sver(mongodb_ver) < sver('6.1.0'):
+        if semver.VersionInfo.parse(mongodb_ver) < semver.VersionInfo.parse('6.1.0'):
             command.extend(['--nojournal'])
 
         if use_wired_tiger:
