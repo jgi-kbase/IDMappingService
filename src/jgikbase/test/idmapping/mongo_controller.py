@@ -14,6 +14,7 @@ import time
 import shutil
 from pymongo.mongo_client import MongoClient
 import semver
+from semver.VersionInfo import parse as sver
 
 
 class MongoController:
@@ -52,9 +53,6 @@ class MongoController:
         if not root_temp_dir:
             raise ValueError("root_temp_dir is None")
 
-        # semver parser
-        s = semver.VersionInfo.parse
-
         # make temp dirs
         root_temp_dir = root_temp_dir.absolute()
         os.makedirs(root_temp_dir, exist_ok=True)
@@ -75,7 +73,7 @@ class MongoController:
             str(data_dir),
         ]
 
-        if s(mongodb_ver) < s('6.1.0'):
+        if sver(mongodb_ver) < sver('6.1.0'):
             command.extend(['--nojournal'])
 
         if use_wired_tiger:

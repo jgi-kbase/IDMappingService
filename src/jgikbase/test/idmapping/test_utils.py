@@ -77,7 +77,7 @@ def find_free_port() -> int:
 
 
 def remove_ns_from_index_info(index_info: dict) -> None:
-    for _, index_detail in index_info.items():
+    for index_detail in index_info.values():
         index_detail.pop("ns", None)
 
 

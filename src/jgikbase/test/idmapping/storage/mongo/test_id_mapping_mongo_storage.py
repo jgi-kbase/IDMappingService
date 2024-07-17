@@ -167,8 +167,9 @@ def test_startup_with_2_config_docs(mongo):
     # pattern matcher for the error format across python 2 & 3
     p = re.compile(
         r'Failed to create index: .*?'
-        r'E11000 duplicate key error collection: .*?'
-        r' index: schema_1 dup key: .*?'
+        r'E11000 duplicate key error collection: '
+        r'test_id_mapping.config index: schema_1 dup key: '
+        r'\{(\s*: \s*"schema"| schema: \s*"schema")\}'
     )
 
     with raises(StorageInitException) as got:
