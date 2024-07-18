@@ -67,7 +67,7 @@ def test_id_mapping_service(ready) -> None:
     create_namespaces(token)
     add_admins(user, token)
     create_mappings(token)
-    list_mappings(token)
+    list_mappings()
 
 
 def create_namespaces(token) -> None:
@@ -103,20 +103,16 @@ def add_admins(user: str, token: str) -> None:
 def create_mappings(token: str) -> None:
     response = requests.put(
         ID_MAPPING_URL + f"/api/v1/mapping/{NAMESPACE_1}/{NAMESPACE_2}",
-        headers={
-            "Authorization": "local " + token,
-            "content-type": "x-www-form-urlencoded",
-        },
-        data=json.dumps({"id1": "id2", "id3": "id4", "id5": "id6"}),
+        headers={"Authorization": "local " + token},
+        json={"id1": "id2", "id3": "id4", "id5": "id6"},
     )
 
     assert response.status_code == 204
 
 
-def list_mappings(token: str) -> None:
+def list_mappings() -> None:
     response = requests.get(
         ID_MAPPING_URL + f"/api/v1/mapping/{NAMESPACE_2}?separate",
-        headers={"Authorization": "local " + token},
         data=json.dumps({"ids": ["id2", "id4", "id8"]}),
     )
 
@@ -131,11 +127,13 @@ def list_mappings(token: str) -> None:
 def test_id_mapping_version() -> None:
     """get the current id mapping service version"""
     res = requests.get(ID_MAPPING_URL)
-    res.status_code == 200
+    assert res.status_code == 200
     data = res.json()
     assert data["service"] == SERVICE
     assert data["version"] == ID_MAPPING_SERVICE_VERSION
 
 
 def get_user_and_token() -> tuple[str, str]:
-    return os.environ["USER"], os.environ["TOKEN"].split("\n")[1]
+    user = os.environ["USER"]
+    token = os.environ["ID_MAPPER_OUTPUT"].split("\n")[1]
+    return user, token

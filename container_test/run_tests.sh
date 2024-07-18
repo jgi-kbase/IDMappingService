@@ -16,7 +16,7 @@ fi
 
 export USER=myname
 # create user myname with token
-export TOKEN=$(docker exec id_mapper_container /bin/sh ./id_mapper --user $USER --create)
+export ID_MAPPER_OUTPUT=$(docker exec id_mapper_container /bin/sh ./id_mapper --user $USER --create)
 # set user myname's admin state to true
 docker exec id_mapper_container /bin/sh ./id_mapper --user $USER --admin true
 
