@@ -30,6 +30,7 @@ class KBaseConfig:
     mongo-db
     mongo-user (optional)
     mongo-pwd (optional)
+    mongo-retrywrites (optional)
     authentication-enabled (optional)
     authentication-admin-enabled (optional)
     keys specific to each authentication source. See the example deploy.cfg file in this repo
@@ -43,6 +44,7 @@ class KBaseConfig:
     :ivar mongo_db: the MongoDB database to use for the ID mapping service.
     :ivar mongo_user: the username to use with MongoDB, if any.
     :ivar mongo_pwd: the password to use with MongoDB, if any.
+    :ivar mongo_retrywrites: whether to enable retryWrites parameter with MongoDB.
     :ivar auth_enabled: the set of authentication sources that are enabled.
     :ivar auth_admin_enabled: the set of authentication sources that are trusted to define
         system administrators.
@@ -81,6 +83,9 @@ class KBaseConfig:
 
     KEY_MONGO_PWD = "mongo-pwd"  # nosec
     """ The key corresponding to the value containing the MongoDB user password. """
+
+    KEY_MONGO_RETRYWRITES = "mongo-retrywrites"
+    """ The key corresponding to the value containing the MongoDB retrywrites. """
 
     KEY_AUTH_ENABLED = "authentication-enabled"
     """
@@ -130,6 +135,7 @@ class KBaseConfig:
         self.ignore_ip_headers = self._TRUE == cfg.get(self.KEY_IGNORE_IP_HEADERS)
         self.mongo_host = self._get_string(self.KEY_MONGO_HOST, cfg)
         self.mongo_db = self._get_string(self.KEY_MONGO_DB, cfg)
+        self.mongo_retrywrites = self._TRUE == self._get_string(self.KEY_MONGO_RETRYWRITES, cfg, False)
         self.mongo_user = self._get_string(self.KEY_MONGO_USER, cfg, False)
         mongo_pwd = self._get_string(self.KEY_MONGO_PWD, cfg, False)
         if bool(self.mongo_user) ^ bool(mongo_pwd):  # xor
