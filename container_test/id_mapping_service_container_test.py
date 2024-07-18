@@ -129,7 +129,7 @@ def list_mappings(token: str) -> None:
 
 
 def test_id_mapping_version() -> None:
-    """get the current id maaping service version"""
+    """get the current id mapping service version"""
     res = requests.get(ID_MAPPING_URL)
     res.status_code == 200
     data = res.json()
@@ -138,4 +138,4 @@ def test_id_mapping_version() -> None:
 
 
 def get_user_and_token() -> tuple[str, str]:
-    return os.environ["USER"], os.environ["TOKEN"]
+    return os.environ["USER"], os.environ["TOKEN"].split("\n")[1]
