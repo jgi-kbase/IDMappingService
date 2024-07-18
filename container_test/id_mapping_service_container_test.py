@@ -56,7 +56,7 @@ def wait_for_id_mapping_service():
                 time.sleep(t)
             attempt += 1
     raise Exception(
-        f"Couldn't connect to the handle service after {max_attempts} attempts"
+        f"Couldn't connect to the id mapping service after {max_attempts} attempts"
     )
 
 
