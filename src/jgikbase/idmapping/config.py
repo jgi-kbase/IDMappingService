@@ -135,9 +135,10 @@ class KBaseConfig:
         self.ignore_ip_headers = self._TRUE == cfg.get(self.KEY_IGNORE_IP_HEADERS)
         self.mongo_host = self._get_string(self.KEY_MONGO_HOST, cfg)
         self.mongo_db = self._get_string(self.KEY_MONGO_DB, cfg)
-        self.mongo_retrywrites = self._TRUE == self._get_string(self.KEY_MONGO_RETRYWRITES, cfg, False)
         self.mongo_user = self._get_string(self.KEY_MONGO_USER, cfg, False)
         mongo_pwd = self._get_string(self.KEY_MONGO_PWD, cfg, False)
+        mongo_retrywrites_value = self._get_string(self.KEY_MONGO_RETRYWRITES, cfg, False)
+        self.mongo_retrywrites = self._TRUE == mongo_retrywrites_value
         if bool(self.mongo_user) ^ bool(mongo_pwd):  # xor
             mongo_pwd = None
             raise IDMappingConfigError(
