@@ -33,7 +33,7 @@ jobs:
           pip install pytest requests
 
           # set up deploy.cfg
-          cp -n deplop.cfg.example deploy.cfg
+          cp -n deploy.cfg.example deploy.cfg
           sed -i "s#^mongo-host.*#mongo-host=mongo#" deploy.cfg
           sed -i "s#^mongo-db.*#mongo-db=idmapping#" deploy.cfg
 

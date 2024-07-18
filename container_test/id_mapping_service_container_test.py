@@ -137,5 +137,5 @@ def test_id_mapping_version() -> None:
     assert data["version"] == ID_MAPPING_SERVICE_VERSION
 
 
-def get_user_and_token():
+def get_user_and_token() -> tuple[str, str]:
     return os.environ["USER"], os.environ["TOKEN"]
