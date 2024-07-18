@@ -247,8 +247,8 @@ A maximum of 10000 ids may be supplied.
 
 ## Requirements
 
-* Python 3.6+
-* MongoDB 2.6+
+* Python 3.9.19
+* MongoDB 3.6+
 * Make
 * git
 
@@ -257,7 +257,7 @@ The system is tested on Ubuntu, but should probably work on other operating syst
 ## Setup
 
 * Install the runtime dependencies
-  * `pip install -r requirements.txt`
+  * `pipenv sync --system`
 * Start MongoDB
 * From the IDMappingService repo:
   * `make`
@@ -425,8 +425,6 @@ Anything else is mapped to 500.
 
 ## TODO
 
-* travis
-  * try mongo 4 - maybe wait for a couple bugfix versions
 * integration tests with KBase auth server? - lot of work for little gain
 * if performance becomes an issue
   * push the bulk operations further down the stack

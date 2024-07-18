@@ -19,7 +19,7 @@ sh container_test/run_tests.sh
 """
 
 SERVICE = "ID Mapping Service"
-ID_MAPPING_SERVICE_VERSION = "0.1.1"
+ID_MAPPING_SERVICE_VERSION = "0.1.2"
 
 ID_MAPPING_URL = "http://localhost:8080"
 WAIT_TIMES = [1, 2, 5, 10, 30]
