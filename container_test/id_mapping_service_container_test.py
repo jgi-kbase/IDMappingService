@@ -14,7 +14,7 @@ Assumes that the id mapping service is running locally on ports 8080.
 
 Use the wrapper shell script, `run_tests.sh`, to create the necessary set up and run the tests:
 
-sh scripts/run_tests.sh
+sh container_test/run_tests.sh
 
 """
 
