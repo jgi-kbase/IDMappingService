@@ -89,9 +89,12 @@ class IDMappingBuilder:
                     authSource=self.cfg.mongo_db,
                     username=self.cfg.mongo_user,
                     password=self.cfg.mongo_pwd,
+                    retryWrites=self.cfg.mongo_retrywrites,
                 )
             else:
-                client = MongoClient(self.cfg.mongo_host)
+                client = MongoClient(
+                    self.cfg.mongo_host, retryWrites=self.cfg.mongo_retrywrites
+                )
             try:
                 # The ismaster command is cheap and does not require auth.
                 client.admin.command("ismaster")

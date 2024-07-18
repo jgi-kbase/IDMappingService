@@ -3,6 +3,7 @@ mongo-host={{ default .Env.mongo_host "ci-mongo" }}
 mongo-db={{ default .Env.mongo_db "idmapping" }}
 mongo-user={{ default .Env.mongo_user "" }}
 mongo-pwd={{ default .Env.mongo_pwd "" }}
+mongo-retrywrites={{ default .Env.mongo_retrywrites "false" }}
 
 authentication-enabled={{ default .Env.authentication_enabled "local, kbase" }}
 authentication-admin-enabled={{ default .Env.authentication_admin_enabled "local, kbase" }}

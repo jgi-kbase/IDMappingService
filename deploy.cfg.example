@@ -63,3 +63,7 @@ auth-source-kbase-init-token=<insert kbase service token here>
 # This configuration variable defines the name of the custom role in the KBase auth service
 # that specifies the user is a system administrator of the ID mapping service.
 auth-source-kbase-init-admin-role=ID_MAPPER_ADMIN
+
+# Whether to enable ('true') the MongoDB retryWrites parameter or not (anything other than 'true').
+# See https://www.mongodb.com/docs/manual/core/retryable-writes/
+mongo-retrywrites=false
