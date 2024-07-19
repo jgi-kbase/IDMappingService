@@ -9,7 +9,7 @@ flask = "==2.0.0"
 gevent = "==24.2.1"
 gunicorn = "==22.0.0"
 pymongo = "==4.7.2"
-requests = "==2.20.0"
+requests = "==2.32.2"
 types-requests = "==2.25.0"
 werkzeug = "==2.0.3"
 
