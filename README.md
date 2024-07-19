@@ -247,7 +247,7 @@ A maximum of 10000 ids may be supplied.
 
 ## Requirements
 
-* Python 3.9.19
+* Python 3.9+
 * MongoDB 3.6+
 * Make
 * git
@@ -257,7 +257,8 @@ The system is tested on Ubuntu, but should probably work on other operating syst
 ## Setup
 
 * Install the runtime dependencies
-  * `pipenv sync --system`
+  * `pipenv sync`
+  * `pipenv shell`
 * Start MongoDB
 * From the IDMappingService repo:
   * `make`
