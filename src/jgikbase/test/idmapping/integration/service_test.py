@@ -34,7 +34,7 @@ import json
 
 # Should test logging here...? Skip for now. Maybe add later.
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 
 DB_NAME = "test_db_idmapping_service_integration"

@@ -24,7 +24,7 @@ from jgikbase.test.idmapping.test_utils import (
     assert_json_error_correct,
 )
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 WERKZEUG = "werkzeug/2.0.3"
 
 
