@@ -10,7 +10,7 @@ gevent = "==24.2.1"
 gunicorn = "==22.0.0"
 pymongo = "==4.7.2"
 requests = "==2.20.0"
-types-requests = "==2.25.0"
+types-requests = "==2.31.0.6"
 werkzeug = "==2.0.3"
 
 [dev-packages]
