@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "64e459eb467c3ae215a980b94f5d4fc418dceb8dd1343b3b2014b61b2927a541"
+            "sha256": "7506aebe9e8b7224fae3a6c57707208b7f6fef3efd5099620c7cf69682b6c5d0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -878,11 +878,12 @@
         },
         "semver": {
             "hashes": [
-                "sha256:41c9aa26c67dc16c54be13074c352ab666bce1fa219c7110e8f03374cd4206b0",
-                "sha256:5b09010a66d9a3837211bb7ae5a20d10ba88f8cb49e92cb139a69ef90d5060d8"
+                "sha256:6253adb39c70f6e51afed2fa7152bcd414c411286088fb4b9effb133885ab4cc",
+                "sha256:b1ea4686fe70b981f85359eda33199d60c53964284e0cfb4977d243e37cf4bf4"
             ],
             "index": "pypi",
-            "version": "==2.8.1"
+            "markers": "python_version >= '3.7'",
+            "version": "==3.0.2"
         },
         "setuptools": {
             "hashes": [
