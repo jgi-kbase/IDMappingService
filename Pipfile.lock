@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "64e459eb467c3ae215a980b94f5d4fc418dceb8dd1343b3b2014b61b2927a541"
+            "sha256": "1dcfc2db04f92f0c12e4f5f1ecc0becfd3260b05b6f9fef61eb9d90540c315f3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -856,7 +856,6 @@
                 "sha256:99dcfdaaeb17caf6e526f32b6a7b780461512ab3f1d992187801694cba42770c",
                 "sha256:a84b8c9ab6239b578f22d1c21d51b696dcfe004032bb80ea832398d6909d7279"
             ],
-            "index": "pypi",
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.20.0"
         },
@@ -917,20 +916,20 @@
         },
         "sphinx-autodoc-typehints": {
             "hashes": [
-                "sha256:1a9df6cb3ba72453ea4bfbe96ea887abc0d796b2ce9508c2189217a1bb69b366",
-                "sha256:46cc9e985ee6d8bbbd07fffd95b815c39a72df6afb600f59671f85f7340e7d0d"
+                "sha256:19fe0b426b7c008181f67f816060da7f046bd8a42723f67a685d26d875bcefd7",
+                "sha256:f9c06acfec80766fe8f542a6d6a042e751fcf6ce2e2711a7dc00d8b6daf8aa36"
             ],
             "index": "pypi",
             "markers": "python_full_version not in '3.5.0, 3.5.1'",
-            "version": "==1.3.0"
+            "version": "==1.6.0"
         },
         "sphinxcontrib-serializinghtml": {
             "hashes": [
-                "sha256:326369b8df80a7d2d8d7f99aa5ac577f51ea51556ed974e7716cfd4fca3f6cb7",
-                "sha256:93f3f5dc458b91b192fe10c397e324f262cf163d79f3282c158e8436a2c4511f"
+                "sha256:6e2cb0eef194e10c27ec0023bfeb25badbbb5868244cf5bc5bdc04e4464bf331",
+                "sha256:e9d912827f872c029017a53f0ef2180b327c3f7fd23c87229f7a8e8b70031d4d"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==1.1.10"
+            "version": "==2.0.0"
         },
         "sphinxcontrib-websupport": {
             "hashes": [
