@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-cacheout = "==0.10.2"
+cacheout = "==0.16.0"
 flask = "==2.0.0"
 gevent = "==24.2.1"
 gunicorn = "==22.0.0"
