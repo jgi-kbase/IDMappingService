@@ -11,7 +11,7 @@ gunicorn = "==22.0.0"
 pymongo = "==4.7.2"
 requests = "==2.20.0"
 types-requests = "==2.25.0"
-werkzeug = "==2.0.3"
+werkzeug = "==3.0.4"
 
 [dev-packages]
 bandit = "==1.7.9"
