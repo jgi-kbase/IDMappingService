@@ -59,6 +59,7 @@ def test_kb_config_minimal_config():
     assert c.auth_enabled == set()
     assert c.auth_admin_enabled == set()
     assert c.ignore_ip_headers is False
+    assert c.mongo_retrywrites is False
 
 
 def test_kb_config_minimal_config_whitespace():
@@ -66,6 +67,7 @@ def test_kb_config_minimal_config_whitespace():
                                    'mongo-host=foo', 'mongo-db=bar',
                                    'mongo-user=  \t   ', 'mongo-pwd=  \t   ',
                                    'dont-trust-x-ip-headers=   crap',
+                                   'mongo-retrywrites=   another crap',
                                    'authentication-enabled=    \t     ',
                                    'authentication-admin-enabled=      \t     '])
     c = KBaseConfig(p)
@@ -77,12 +79,14 @@ def test_kb_config_minimal_config_whitespace():
     assert c.auth_enabled == set()
     assert c.auth_admin_enabled == set()
     assert c.ignore_ip_headers is False
+    assert c.ignore_ip_headers is False
 
 
 def test_kb_config_maximal_config():
     p = mock_path_to_file('path', [
         '[idmapping]', 'mongo-host=foo', 'mongo-db=bar', 'mongo-user=u', 'mongo-pwd=p',
         'dont-trust-x-ip-headers=true',
+        'mongo-retrywrites=true',
         'authentication-enabled=   authone,   auththree, \t  authtwo  , local ',
         'authentication-admin-enabled=   authone,   autha, \t  authbcd   ',
         'auth-source-authone-factory-module=  some.module  \t  ',
@@ -106,6 +110,7 @@ def test_kb_config_maximal_config():
                                                                                 'whee': 'whoo'}),
                                 AuthsourceID('auththree'): ('some.other.other.module', {'x': 'Y'})}
     assert c.ignore_ip_headers is True
+    assert c.mongo_retrywrites is True
 
 
 def test_kb_config_fail_not_file():

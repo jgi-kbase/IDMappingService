@@ -9,14 +9,14 @@ from logging import LogRecord  # @UnusedImport pydev
 import time
 import re
 
-MONGO_EXE = 'test.mongo.exe'
-TEST_TEMP_DIR = 'test.temp.dir'
-MONGO_USE_WIRED_TIGER = 'test.mongo.wired_tiger'
-KEEP_TEMP_DIR = 'test.temp.dir.keep'
+MONGO_EXE = "test.mongo.exe"
+TEST_TEMP_DIR = "test.temp.dir"
+MONGO_USE_WIRED_TIGER = "test.mongo.wired_tiger"
+KEEP_TEMP_DIR = "test.temp.dir.keep"
 
-TEST_CONFIG_FILE_SECTION = 'idmappingservicetest'
+TEST_CONFIG_FILE_SECTION = "idmappingservicetest"
 
-TEST_FILE_LOC_ENV_KEY = 'IDMAP_TEST_FILE'
+TEST_FILE_LOC_ENV_KEY = "IDMAP_TEST_FILE"
 
 _CONFIG = None
 
@@ -30,17 +30,19 @@ def get_temp_dir() -> Path:
 
 
 def get_use_wired_tiger() -> bool:
-    return _get_test_property(MONGO_USE_WIRED_TIGER) == 'true'
+    return _get_test_property(MONGO_USE_WIRED_TIGER) == "true"
 
 
 def get_delete_temp_files() -> bool:
-    return _get_test_property(KEEP_TEMP_DIR) != 'true'
+    return _get_test_property(KEEP_TEMP_DIR) != "true"
 
 
 def _get_test_config_file_path() -> Path:
     p = os.environ.get(TEST_FILE_LOC_ENV_KEY)
     if not p:
-        raise TestException("Can't find key {} in environment".format(TEST_FILE_LOC_ENV_KEY))
+        raise TestException(
+            "Can't find key {} in environment".format(TEST_FILE_LOC_ENV_KEY)
+        )
     return Path(p)
 
 
@@ -51,25 +53,36 @@ def _get_test_property(prop: str) -> str:
         config = configparser.ConfigParser()
         config.read(test_cfg)
         if TEST_CONFIG_FILE_SECTION not in config:
-            raise TestException('No section {} found in test config file {}'
-                                .format(TEST_CONFIG_FILE_SECTION, test_cfg))
+            raise TestException(
+                "No section {} found in test config file {}".format(
+                    TEST_CONFIG_FILE_SECTION, test_cfg
+                )
+            )
         sec = config[TEST_CONFIG_FILE_SECTION]
         # a section is not a real map and is missing methods
         _CONFIG = {x: sec[x] for x in sec.keys()}
     if prop not in _CONFIG:
-        raise TestException('Property {} in section {} of test file {} is missing'
-                            .format(prop, TEST_CONFIG_FILE_SECTION, test_cfg))
+        raise TestException(
+            "Property {} in section {} of test file {} is missing".format(
+                prop, TEST_CONFIG_FILE_SECTION, test_cfg
+            )
+        )
     return _CONFIG[prop]
 
 
 def find_free_port() -> int:
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('', 0))
+        s.bind(("", 0))
         return s.getsockname()[1]
 
 
+def remove_ns_from_index_info(index_info: dict) -> None:
+    for index_detail in index_info.values():
+        index_detail.pop("ns", None)
+
+
 def assert_exception_correct(got: Exception, expected: Exception):
-    assert type(got) == type(expected)
+    assert type(got) is type(expected)
     assert got.args == expected.args
 
 
@@ -79,14 +92,14 @@ def assert_ms_epoch_close_to_now(time_):
     assert now_ms - 1000 < time_
 
 
-CALLID_PATTERN = re.compile('^\d{16}$')
+CALLID_PATTERN = re.compile(r"^\d{16}$")
 
 
 def assert_json_error_correct(got, expected):
-    time_ = got['error']['time']
-    callid = got['error']['callid']
-    del got['error']['time']
-    del got['error']['callid']
+    time_ = got["error"]["time"]
+    callid = got["error"]["callid"]
+    del got["error"]["time"]
+    del got["error"]["callid"]
 
     assert got == expected
     assert CALLID_PATTERN.match(callid) is not None
@@ -103,7 +116,7 @@ class TerstFermerttr(Formatter):
 
     def format(self, record):
         self.logs.append(record)
-        return 'no logs here, no sir'
+        return "no logs here, no sir"
 
 
 class TestException(Exception):

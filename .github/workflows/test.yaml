@@ -1,0 +1,100 @@
+name: ID Mapping Service test
+
+on:
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
+  push:
+    # run workflow when merging to main or develop
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  id_mapping_service_container_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out GitHub repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9.19"
+
+      - name: Install dependencies and set up test config
+        shell: bash
+        run: |
+          # set up python dependencies
+          pip install pytest requests
+
+          # set up deploy.cfg
+          cp -n deploy.cfg.example deploy.cfg
+          sed -i "s#^mongo-host.*#mongo-host=mongo#" deploy.cfg
+          sed -i "s#^mongo-db.*#mongo-db=idmapping#" deploy.cfg
+
+      - name: Run tests
+        shell: bash
+        run: |
+          sh container_test/run_tests.sh
+
+  id_mapping_service_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.9.19'
+            mongo: 'mongodb-linux-x86_64-3.6.23'
+            wired_tiger: 'false'
+          - python: '3.9.19'
+            mongo: 'mongodb-linux-x86_64-ubuntu2204-7.0.4'
+            wired_tiger: 'true'
+
+    steps:
+    - name: Check out GitHub repo
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{matrix.python}}
+
+    - name: Install dependencies and set up test config
+      shell: bash
+      run: |
+
+        # install python libraries
+        python -m pip install --upgrade pip
+        pip install pipenv
+        pipenv sync --system --dev
+
+        # set up mongo
+        cd ..
+        wget -q http://fastdl.mongodb.org/linux/${{matrix.mongo}}.tgz
+        tar xfz ${{matrix.mongo}}.tgz
+        export MONGOD=`pwd`/${{matrix.mongo}}/bin/mongod
+        cd -
+
+        # set up test config
+        cp -n test.cfg.example test.cfg
+        sed -i "s#^test.temp.dir =.*#test.temp.dir=temp_test_dir#" test.cfg
+        sed -i "s#^test.mongo.exe.*#test.mongo.exe=$MONGOD#" test.cfg
+        sed -i "s#^test.mongo.wired_tiger.*#test.mongo.wired_tiger=${{matrix.wired_tiger}}#" test.cfg
+
+    - name: Run tests
+      shell: bash
+      run: |
+        HOMEDIR=`pwd`
+        PYTHONPATH=$HOMEDIR/src:$PYTHONPATH
+        make test
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true

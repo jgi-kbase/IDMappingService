@@ -2,6 +2,7 @@
 Interface for a storage system for ID mappings.
 
 """
+
 # it'd be nice if you could just pragma: no cover the entire file, but that doesn't seem to work
 from abc import abstractmethod as _abstractmethod  # pragma: no cover
 from abc import ABCMeta as _ABCMeta  # pragma: no cover
@@ -11,13 +12,14 @@ from jgikbase.idmapping.core.tokens import HashedToken  # pragma: no cover
 from jgikbase.idmapping.core.object_id import Namespace  # pragma: no cover
 from typing import Iterable, Set, Tuple  # pragma: no cover
 from jgikbase.idmapping.core.object_id import ObjectID  # pragma: no cover
-from typing import Dict
+from typing import Dict, Optional
 
 
 class IDMappingStorage:  # pragma: no cover
     """
     An interface for a storage system for ID mappings. All methods are abstract.
     """
+
     __metaclass__ = _ABCMeta
 
     @_abstractmethod
@@ -38,14 +40,14 @@ class IDMappingStorage:  # pragma: no cover
 
     @_abstractmethod
     def set_local_user_as_admin(self, username: Username, admin: bool) -> None:
-        '''
+        """
         Mark a user as a system admin. Or not.
 
         :param username: the name of the user to alter.
         :param admin: True to give the user admin privileges, False to remove them. If the user
             is already in the given state, no further action is taken.
         :raises TypeError: if the usename is None.
-        '''
+        """
         raise NotImplementedError()
 
     @_abstractmethod
@@ -88,12 +90,12 @@ class IDMappingStorage:  # pragma: no cover
 
     @_abstractmethod
     def user_exists(self, username: Username) -> bool:
-        '''
+        """
         Check if a user exist in the system. Returns True if so.
 
         :param username: the username to check.
         :raises TypeError: if the username is None.
-        '''
+        """
         raise NotImplementedError()
 
     @_abstractmethod
@@ -108,7 +110,9 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def add_user_to_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
+    def add_user_to_namespace(
+        self, namespace_id: NamespaceID, admin_user: User
+    ) -> None:
         """
         Add a user to a namespace, giving them administration rights. A noop occurs if the user
         is already an administrator for the namespace.
@@ -122,7 +126,9 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def remove_user_from_namespace(self, namespace_id: NamespaceID, admin_user: User) -> None:
+    def remove_user_from_namespace(
+        self, namespace_id: NamespaceID, admin_user: User
+    ) -> None:
         """
         Remove a user from a namespace, removing their administration rights.
 
@@ -135,8 +141,9 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def set_namespace_publicly_mappable(self, namespace_id: NamespaceID, publicly_mappable: bool
-                                        ) -> None:
+    def set_namespace_publicly_mappable(
+        self, namespace_id: NamespaceID, publicly_mappable: bool
+    ) -> None:
         """
         Set the publicly mappable flag on a namespace.
 
@@ -149,7 +156,7 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def get_namespaces(self, nids: Iterable[NamespaceID]=None) -> Set[Namespace]:
+    def get_namespaces(self, nids: Optional[Iterable[NamespaceID]] = None) -> Set[Namespace]:
         """
         Get all the namespaces in the system.
 
@@ -198,8 +205,9 @@ class IDMappingStorage:  # pragma: no cover
         raise NotImplementedError()
 
     @_abstractmethod
-    def find_mappings(self, oid: ObjectID, ns_filter: Iterable[NamespaceID]=None
-                      ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
+    def find_mappings(
+        self, oid: ObjectID, ns_filter: Optional[Iterable[NamespaceID]] = None
+    ) -> Tuple[Set[ObjectID], Set[ObjectID]]:
         """
         Find mappings given a namespace / id combination.
 
